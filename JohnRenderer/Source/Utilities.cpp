@@ -6,6 +6,8 @@
 #include "assimp/postprocess.h"
 #include "assimp/LogStream.hpp"
 #include "assimp/DefaultLogger.hpp"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 namespace 
 {
@@ -72,8 +74,8 @@ namespace John
 			vertex.Normal = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
 			if (mesh->HasTangentsAndBitangents())
 			{
-			//	vertex.Tangent = { mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z };
-			//	vertex.Bitangent = { mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z };
+				vertex.Tangent = { mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z };
+				vertex.Bitangent = { mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z };
 			}
 			if (mesh->HasTextureCoords(0))
 			{
@@ -168,6 +170,87 @@ namespace John
 		);
 
 		return buffer;
+	}
+
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> CreateSamplerState(ID3D11Device* device, D3D11_FILTER filter, D3D11_TEXTURE_ADDRESS_MODE addressMode)
+	{
+		D3D11_SAMPLER_DESC desc = {};
+		desc.Filter = filter;
+		desc.AddressU = addressMode;
+		desc.AddressV = addressMode;
+		desc.AddressW = addressMode;
+
+		desc.MaxAnisotropy = (filter == D3D11_FILTER_ANISOTROPIC) ? D3D11_REQ_MAXANISOTROPY : 1;
+		desc.MinLOD = 0;
+		desc.MaxLOD = D3D11_FLOAT32_MAX;
+
+		Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
+		DX::ThrowIfFailed(
+			device->CreateSamplerState(
+				&desc,
+				samplerState.ReleaseAndGetAddressOf()
+			)
+		);
+		return samplerState;
+	}
+
+	John::Texture CreateTexture(const std::string FileName, ID3D11DeviceContext* context, ID3D11Device* device, DXGI_FORMAT format, UINT levels, int Channels)
+	{
+		
+		Texture NewTexture;
+		//todo: HDR
+		int width, height;
+		int channels = 0;
+		unsigned char* pixels = stbi_load(FileName.c_str(), &width, &height, &channels, Channels);
+		if(!pixels)
+		{
+			std::string fail_Reason(stbi_failure_reason());
+			throw std::runtime_error("failed to load image: " + FileName);
+		}
+
+		NewTexture.Width = width;
+		NewTexture.Height = height;
+		NewTexture.Levels = (levels > 0) ? levels : John::NumMipMapLevels(width, height);
+
+		D3D11_TEXTURE2D_DESC texDesc = {};
+		texDesc.Width = width;
+		texDesc.Height = height;
+		texDesc.MipLevels = levels;
+		texDesc.ArraySize = 1;
+		texDesc.Format = format;
+		texDesc.SampleDesc.Count = 1;
+		texDesc.Usage = D3D11_USAGE_DEFAULT;
+		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+		if(levels == 0)
+		{
+			texDesc.BindFlags |= D3D11_BIND_RENDER_TARGET;
+			texDesc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
+		}
+
+		DX::ThrowIfFailed(
+			device->CreateTexture2D(&texDesc, nullptr, NewTexture.texture.ReleaseAndGetAddressOf())
+		);
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+		srvDesc.Format = texDesc.Format;
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Texture2D.MostDetailedMip = 0;
+		srvDesc.Texture2D.MipLevels = -1;
+
+		DX::ThrowIfFailed(
+			device->CreateShaderResourceView(NewTexture.texture.Get(), &srvDesc, NewTexture.SRV.ReleaseAndGetAddressOf())
+		);
+
+		int pitch = Channels * sizeof(unsigned char);
+		context->UpdateSubresource(NewTexture.texture.Get(), 0, nullptr, reinterpret_cast<const void*>(pixels), NewTexture.Width * pitch, 0);
+		
+		if(levels == 0)
+		{
+			context->GenerateMips(NewTexture.SRV.Get());
+		}
+
+		return NewTexture;
+
 	}
 
 }

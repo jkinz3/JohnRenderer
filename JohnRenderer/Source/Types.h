@@ -21,5 +21,16 @@ namespace John
 	struct ShadingCB
 	{
 		DirectX::XMVECTOR LightPos;
+		DirectX::XMVECTOR CameraPos;
+	};
+
+	struct Texture
+	{
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SRV;
+		Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> UAV;
+		UINT Width, Height;
+		UINT Levels;
+
 	};
 }

@@ -5,6 +5,8 @@ struct Vertex
 	DirectX::SimpleMath::Vector3 Position;
 	DirectX::SimpleMath::Vector3 Normal;
 	DirectX::SimpleMath::Vector2 TexCoord;
+	DirectX::SimpleMath::Vector3 Tangent;
+	DirectX::SimpleMath::Vector3 Bitangent;
 };
 
 struct Face

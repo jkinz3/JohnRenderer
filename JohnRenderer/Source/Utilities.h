@@ -23,5 +23,18 @@ namespace John
 		return CreateConstantBuffer(data, sizeof(T), device);
 	}
 
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> CreateSamplerState(ID3D11Device* device, D3D11_FILTER filter, D3D11_TEXTURE_ADDRESS_MODE addressMode);
+
+	Texture CreateTexture(const std::string FileName, ID3D11DeviceContext* context, ID3D11Device* device, DXGI_FORMAT format, UINT levels, int Channels =4);
+
+	template<typename T> static constexpr T NumMipMapLevels(T width, T height)
+	{
+		T levels = 1;
+		while ((width|height) >> levels)
+		{
+			++levels;
+		}
+		return levels;
+	}
 
 }

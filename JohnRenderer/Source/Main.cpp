@@ -23,6 +23,8 @@ LPCWSTR g_szAppName = L"JohnRenderer";
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 void ExitGame() noexcept;
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 
 // Indicates to hybrid graphics systems to prefer the discrete part by default
 extern "C"
@@ -121,6 +123,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     // TODO: Set s_fullscreen to true if defaulting to fullscreen.
 
     auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+
+	if(ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
+	{
+
+		return true;
+	}
 
     switch (message)
     {
