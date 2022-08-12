@@ -12,6 +12,11 @@ namespace John
 		std::wstring PixelFileName;
 	};
 
+	struct ComputeProgram
+	{
+		Microsoft::WRL::ComPtr<ID3D11ComputeShader> ComputeShader;
+	};
+
 	struct TransformCB
 	{
 		DirectX::XMMATRIX MVP;

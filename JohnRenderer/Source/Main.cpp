@@ -5,6 +5,7 @@
 #include "pch.h"
 #include "Game.h"
 
+
 using namespace DirectX;
 
 #ifdef __clang__
@@ -101,7 +102,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
             DispatchMessage(&msg);
         }
         else
-        {
+		{
             g_game->Tick();
         }
     }

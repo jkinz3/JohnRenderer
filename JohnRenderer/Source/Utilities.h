@@ -1,6 +1,6 @@
 #pragma once
 #include "Types.h"
-
+#include "Image.h"
 class JohnMesh;
 
 
@@ -9,7 +9,11 @@ namespace John
 {
 	std::shared_ptr<JohnMesh> LoadMeshFromFile(const char* FileName);
 
-	ShaderProgram CreateShaderProgram(const wchar_t* vertFile, const wchar_t* pixelFile,  const std::vector<D3D11_INPUT_ELEMENT_DESC>* inputLayoutDesc, ID3D11Device* device);
+	Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const std::wstring& filename, const std::string& entryPoint, const std::string& profile);
+
+	ShaderProgram CreateShaderProgram(const Microsoft::WRL::ComPtr<ID3DBlob> vsByteCode,const Microsoft::WRL::ComPtr<ID3DBlob> psByteCode, const std::wstring& vsFile, const std::wstring& psFile, const std::vector<D3D11_INPUT_ELEMENT_DESC>* inputLayoutDesc, ID3D11Device* device);
+
+	ComputeProgram CreateComputeProgram(const Microsoft::WRL::ComPtr<ID3DBlob>& csByteCode, ID3D11Device* device);
 
 	template<typename T> static constexpr T RoundToPowerOfTwo(T value, int POT)
 	{
@@ -25,7 +29,13 @@ namespace John
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> CreateSamplerState(ID3D11Device* device, D3D11_FILTER filter, D3D11_TEXTURE_ADDRESS_MODE addressMode);
 
-	Texture CreateTexture(const std::string FileName, ID3D11DeviceContext* context, ID3D11Device* device, DXGI_FORMAT format, UINT levels, int Channels =4);
+	Texture CreateTexture(ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels);
+
+	Texture CreateTextureCube(ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels = 0);
+
+	Texture CreateTexture(ID3D11Device* device, ID3D11DeviceContext* context, const std::shared_ptr<John::Image>& image, DXGI_FORMAT format, UINT levels);
+
+	void CreateTextureUAV(Texture& texture, UINT mipSlice, ID3D11Device* device);
 
 	template<typename T> static constexpr T NumMipMapLevels(T width, T height)
 	{

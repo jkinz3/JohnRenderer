@@ -29,6 +29,7 @@
     <ClInclude Include="ThirdParty\ImGui\imgui.h" />
     <ClInclude Include="ThirdParty\ImGui\imconfig.h" />
     <ClInclude Include="Source\stb_image.h" />
+    <ClInclude Include="Source\Image.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\pch.cpp" />
@@ -46,6 +47,7 @@
     <ClCompile Include="ThirdParty\ImGui\imgui.cpp" />
     <ClCompile Include="ThirdParty\ImGui\imgui_tables.cpp" />
     <ClCompile Include="ThirdParty\ImGui\imgui_draw.cpp" />
+    <ClCompile Include="Source\Image.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -63,9 +65,18 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Shaders\PhongCommon.hlsli" />
+    <None Include="Shaders\SkyboxCommon.hlsli" />
+    <None Include="Shaders\PBRCommon.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\PhongVS.hlsl" />
     <FxCompile Include="Shaders\PhongPS.hlsl" />
+    <FxCompile Include="Shaders\SkyboxPS.hlsl" />
+    <FxCompile Include="Shaders\SkyboxVS.hlsl" />
+    <FxCompile Include="Shaders\Compute\IrradianceMapGenerator.hlsl" />
+    <FxCompile Include="Shaders\Compute\SPBRDF.hlsl" />
+    <FxCompile Include="Shaders\PBRVS.hlsl" />
+    <FxCompile Include="Shaders\PBRPS.hlsl" />
+    <FxCompile Include="Shaders\Compute\SPMap.hlsl" />
   </ItemGroup>
 </Project>

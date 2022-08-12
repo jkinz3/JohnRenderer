@@ -96,52 +96,31 @@ namespace John
 
 	}
 
-	John::ShaderProgram CreateShaderProgram(const wchar_t* vertFile, const wchar_t* pixelFile, const std::vector<D3D11_INPUT_ELEMENT_DESC>* inputLayoutDesc, ID3D11Device* device)
+
+
+	John::ShaderProgram CreateShaderProgram(const Microsoft::WRL::ComPtr<ID3DBlob> vsByteCode, const Microsoft::WRL::ComPtr<ID3DBlob> psByteCode, const std::wstring& vsFile, const std::wstring& psFile, const std::vector<D3D11_INPUT_ELEMENT_DESC>* inputLayoutDesc, ID3D11Device* device)
 	{
-		
-		UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
-#if _DEBUG
-		flags |= D3DCOMPILE_DEBUG;
-		flags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-#endif
-		Microsoft::WRL::ComPtr<ID3DBlob> vsShaderBlob;
-		Microsoft::WRL::ComPtr<ID3DBlob> psShaderBlob;
-		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
-
-
-		DX::ThrowIfFailed(
-			D3DCompileFromFile(
-				vertFile, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", "vs_5_0", flags, 0, vsShaderBlob.GetAddressOf(), errorBlob.GetAddressOf() 
-			)
-		);
-
-		DX::ThrowIfFailed(
-			D3DCompileFromFile(
-				pixelFile, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", "ps_5_0", flags, 0, psShaderBlob.GetAddressOf(), errorBlob.GetAddressOf()
-			)
-		);
-
 		ShaderProgram program;
 
-		program.VertFileName = std::wstring(vertFile);
-		program.PixelFileName = std::wstring(pixelFile);;
-		
+		program.VertFileName = std::wstring(vsFile.c_str());
+		program.PixelFileName = std::wstring(psFile.c_str());;
+
 		DX::ThrowIfFailed(
 			device->CreateVertexShader(
-				vsShaderBlob->GetBufferPointer(), vsShaderBlob->GetBufferSize(), nullptr, program.VertexShader.ReleaseAndGetAddressOf()
+				vsByteCode->GetBufferPointer(), vsByteCode->GetBufferSize(), nullptr, program.VertexShader.ReleaseAndGetAddressOf()
 			)
 		);
 		DX::ThrowIfFailed(
 			device->CreatePixelShader(
-				psShaderBlob->GetBufferPointer(), psShaderBlob->GetBufferSize(), nullptr, program.PixelShader.ReleaseAndGetAddressOf()
+				psByteCode->GetBufferPointer(), psByteCode->GetBufferSize(), nullptr, program.PixelShader.ReleaseAndGetAddressOf()
 			)
 		);
 
-		if(inputLayoutDesc)
+		if (inputLayoutDesc)
 		{
 			DX::ThrowIfFailed(
 				device->CreateInputLayout(
-					inputLayoutDesc->data(), (UINT)inputLayoutDesc->size(), vsShaderBlob->GetBufferPointer(), vsShaderBlob->GetBufferSize(), program.InputLayout.ReleaseAndGetAddressOf()
+					inputLayoutDesc->data(), (UINT)inputLayoutDesc->size(), vsByteCode->GetBufferPointer(), vsByteCode->GetBufferSize(), program.InputLayout.ReleaseAndGetAddressOf()
 				)
 			);
 
@@ -150,7 +129,38 @@ namespace John
 		return program;
 
 
+	}
 
+	John::ComputeProgram CreateComputeProgram(const Microsoft::WRL::ComPtr<ID3DBlob>& csByteCode, ID3D11Device* device)
+	{
+		ComputeProgram program;
+
+		DX::ThrowIfFailed(
+			device->CreateComputeShader(csByteCode->GetBufferPointer(), csByteCode->GetBufferSize(), nullptr, &program.ComputeShader)
+		);
+
+		return program;
+	}
+
+	Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const std::wstring& filename, const std::string& entryPoint, const std::string& profile)
+	{
+
+		UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
+#if _DEBUG
+		flags |= D3DCOMPILE_DEBUG;
+		flags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+		Microsoft::WRL::ComPtr<ID3DBlob> shader;
+		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
+
+
+		DX::ThrowIfFailed(
+			D3DCompileFromFile(
+				filename.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, entryPoint.c_str() , profile.c_str(), flags, 0, shader.GetAddressOf(), errorBlob.GetAddressOf()
+			)
+		);
+
+		return shader;
 	}
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> CreateConstantBuffer(const void* data, UINT size, ID3D11Device* device)
@@ -194,20 +204,61 @@ namespace John
 		return samplerState;
 	}
 
-	John::Texture CreateTexture(const std::string FileName, ID3D11DeviceContext* context, ID3D11Device* device, DXGI_FORMAT format, UINT levels, int Channels)
+	John::Texture CreateTexture(ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels)
 	{
 		
-		Texture NewTexture;
-		//todo: HDR
-		int width, height;
-		int channels = 0;
-		unsigned char* pixels = stbi_load(FileName.c_str(), &width, &height, &channels, Channels);
-		if(!pixels)
-		{
-			std::string fail_Reason(stbi_failure_reason());
-			throw std::runtime_error("failed to load image: " + FileName);
-		}
+		Texture texture;
+		texture.Width = width;
+		texture.Height = height;
+		texture.Levels = (levels > 0) ? levels : John::NumMipMapLevels(width, height);
 
+		D3D11_TEXTURE2D_DESC desc = {};
+		desc.Width = width;
+		desc.Height = height;
+		desc.MipLevels = levels;
+		desc.ArraySize = 1;
+		desc.Format = format;
+		desc.SampleDesc.Count = 1;
+		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+		if (levels == 0)
+		{
+			desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
+			desc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
+		}
+		DX::ThrowIfFailed(
+			device->CreateTexture2D(&desc, nullptr, &texture.texture)
+		);
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+		srvDesc.Format = desc.Format;
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Texture2D.MostDetailedMip = 0;
+		srvDesc.Texture2D.MipLevels = -1;
+
+		DX::ThrowIfFailed(
+			device->CreateShaderResourceView(texture.texture.Get(), &srvDesc, &texture.SRV)
+		);
+
+		return texture;
+
+	}
+
+	John::Texture CreateTexture(ID3D11Device* device, ID3D11DeviceContext* context, const std::shared_ptr<Image>& image, DXGI_FORMAT format, UINT levels)
+	{
+		Texture texture = John::CreateTexture(device, image->GetWidth(), image->GetHeight(), format, levels);
+		context->UpdateSubresource(texture.texture.Get(), 0, nullptr, image->GetPixels<void>(), image->GetPitch(), 0);
+		if (levels == 0)
+		{
+			context->GenerateMips(texture.SRV.Get());
+		}
+		return texture;
+	}
+
+	John::Texture CreateTextureCube(ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels)
+	{
+
+		Texture NewTexture;
 		NewTexture.Width = width;
 		NewTexture.Height = height;
 		NewTexture.Levels = (levels > 0) ? levels : John::NumMipMapLevels(width, height);
@@ -216,12 +267,13 @@ namespace John
 		texDesc.Width = width;
 		texDesc.Height = height;
 		texDesc.MipLevels = levels;
-		texDesc.ArraySize = 1;
+		texDesc.ArraySize = 6;
 		texDesc.Format = format;
 		texDesc.SampleDesc.Count = 1;
 		texDesc.Usage = D3D11_USAGE_DEFAULT;
 		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-		if(levels == 0)
+		texDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+		if (levels == 0)
 		{
 			texDesc.BindFlags |= D3D11_BIND_RENDER_TARGET;
 			texDesc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
@@ -233,24 +285,42 @@ namespace John
 
 		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 		srvDesc.Format = texDesc.Format;
-		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
 		srvDesc.Texture2D.MostDetailedMip = 0;
 		srvDesc.Texture2D.MipLevels = -1;
 
 		DX::ThrowIfFailed(
-			device->CreateShaderResourceView(NewTexture.texture.Get(), &srvDesc, NewTexture.SRV.ReleaseAndGetAddressOf())
+			device->CreateShaderResourceView(NewTexture.texture.Get(), &srvDesc, &NewTexture.SRV)
 		);
 
-		int pitch = Channels * sizeof(unsigned char);
-		context->UpdateSubresource(NewTexture.texture.Get(), 0, nullptr, reinterpret_cast<const void*>(pixels), NewTexture.Width * pitch, 0);
-		
-		if(levels == 0)
+		return NewTexture;
+	}
+
+	void CreateTextureUAV(Texture& texture, UINT mipSlice, ID3D11Device* device)
+	{
+		assert(texture.texture);
+
+		D3D11_TEXTURE2D_DESC desc;
+		texture.texture->GetDesc(&desc);
+
+		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+		uavDesc.Format = desc.Format;
+		if (desc.ArraySize == 1)
 		{
-			context->GenerateMips(NewTexture.SRV.Get());
+			uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+			uavDesc.Texture2D.MipSlice = mipSlice;
+		}
+		else
+		{
+			uavDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
+			uavDesc.Texture2DArray.MipSlice = mipSlice;
+			uavDesc.Texture2DArray.FirstArraySlice = 0;
+			uavDesc.Texture2DArray.ArraySize = desc.ArraySize;
 		}
 
-		return NewTexture;
-
+		DX::ThrowIfFailed(
+			device->CreateUnorderedAccessView(texture.texture.Get(), &uavDesc, &texture.UAV)
+		);
 	}
 
 }

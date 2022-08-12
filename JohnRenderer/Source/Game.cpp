@@ -6,12 +6,17 @@
 #include "Game.h"
 #include "JohnMesh.h"
 #include "Utilities.h"
+#include "renderdoc_app.h"
+
+
 extern void ExitGame() noexcept;
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
 using Microsoft::WRL::ComPtr;
+
+RENDERDOC_API_1_5_0* rdoc_api = NULL;
 
 Game::Game() noexcept(false)
 {
@@ -26,12 +31,20 @@ Game::Game() noexcept(false)
 // Initialize the Direct3D resources required to run.
 void Game::Initialize(HWND window, int width, int height)
 {
+	if (HMODULE mod = GetModuleHandleA("renderdoc.dll"))
+	{
+		pRENDERDOC_GetAPI RENDERDOC_GetAPI =
+			(pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
+		int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_5_0, (void**)&rdoc_api);
+		assert(ret == 1);
+	}
+
     m_deviceResources->SetWindow(window, width, height);
 
     m_deviceResources->CreateDeviceResources();
     CreateDeviceDependentResources();
 
-    m_deviceResources->CreateWindowSizeDependentResources();
+	m_deviceResources->CreateWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
 
 	m_Keyboard = std::make_unique<DirectX::Keyboard>();
@@ -63,7 +76,123 @@ void Game::InitUI(HWND window)
 
 			
 }
+#pragma region Init InitializeSky
+void Game::InitializeSky()
+{
+	if(rdoc_api)
+	{
+		rdoc_api->StartFrameCapture(NULL, NULL);
+	}
 
+	
+
+
+
+	m_deviceResources->PIXBeginEvent(L"Init Sky");
+	auto context = m_deviceResources->GetD3DDeviceContext();
+	auto device = m_deviceResources->GetD3DDevice();
+	ID3D11UnorderedAccessView* const nullUAV[] = { nullptr };
+	m_ComputeSampler = John::CreateSamplerState(device, D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP);
+	//load and convert equirect to cubemap
+	{
+		//temp unfiltered cubemap
+		John::Texture m_EnvMapUnfiltered = John::CreateTextureCube(device, 1024,1024, DXGI_FORMAT_R16G16B16A16_FLOAT);
+		John::CreateTextureUAV(m_EnvMapUnfiltered, 0, device);
+
+
+		{
+
+			John::ComputeProgram equirectToCubeProgram = John::CreateComputeProgram(John::CompileShader(L"Shaders/Compute/CubemapConversion.hlsl", "main", "cs_5_0"), device);
+			John::Texture envTextureEquirect = John::CreateTexture(device, context, John::Image::FromFile("Content/fouriesburg_mountain_midday_8k.hdr"), DXGI_FORMAT_R32G32B32A32_FLOAT,1);
+
+
+			context->CSSetShaderResources(0, 1, envTextureEquirect.SRV.GetAddressOf());
+			context->CSSetUnorderedAccessViews(0, 1, m_EnvMapUnfiltered.UAV.GetAddressOf(), nullptr);
+			context->CSSetSamplers(0, 1, m_ComputeSampler.GetAddressOf());
+			context->CSSetShader(equirectToCubeProgram.ComputeShader.Get(), nullptr, 0);
+			context->Dispatch(envTextureEquirect.Width / 32, envTextureEquirect.Height / 32, 6);
+
+			context->CSSetUnorderedAccessViews(0, 1, nullUAV, nullptr);
+
+		}
+		context->GenerateMips(m_EnvMapUnfiltered.SRV.Get());
+		m_EnvMap = John::CreateTextureCube(device, 1024, 1024, DXGI_FORMAT_R16G16B16A16_FLOAT);
+
+		for(int arraySlice=0; arraySlice<6; ++arraySlice)
+		{
+			const UINT subresourceIndex = D3D11CalcSubresource(0, arraySlice, m_EnvMap.Levels);
+			context->CopySubresourceRegion(m_EnvMap.texture.Get(), subresourceIndex, 0, 0, 0, m_EnvMapUnfiltered.texture.Get(), subresourceIndex, nullptr);
+
+		}
+		struct SpecMapFilterSettingsCB
+		{
+			float roughness;
+			float padding[3];
+		};
+
+		John::ComputeProgram spmapProgram = John::CreateComputeProgram(John::CompileShader(L"Shaders/Compute/SPMap.hlsl", "main", "cs_5_0"), device);
+		Microsoft::WRL::ComPtr<ID3D11Buffer> spmapCB = John::CreateConstantBuffer<SpecMapFilterSettingsCB>(device);
+		
+		context->CSSetShaderResources(0, 1, m_EnvMapUnfiltered.SRV.GetAddressOf());
+		context->CSSetSamplers(0, 1, m_ComputeSampler.GetAddressOf());
+		context->CSSetShader(spmapProgram.ComputeShader.Get(), nullptr, 0);
+
+		const float deltaRoughness = 1.f / std::max(float(m_EnvMap.Levels - 1), 1.f);
+		for(UINT level = 1, size = 512; level < m_EnvMap.Levels; ++level, size /=2)
+		{
+			wchar_t buf[100];
+			swprintf_s(buf, 100, L"Level %i", level);
+			m_deviceResources->PIXBeginEvent(buf);
+			const UINT numGroups = std::max<UINT>(1, size / 32);
+			John::CreateTextureUAV(m_EnvMap, level, device);
+			
+			const SpecMapFilterSettingsCB spMapConstants = { level * deltaRoughness };
+			context->UpdateSubresource(spmapCB.Get(), 0, nullptr, &spMapConstants, 0, 0);
+			context->CSSetUnorderedAccessViews(0, 1, m_EnvMap.UAV.GetAddressOf(), nullptr);
+			context->Dispatch(numGroups, numGroups, 6);
+			m_deviceResources->PIXEndEvent();
+		}
+		context->CSSetUnorderedAccessViews(0, 1, nullUAV, nullptr);
+	}
+	//compute diffuse irradiance map
+	{
+		John::ComputeProgram irMapProgram = John::CreateComputeProgram(John::CompileShader(L"Shaders/Compute/IrradianceMapGenerator.hlsl", "main", "cs_5_0"), device);
+		m_IrradianceMap = John::CreateTextureCube(device, 32, 32, DXGI_FORMAT_R16G16B16A16_FLOAT, 1);
+		John::CreateTextureUAV(m_IrradianceMap, 0, device);
+
+		context->CSSetShaderResources(0, 1, m_EnvMap.SRV.GetAddressOf());
+		context->CSSetSamplers(0, 1, m_ComputeSampler.GetAddressOf());
+		context->CSSetUnorderedAccessViews(0, 1, m_IrradianceMap.UAV.GetAddressOf(), nullptr);
+		context->CSSetShader(irMapProgram.ComputeShader.Get(), nullptr, 0);
+		context->Dispatch(m_IrradianceMap.Width / 32, m_IrradianceMap.Height / 32, 6);
+		context->CSSetUnorderedAccessViews(0, 1, nullUAV, nullptr);
+
+	}
+
+	//compute spec BRDF
+	{
+		John::ComputeProgram BRDFProgram = John::CreateComputeProgram(John::CompileShader(L"Shaders/Compute/SPBRDF.hlsl", "main", "cs_5_0"), device);
+
+		m_BRDF_LUT = John::CreateTexture(device, 256, 256, DXGI_FORMAT_R16G16_FLOAT, 1);
+		
+		m_BRDF_Sampler = John::CreateSamplerState(device, D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_CLAMP);
+		John::CreateTextureUAV(m_BRDF_LUT, 0, device);
+
+		context->CSSetUnorderedAccessViews(0, 1, m_BRDF_LUT.UAV.GetAddressOf(), nullptr);
+		context->CSSetShader(BRDFProgram.ComputeShader.Get(), nullptr, 0);
+		context->Dispatch(m_BRDF_LUT.Width / 32, m_BRDF_LUT.Height / 32, 1);
+		context->CSSetUnorderedAccessViews(0, 1, nullUAV, nullptr);
+	}
+
+	m_Skydome = John::LoadMeshFromFile("Content/skyDome.obj");
+	m_Skydome->Build(device);
+	m_deviceResources->PIXEndEvent();
+	if(rdoc_api)
+	{
+		rdoc_api->EndFrameCapture(NULL, NULL);
+	}
+}
+#pragma endregion
 #pragma region Frame Update
 // Executes the basic game loop.
 void Game::Tick()
@@ -153,9 +282,17 @@ void Game::Movement(float DeltaTime)
 		{ "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
 
+		m_PBRProgram = John::CreateShaderProgram(
+			John::CompileShader(m_PBRProgram.VertFileName, "main", "vs_5_0"),
+			John::CompileShader(m_PBRProgram.PixelFileName, "main", "ps_5_0"),
+			m_PBRProgram.VertFileName,
+			m_PBRProgram.PixelFileName,
+			&meshInputLayout,
+			m_deviceResources->GetD3DDevice()
+
+		);
 
 
-		m_StandardProgram = John::CreateShaderProgram(m_StandardProgram.VertFileName.c_str(), m_StandardProgram.PixelFileName.c_str(), &meshInputLayout, m_deviceResources->GetD3DDevice());
 	}
 
 	if (CanMoveCamera())
@@ -313,10 +450,11 @@ void Game::Render()
     m_deviceResources->PIXBeginEvent(L"Render");
     auto context = m_deviceResources->GetD3DDeviceContext();
 
+	 
     // TODO: Add your rendering code here.
     context;
 
-
+	RenderSky();
 
 	John::TransformCB transformConstants;
 	Matrix Model = m_Mesh->GetTransformationMatrix();
@@ -336,20 +474,29 @@ void Game::Render()
 
 	ID3D11ShaderResourceView* const srvs[] =
 	{
+		m_EnvMap.SRV.Get(),
+		m_IrradianceMap.SRV.Get(),
+		m_BRDF_LUT.SRV.Get(),
 		m_BrickAlbedo.SRV.Get(),
-		m_BrickNormal.SRV.Get()
+		m_BrickRoughness.SRV.Get(),
+		m_BrickNormal.SRV.Get(),
+		m_BrickMetallic.SRV.Get(),
 	};
 
-
+	ID3D11SamplerState* const states[] =
+	{
+		m_StandardSampler.Get(),
+		m_BRDF_Sampler.Get()
+	};
 
 	context->VSSetConstantBuffers(0, 1, m_TransformCB.GetAddressOf());
 	context->PSSetConstantBuffers(0, 1, m_ShadingCB.GetAddressOf());
 	context->PSSetShaderResources(0, _countof(srvs), srvs);
-	context->PSSetSamplers(0, 1, m_StandardSampler.GetAddressOf());
-	context->VSSetShader(m_StandardProgram.VertexShader.Get(), nullptr, 0);
-	context->PSSetShader(m_StandardProgram.PixelShader.Get(), nullptr, 0);
-	context->IASetInputLayout(m_StandardProgram.InputLayout.Get());
-
+	context->PSSetSamplers(0, _countof(states),states);
+	context->VSSetShader(m_PBRProgram.VertexShader.Get(), nullptr, 0);
+	context->PSSetShader(m_PBRProgram.PixelShader.Get(), nullptr, 0);
+	context->IASetInputLayout(m_PBRProgram.InputLayout.Get());
+	context->OMSetDepthStencilState(m_StandardDepthStencilState.Get(), 0);
 	m_Mesh->Draw(context);
 
 	RenderUI();
@@ -365,6 +512,33 @@ void Game::RenderUI()
 	auto context = m_deviceResources->GetD3DDeviceContext();
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+}
+
+void Game::RenderSky()
+{
+
+	auto context = m_deviceResources->GetD3DDeviceContext();
+	John::TransformCB transformConstants;
+
+	Matrix Model = Matrix::Identity;
+	XMMATRIX View = m_ViewMatrix;
+	View.r[3] = g_XMIdentityR3;
+	Matrix MVP = XMMatrixMultiply(View, m_ProjMatrix);
+	transformConstants.MVP = MVP.Transpose();
+	transformConstants.Model= Model;
+
+	context->UpdateSubresource(m_TransformCB.Get(), 0, nullptr, &transformConstants, 0, 0);
+	context->VSSetConstantBuffers(0, 1, m_TransformCB.GetAddressOf());
+	context->OMSetDepthStencilState(m_SkyboxDepthStencilState.Get(), 0);
+	context->IASetInputLayout(m_SkyboxProgram.InputLayout.Get());
+	context->VSSetShader(m_SkyboxProgram.VertexShader.Get(), nullptr, 0);
+	context->PSSetShader(m_SkyboxProgram.PixelShader.Get(), nullptr, 0);
+	context->PSSetShaderResources(0, 1, m_IrradianceMap.SRV.GetAddressOf());
+	context->PSSetSamplers(0, 1, m_StandardSampler.GetAddressOf());
+	
+	m_Skydome->Draw(context);
+
 
 }
 
@@ -478,8 +652,11 @@ void Game::CreateDeviceDependentResources()
 {
     auto device = m_deviceResources->GetD3DDevice();
 	auto window = m_deviceResources->GetWindow();
+	auto context = m_deviceResources->GetD3DDeviceContext();
 
 	InitUI(window);
+	InitializeSky();
+	
 
 
 	m_Mesh = John::LoadMeshFromFile("Content/sphere.obj");
@@ -493,17 +670,66 @@ void Game::CreateDeviceDependentResources()
 	{ "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 
-	m_StandardProgram = John::CreateShaderProgram(L"Shaders/PhongVS.hlsl", L"Shaders/PhongPS.hlsl", &meshInputLayout, device);
+	m_StandardProgram = John::CreateShaderProgram(
+		John::CompileShader(L"Shaders/PhongVS.hlsl", "main", "vs_5_0"),
+		John::CompileShader(L"Shaders/PhongPS.hlsl", "main", "ps_5_0"),
+		L"Shaders/PhongVS.hlsl",
+		L"Shaders/PhongPS.hlsl",
+		&meshInputLayout,
+		device
+		
+	);
+
+
+	m_PBRProgram = John::CreateShaderProgram(
+		John::CompileShader(L"Shaders/PBRVS.hlsl", "main", "vs_5_0"),
+		John::CompileShader(L"Shaders/PBRPS.hlsl", "main", "ps_5_0"),
+		L"Shaders/PBRVS.hlsl",
+		L"Shaders/PBRPS.hlsl",
+		&meshInputLayout,
+		device
+
+	);
+
+
+	m_SkyboxProgram = John::CreateShaderProgram(
+		John::CompileShader(L"Shaders/SkyboxVS.hlsl", "main", "vs_5_0"),
+		John::CompileShader(L"Shaders/SkyboxPS.hlsl", "main", "ps_5_0"),
+		L"Shaders/SkyboxVS.hlsl",
+		L"Shaders/SkyboxPS.hlsl",
+		&meshInputLayout,
+		device
+	);
+
 
 	m_TransformCB = John::CreateConstantBuffer<John::TransformCB>(device);
 	m_ShadingCB = John::CreateConstantBuffer<John::ShadingCB>(device);
 
 	m_StandardSampler = John::CreateSamplerState(device, D3D11_FILTER_ANISOTROPIC, D3D11_TEXTURE_ADDRESS_WRAP);
-	m_BrickAlbedo = John::CreateTexture("Content/Brick_Albedo.jpg", m_deviceResources->GetD3DDeviceContext(), device, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
-	m_BrickNormal = John::CreateTexture("Content/Brick_Normal.jpg", m_deviceResources->GetD3DDeviceContext(), device, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
+	m_BrickAlbedo = John::CreateTexture(device, context, John::Image::FromFile("Content/Brick_Albedo.jpg"), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
+	m_BrickNormal = John::CreateTexture(device, context, John::Image::FromFile("Content/Brick_Normal.jpg"), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
+	m_BrickRoughness = John::CreateTexture(device, context, John::Image::FromFile("Content/Brick_Roughness.jpg"), DXGI_FORMAT_R8_UNORM, 1);
+	m_BrickMetallic = John::CreateTexture(device, context, John::Image::FromFile("Content/Brick_Metallic.jpg"), DXGI_FORMAT_R8_UNORM, 1);
 
     // TODO: Initialize device dependent objects here (independent of window size).
     device;
+
+	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
+	depthStencilDesc.DepthEnable = false;
+	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+	DX::ThrowIfFailed(
+		device->CreateDepthStencilState(&depthStencilDesc, m_SkyboxDepthStencilState.ReleaseAndGetAddressOf())
+	);
+
+	depthStencilDesc.DepthEnable = true;
+	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+
+	DX::ThrowIfFailed(
+		device->CreateDepthStencilState(&depthStencilDesc, m_StandardDepthStencilState.ReleaseAndGetAddressOf())
+	);
+
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.

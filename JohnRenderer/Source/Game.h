@@ -36,7 +36,7 @@ public:
     // Initialization and management
     void Initialize(HWND window, int width, int height);
 	void InitUI(HWND window);
-	
+	void InitializeSky();
 
     // Basic game loop
     void Tick();
@@ -79,6 +79,7 @@ private:
 	bool CanMoveCamera() const;
     void Render();
 	void RenderUI();
+	void RenderSky();
 
     void Clear();
 
@@ -92,6 +93,10 @@ private:
     DX::StepTimer                           m_timer;
 
 	John::ShaderProgram m_StandardProgram;
+	John::ShaderProgram m_PBRProgram;
+	John::ShaderProgram m_SkyboxProgram;
+	John::ComputeProgram m_CubemapConversionProgram;
+	
 	DirectX::SimpleMath::Vector3 m_CameraPos;
 	float m_Pitch, m_Yaw;
 	float m_Distance = 3.f;
@@ -101,9 +106,19 @@ private:
 	DirectX::SimpleMath::Matrix m_ProjMatrix;
 
 	std::shared_ptr<JohnMesh> m_Mesh;
+	std::shared_ptr<JohnMesh> m_Skydome;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_TransformCB;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_ShadingCB;
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_StandardSampler;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SkyboxSampler;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_ComputeSampler;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_BRDF_Sampler;
+
+
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_SkyboxDepthStencilState;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_StandardDepthStencilState;
+
+
 
 	std::unique_ptr<DirectX::Mouse> m_Mouse;
 	std::unique_ptr<DirectX::Keyboard> m_Keyboard;
@@ -114,6 +129,13 @@ private:
 
 	John::Texture m_BrickAlbedo;
 	John::Texture m_BrickNormal;
+	John::Texture m_BrickRoughness;
+	John::Texture m_BrickMetallic;
+
+	John::Texture m_EnvMap;
+	John::Texture m_IrradianceMap;
+	John::Texture m_BRDF_LUT;
+
 
 };
 
