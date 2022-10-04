@@ -7,16 +7,10 @@
 #include "DeviceResources.h"
 #include "StepTimer.h"
 #include "Types.h"
-
+#include "Camera.h"
 class JohnMesh;
 
-struct CameraMovementSettings
-{
-	float MovementSpeed = 5.f;
-	float MouseLookSensitivity = 110.f;
-	float MouseOrbitSensitivity = 50.f;
-	
-};
+
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -58,23 +52,11 @@ public:
     // Properties
     void GetDefaultSize( int& width, int& height ) const noexcept;
 
-	DirectX::SimpleMath::Vector3 GetCameraForwardVector() const;
-	DirectX::SimpleMath::Vector3 GetCameraUpVector() const;
-	DirectX::SimpleMath::Vector3 GetCameraRightVector() const;
-
-	DirectX::SimpleMath::Quaternion GetCameraOrientation() const;
-
 private:
 
     void Update(DX::StepTimer const& timer);
 	void Movement(float DeltaTime);
-	void CameraPan(DirectX::SimpleMath::Vector2 Delta);
-	void CameraOrbit(DirectX::SimpleMath::Vector2  Delta);
-	void CameraZoom(DirectX::SimpleMath::Vector2 Delta);
-	void UpdateLookAt();
-	void FocusOnPosition(DirectX::SimpleMath::Vector3 NewLookAt);
 
-	DirectX::SimpleMath::Vector3 CalculatePosition();
 
 	bool CanMoveCamera() const;
     void Render();
@@ -85,6 +67,8 @@ private:
 
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
+
+	void ReloadShaders( John::ShaderProgram InProgram );
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
@@ -97,14 +81,6 @@ private:
 	John::ShaderProgram m_SkyboxProgram;
 	John::ComputeProgram m_CubemapConversionProgram;
 	
-	DirectX::SimpleMath::Vector3 m_CameraPos;
-	float m_Pitch, m_Yaw;
-	float m_Distance = 3.f;
-	DirectX::SimpleMath::Vector3 m_LookPosition = DirectX::SimpleMath::Vector3::Zero;
-
-	DirectX::SimpleMath::Matrix m_ViewMatrix;
-	DirectX::SimpleMath::Matrix m_ProjMatrix;
-
 	std::shared_ptr<JohnMesh> m_Mesh;
 	std::shared_ptr<JohnMesh> m_Skydome;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_TransformCB;
@@ -119,22 +95,24 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_StandardDepthStencilState;
 
 
+	std::unique_ptr<Camera> m_Camera;
 
 	std::unique_ptr<DirectX::Mouse> m_Mouse;
 	std::unique_ptr<DirectX::Keyboard> m_Keyboard;
 	DirectX::Keyboard::KeyboardStateTracker m_Keys;
 	DirectX::Mouse::ButtonStateTracker m_MouseButtons;
 
-	CameraMovementSettings m_CamSettings;
 
 	John::Texture m_BrickAlbedo;
 	John::Texture m_BrickNormal;
 	John::Texture m_BrickRoughness;
 	John::Texture m_BrickMetallic;
 
-	John::Texture m_EnvMap;
+
 	John::Texture m_IrradianceMap;
 	John::Texture m_BRDF_LUT;
+
+	John::Texture m_EnvMap;
 
 
 };

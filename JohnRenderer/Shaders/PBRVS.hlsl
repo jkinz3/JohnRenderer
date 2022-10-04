@@ -7,7 +7,7 @@ PSInput main(VSInput vin)
 	PSInput vout;
 	
 	vout.PositionPS = mul(vin.pos, MVP);
-	vout.PositionWS = mul(vin.pos, Model);
+	vout.PositionWS = mul(vin.pos, Model).xyz;
 	
 	vout.TexCoord = vin.texCoord;
 	

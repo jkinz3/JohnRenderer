@@ -255,7 +255,35 @@ namespace John
 		return texture;
 	}
 
-	John::Texture CreateTextureCube(ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels)
+	John::Texture CreateDefaultNormalTexture( ID3D11Device* device )
+	{
+		Texture defaultNormal;
+		static const uint32_t pixel = 0x7f7f;
+		
+		D3D11_SUBRESOURCE_DATA initData = { &pixel, sizeof( uint32_t ), 0 };
+
+		D3D11_TEXTURE2D_DESC desc = {};
+		desc.Width = desc.Height = desc.MipLevels = desc.ArraySize = 1;
+		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		desc.SampleDesc.Count = 1;
+		desc.Usage = D3D11_USAGE_IMMUTABLE;
+		desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+		DX::ThrowIfFailed(device->CreateTexture2D(&desc, &initData, &defaultNormal.texture));
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
+		SRVDesc.Format = desc.Format;
+		SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		SRVDesc.Texture2D.MipLevels = 1;
+
+		DX::ThrowIfFailed(
+			device->CreateShaderResourceView( defaultNormal.texture.Get(), &SRVDesc, defaultNormal.SRV.ReleaseAndGetAddressOf() )
+		);
+
+		return defaultNormal;
+	}
+
+	John::Texture CreateTextureCube( ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels )
 	{
 
 		Texture NewTexture;

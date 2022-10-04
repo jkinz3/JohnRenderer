@@ -25,8 +25,8 @@ namespace John
 
 	struct ShadingCB
 	{
-		DirectX::XMVECTOR LightPos;
 		DirectX::XMVECTOR CameraPos;
+		DirectX::XMVECTOR LightPos;
 	};
 
 	struct Texture

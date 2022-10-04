@@ -12,15 +12,16 @@ Camera::Camera()
 	m_Position = Vector3::Zero;
 	m_Rotation = Vector2::Zero;
 	
-	m_MouseSensitivity = 50.f;
-	m_MovementSpeed = 3.f;
-
 	m_ViewMatrix = Matrix::Identity;
 	m_ProjectionMatrix = Matrix::Identity;
 
 	m_FocalPosition = Vector3::Zero;
 	m_Distance = 5.f;
 	
+	m_MovementSettings.MovementSpeed = 3.f;
+	m_MovementSettings.MouseLookSensitivity = 110.f;
+	m_MovementSettings.MouseOrbitSensitivity = .2f;
+
 	UpdateFocalPosition();
 
 	UpdateMatrices();
@@ -49,7 +50,7 @@ void Camera::UpdateMatrices()
 
 void Camera::UpdateView()
 {
-	m_ViewMatrix = XMMatrixLookAtLH(m_Position, m_Position + GetForwardVector(), GetUpVector());
+	m_ViewMatrix = XMMatrixLookAtLH(m_Position, m_FocalPosition, GetUpVector());
 }
 
 void Camera::UpdateProjection()
@@ -60,12 +61,11 @@ void Camera::UpdateProjection()
 
 void Camera::MoveAndRotateCamera(DirectX::SimpleMath::Vector3 DeltaLoc, DirectX::SimpleMath::Vector2 MouseDelta)
 {
-	m_Position += DeltaLoc * m_MovementSpeed;
-	m_Rotation.x -= MouseDelta.y * m_MouseSensitivity;
-	m_Rotation.y += MouseDelta.x * m_MouseSensitivity;
+	m_Position += DeltaLoc * m_MovementSettings.MovementSpeed;
+	m_Rotation.x += MouseDelta.y * m_MovementSettings.MouseLookSensitivity;
+	m_Rotation.y += MouseDelta.x * m_MovementSettings.MouseLookSensitivity;
 
 	UpdateFocalPosition();
-	UpdateView();
 
 }
 
@@ -78,7 +78,6 @@ void Camera::SetPosition(DirectX::SimpleMath::Vector3 NewPos)
 {
 	m_Position = NewPos;
 	UpdateFocalPosition();
-	UpdateView();
 }
 
 Vector2 Camera::GetRotation() const
@@ -90,31 +89,31 @@ void Camera::SetRotation(DirectX::SimpleMath::Vector2 NewRot)
 {
 	m_Rotation = NewRot;
 	UpdateFocalPosition();
-	UpdateView();
+
 }
 
 Quaternion Camera::GetOrientation() const
 {
-	return Quaternion::CreateFromYawPitchRoll(XMConvertToRadians(m_Rotation.y),XMConvertToRadians(m_Rotation.x), 0.f);
+	return Quaternion::CreateFromYawPitchRoll( XMConvertToRadians( m_Rotation.y ), XMConvertToRadians( m_Rotation.x ), 0.f );
 }
 
 Vector3 Camera::GetForwardVector() const
 {
-	Vector3 ForwardVec = Vector3::Transform(Vector3::Forward, GetOrientation());
+	Vector3 ForwardVec = Vector3::Transform(Vector3::UnitZ, GetOrientation());
 	ForwardVec.Normalize();
 	return ForwardVec;
 }
 
 Vector3 Camera::GetRightVector() const
 {
-	Vector3 RightVec = Vector3::Transform(Vector3::Right, GetOrientation());
+	Vector3 RightVec = Vector3::Transform(Vector3::UnitX, GetOrientation());
 	RightVec.Normalize();
 	return RightVec;
 }
 
 Vector3 Camera::GetUpVector() const
 {
-	Vector3 UpVec = Vector3::Transform(Vector3::Up, GetOrientation());
+	Vector3 UpVec = Vector3::Transform(Vector3::UnitY, GetOrientation());
 	UpVec.Normalize();
 	return UpVec;
 }
@@ -134,25 +133,66 @@ void Camera::SetFOV(float NewFOV)
 
 void Camera::MouseOrbit(DirectX::SimpleMath::Vector2 MouseDelta)
 {
-
+	//MouseDelta;// *= m_MovementSettings.MouseOrbitSensitivity;
+	float yawSign = GetUpVector().y < 0 ? -1.f : 1.f;
+	m_Rotation.y += yawSign * MouseDelta.x * .8f;
+	m_Rotation.x += MouseDelta.y * .8f;
+	UpdateCameraPosition();
 }
 
 void Camera::MousePan(DirectX::SimpleMath::Vector2 MouseDelta)
 {
 
+
+	const float x = std::min( (float)m_ImageWidth / 1000.f, 100.f );
+	const float xSpeed = .0366f * (x * x) - .1778f * x + .3021f;
+
+	const float y = std::min( (float)m_ImageHeight / 1000.f, 100.f );
+	const float ySpeed = .0366f * (y * y) - .17784f * y + .3021f;
+
+
+
+	Vector3 xDelta = -GetRightVector() * MouseDelta.x * xSpeed * m_Distance;
+	Vector3 yDelta = GetUpVector() * MouseDelta.y * ySpeed * m_Distance;
+
+	m_FocalPosition += xDelta;
+	m_FocalPosition += yDelta;
+
+
+	UpdateCameraPosition();
 }
 
 void Camera::Mousezoom(DirectX::SimpleMath::Vector2 MouseDelta)
 {
+	float distance = m_Distance * .2f;
+	distance = std::max( distance, 0.f );
+	float speed = distance * distance;
+	speed = std::min( speed, 100.f );
 
+	float oldDistance = m_Distance;
+	m_Distance -= MouseDelta.x * speed;
+	if(m_Distance < 1.f)
+	{
+		m_Distance = oldDistance;
+	}
+	UpdateCameraPosition();
 }
 
 void Camera::UpdateCameraPosition()
 {
-
+	m_Position = m_FocalPosition - (GetForwardVector() * m_Distance);
+	UpdateView();
 }
 
 void Camera::UpdateFocalPosition()
 {
 	m_FocalPosition = m_Position + (GetForwardVector() * m_Distance);
+	UpdateView();
+}
+
+void Camera::FocusOnPosition( Vector3 NewPos )
+{
+	m_FocalPosition = NewPos;
+	m_Distance = 3.f;
+	UpdateCameraPosition();
 }

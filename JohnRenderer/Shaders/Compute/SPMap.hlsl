@@ -130,58 +130,107 @@ void main(uint3 ThreadID : SV_DispatchThreadID)
 	{
 		return;
 	}
-	
-	// Get input cubemap dimensions at zero mipmap level.
-	float inputWidth, inputHeight, inputLevels;
-	inputTexture.GetDimensions(0, inputWidth, inputHeight, inputLevels);
 
-	// Solid angle associated with a single cubemap texel at zero mipmap level.
-	// This will come in handy for importance sampling below.
-	float wt = 4.0 * PI / (6 * inputWidth * inputHeight);
-	
-	// Approximation: Assume zero viewing angle (isotropic reflections).
-	float3 N = getSamplingVector(ThreadID);
+	float wt = 4.0 * PI / (6* outputWidth * outputHeight);
+	float3 N = getSamplingVector( ThreadID );
 	float3 Lo = N;
-	
-	float3 S, T;
-	computeBasisVectors(N, S, T);
 
-	float3 color = 0;
+	float3 S, T;
+	computeBasisVectors( N, S, T );
+
+	float3 color = float3(0.f, 0.f, 0.f);
 	float weight = 0;
 
-	// Convolve environment map using GGX NDF importance sampling.
-	// Weight by cosine term since Epic claims it generally improves quality.
-	for (uint i = 0; i < NumSamples; ++i)
+	for ( uint i = 0; i < NumSamples; i++ )
 	{
-		float2 u = sampleHammersley(i);
-		float3 Lh = tangentToWorld(sampleGGX(u.x, u.y, roughness), N, S, T);
+		float2 u = sampleHammersley( i );
+		float3 Lh = tangentToWorld( sampleGGX( u.x, u.y, roughness ), N, S, T );
 
-		// Compute incident direction (Li) by reflecting viewing direction (Lo) around half-vector (Lh).
-		float3 Li = 2.0 * dot(Lo, Lh) * Lh - Lo;
+		float3 Li = 2.0 * dot( Lo, Lh ) * Lh - Lo;
 
-		float cosLi = dot(N, Li);
-		if (cosLi > 0.0)
+		float cosLi = dot( N, Li );
+		if ( cosLi > 0.0 )
 		{
-			// Use Mipmap Filtered Importance Sampling to improve convergence.
-			// See: https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch20.html, section 20.4
+			float cosLh = max( dot( N, Lh ), 0.0 );
 
-			float cosLh = max(dot(N, Lh), 0.0);
+			float pdf = ndfGGX( cosLh, roughness ) * .25;
 
-			// GGX normal distribution function (D term) probability density function.
-			// Scaling by 1/4 is due to change of density in terms of Lh to Li (and since N=V, rest of the scaling factor cancels out).
-			float pdf = ndfGGX(cosLh, roughness) * 0.25;
-
-			// Solid angle associated with this sample.
 			float ws = 1.0 / (NumSamples * pdf);
 
-			// Mip level to sample from.
-			float mipLevel = max(0.5 * log2(ws / wt) + 1.0, 0.0);
+			float mipLevel = max( 0.5 * log2( ws / wt ) + 1.0, 0.0 );
 
-			color += inputTexture.SampleLevel(defaultSampler, Li, mipLevel).rgb * cosLi;
+			color += inputTexture.SampleLevel( defaultSampler, Li, mipLevel ).rgb * cosLi;
 			weight += cosLi;
 		}
 	}
 	color /= weight;
+
+
+	//// Get input cubemap dimensions at zero mipmap level.
+	//float inputWidth, inputHeight, inputLevels;
+	//inputTexture.GetDimensions(0, inputWidth, inputHeight, inputLevels);
+
+	//// Solid angle associated with a single cubemap texel at zero mipmap level.
+	//// This will come in handy for importance sampling below.
+	//float wt = 4.0 * PI / (6 * inputWidth * inputHeight);
+	//
+	//// Approximation: Assume zero viewing angle (isotropic reflections).
+	//float3 N = getSamplingVector(ThreadID);
+	//float3 Lo = N;
+	//
+	//float3 S, T;
+	//computeBasisVectors(N, S, T);
+
+	//float3 color = 0;
+	//float weight = 0;
+
+	//// Convolve environment map using GGX NDF importance sampling.
+	//// Weight by cosine term since Epic claims it generally improves quality.
+	//for (uint i = 0; i < NumSamples; ++i)
+	//{
+	//	float2 u = sampleHammersley(i);
+	//	float3 Lh = tangentToWorld(sampleGGX(u.x, u.y, roughness), N, S, T);
+
+	//	// Compute incident direction (Li) by reflecting viewing direction (Lo) around half-vector (Lh).
+	//	float3 Li = 2.0 * dot(Lo, Lh) * Lh - Lo;
+
+	//	float cosLi = dot(N, Li);
+	//	if (cosLi > 0.0)
+	//	{
+	//		// Use Mipmap Filtered Importance Sampling to improve convergence.
+	//		// See: https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch20.html, section 20.4
+
+	//		float cosLh = max(dot(N, Lh), 0.0);
+
+	//		//// GGX normal distribution function (D term) probability density function.
+	//		//// Scaling by 1/4 is due to change of density in terms of Lh to Li (and since N=V, rest of the scaling factor cancels out).
+	//		//float pdf = ndfGGX(cosLh, roughness) * 0.25;
+
+	//		//// Solid angle associated with this sample.
+	//		//float ws = 1.0 / (NumSamples * pdf);
+
+	//		//// Mip level to sample from.
+	//		//float mipLevel = max(0.5 * log2(ws / wt) + 1.0, 0.0);
+
+	//		//color += inputTexture.SampleLevel(defaultSampler, Li, mipLevel).rgb * cosLi;
+	//		//weight += cosLi;
+
+	//		float D = ndfGGX( cosLh, roughness );
+	//		float NdotH = max( cosLh, 0.0 );
+	//		float HdotV = max( dot( Li, Lh ), 0.0 );
+	//		float pdf = D * NdotH / (4.0 * HdotV) + .0001;
+
+	//		float resolution = 512.f;
+	//		float saTexel = 4.0 * PI / (6.0 * resolution * resolution);
+	//		float saSample = 1.0 / (float( NumSamples ) * pdf + .0001);
+
+	//		float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2( saSample / saTexel );
+
+	//		color += inputTexture.SampleLevel( defaultSampler, Li, mipLevel ).rgb * cosLi;
+	//		weight += cosLi;
+	//	}
+	//}
+	//color /= weight;
 
 	outputTexture[ThreadID] = float4(color, 1.0);
 }

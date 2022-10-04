@@ -103,6 +103,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Camera.h" />
     <ClInclude Include="Source\Image.h" />
     <ClInclude Include="Source\JohnMesh.h" />
     <ClInclude Include="Source\DeviceResources.h" />
@@ -121,6 +122,7 @@
     <ClInclude Include="ThirdParty\ImGui\imstb_textedit.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Camera.cpp" />
     <ClCompile Include="Source\Image.cpp" />
     <ClCompile Include="Source\JohnMesh.cpp" />
     <ClCompile Include="Source\DeviceResources.cpp" />

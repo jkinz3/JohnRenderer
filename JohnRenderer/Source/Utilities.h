@@ -35,6 +35,8 @@ namespace John
 
 	Texture CreateTexture(ID3D11Device* device, ID3D11DeviceContext* context, const std::shared_ptr<John::Image>& image, DXGI_FORMAT format, UINT levels);
 
+	Texture CreateDefaultNormalTexture( ID3D11Device* device );
+
 	void CreateTextureUAV(Texture& texture, UINT mipSlice, ID3D11Device* device);
 
 	template<typename T> static constexpr T NumMipMapLevels(T width, T height)

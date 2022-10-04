@@ -30,6 +30,7 @@
     <ClInclude Include="ThirdParty\ImGui\imconfig.h" />
     <ClInclude Include="Source\stb_image.h" />
     <ClInclude Include="Source\Image.h" />
+    <ClInclude Include="Source\Camera.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\pch.cpp" />
@@ -48,6 +49,7 @@
     <ClCompile Include="ThirdParty\ImGui\imgui_tables.cpp" />
     <ClCompile Include="ThirdParty\ImGui\imgui_draw.cpp" />
     <ClCompile Include="Source\Image.cpp" />
+    <ClCompile Include="Source\Camera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

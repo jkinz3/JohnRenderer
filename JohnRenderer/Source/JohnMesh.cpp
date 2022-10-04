@@ -41,14 +41,29 @@ void JohnMesh::Build(ID3D11Device* device)
 		D3D11_SUBRESOURCE_DATA data;
 		data.pSysMem = &m_Faces[0];
 
-		DX::ThrowIfFailed(
-			device->CreateBuffer(
-				&indexDesc,
-				&data,
-				m_IndexBuffer.ReleaseAndGetAddressOf()
-			)
-		);
+		DX::ThrowIfFailed( device->CreateBuffer( &indexDesc, &data, m_IndexBuffer.ReleaseAndGetAddressOf() ) );
 	}
+
+
+}
+
+void TestFunction(int x)
+{
+
+}
+
+int TestFunction2(int x)
+{
+	return 1;
+}
+int TestFunction3(int x, std::string string)
+{
+	return 1;
+}
+
+void Test()
+{
+
 }
 
 void JohnMesh::Draw(ID3D11DeviceContext* context)

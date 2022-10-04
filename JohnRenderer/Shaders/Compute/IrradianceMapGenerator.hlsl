@@ -71,7 +71,7 @@ float3 SampleGGX(float2 Xi, float3 N)
 	H.y = sin(phi) * sinTheta;
 	H.z = cosTheta;
 
-	float3 up = abs(N.z) < .999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 1.0, 1.0);
+	float3 up = abs(N.z) < .999 ? float3(0.0, 0.0, 1.0) : float3 (1.0, 1.0, 1.0);
 	float3 tangent = normalize(cross(up, N));
 	float3 bitangent = cross(N, tangent);
 
@@ -148,7 +148,7 @@ void main(uint3 ThreadID : SV_DispatchThreadID)
 	for (uint i = 0; i < NumSamples; ++i)
 	{
 		float2 u = sampleHammersley(i);
-		float3 Li = tangentToWorld(sampleHemisphere(u.x, u.y), N, S, T); //SampleGGX(u, N); //
+		float3 Li = tangentToWorld(sampleHemisphere(u.x, u.y), N, S, T);//SampleGGX(u, N); //
 		float cosTheta = max(0.0, dot(Li, N));
 		float3 L = normalize(2.0 * dot(V, Li) * Li - V);
 
