@@ -109,5 +109,5 @@ namespace DX
         {
             throw com_exception(hr);
         }
-    }
+     }
 }

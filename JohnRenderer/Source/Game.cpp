@@ -283,7 +283,7 @@ void Game::Movement(float DeltaTime)
 	{
 		if(keyboard.LeftAlt)
 		{
-			Vector2 delta = Vector2( float( mouse.x ), float( mouse.y ) ) ;
+			Vector2 delta = Vector2( float( mouse.x ), float( mouse.y ) ) * .003f ;
 			if(mouse.middleButton)
 			{
 				m_Camera->MousePan( delta );
@@ -615,7 +615,7 @@ void Game::CreateDeviceDependentResources()
 
 	m_StandardSampler = John::CreateSamplerState(device, D3D11_FILTER_ANISOTROPIC, D3D11_TEXTURE_ADDRESS_WRAP);
 	m_BrickAlbedo = John::CreateTexture(device, context, John::Image::FromFile("Content/Brick_Albedo.jpg"), DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, 1);
-	m_BrickNormal = John::CreateDefaultNormalTexture( device );//John::CreateTexture(device, context, John::Image::FromFile("Content/Brick_Normal.jpg"), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
+	m_BrickNormal = John::CreateTexture(device, context, John::Image::FromFile("Content/Brick_Normal.jpg"), DXGI_FORMAT_R8G8B8A8_UNORM, 1);
 	m_BrickRoughness = John::CreateTexture(device, context, John::Image::FromFile("Content/Brick_Roughness.jpg"), DXGI_FORMAT_R8_UNORM, 1);
 	m_BrickMetallic = John::CreateTexture(device, context, John::Image::FromFile("Content/Brick_Metallic.jpg"), DXGI_FORMAT_R8_UNORM, 1);
 

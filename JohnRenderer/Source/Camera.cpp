@@ -16,7 +16,7 @@ Camera::Camera()
 	m_ProjectionMatrix = Matrix::Identity;
 
 	m_FocalPosition = Vector3::Zero;
-	m_Distance = 5.f;
+	m_Distance = 3.f;
 	
 	m_MovementSettings.MovementSpeed = 3.f;
 	m_MovementSettings.MouseLookSensitivity = 110.f;
@@ -133,10 +133,11 @@ void Camera::SetFOV(float NewFOV)
 
 void Camera::MouseOrbit(DirectX::SimpleMath::Vector2 MouseDelta)
 {
-	//MouseDelta;// *= m_MovementSettings.MouseOrbitSensitivity;
+	float degPitchDelta = XMConvertToDegrees( MouseDelta.y );
+	float degYawDelta = XMConvertToDegrees( MouseDelta.x );
 	float yawSign = GetUpVector().y < 0 ? -1.f : 1.f;
-	m_Rotation.y += yawSign * MouseDelta.x * .8f;
-	m_Rotation.x += MouseDelta.y * .8f;
+	m_Rotation.y += yawSign * degYawDelta * .8f;
+	m_Rotation.x += degPitchDelta* .8f;
 	UpdateCameraPosition();
 }
 
@@ -144,10 +145,10 @@ void Camera::MousePan(DirectX::SimpleMath::Vector2 MouseDelta)
 {
 
 
-	const float x = std::min( (float)m_ImageWidth / 1000.f, 100.f );
+	const float x = std::min( (float)m_ImageWidth  / 1000.0f, 2.4f);
 	const float xSpeed = .0366f * (x * x) - .1778f * x + .3021f;
 
-	const float y = std::min( (float)m_ImageHeight / 1000.f, 100.f );
+	const float y = std::min( (float)m_ImageHeight / 1000.f, 2.f );
 	const float ySpeed = .0366f * (y * y) - .17784f * y + .3021f;
 
 
