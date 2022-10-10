@@ -32,7 +32,8 @@
 #include <Windows.h>
 
 #include <wrl/client.h>
-
+#include <shtypes.h>
+#include <ShlObj_core.h>
 #include <d3d11_1.h>
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>

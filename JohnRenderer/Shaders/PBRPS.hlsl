@@ -64,7 +64,7 @@ float4 main(PSInput pin) : SV_TARGET
 	const float2 texCoord = pin.TexCoord * 1.f;
 	const float Roughness = RoughnessMap.Sample(defaultSampler, texCoord).r;
 	const float Metalness = MetallicMap.Sample(defaultSampler, texCoord).r;
-	const float3 BaseColor = flaot3(0, 0,); //BaseColorMap.Sample(defaultSampler, texCoord);
+	const float3 BaseColor = BaseColorMap.Sample(defaultSampler, texCoord);
 	float3 N = normalize(2.0 * NormalMap.Sample(defaultSampler, texCoord).rgb - 1.0);
 	N = normalize(mul(pin.TangentBasis, N));
 	

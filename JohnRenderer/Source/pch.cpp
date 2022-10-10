@@ -4,13 +4,3 @@
 //
 
 #include "pch.h"
-
-int ReturnFunction(int x, int y)
-{
-	return 5;
-}
-
-void ParameterFunction(int i)
-{
-
-}

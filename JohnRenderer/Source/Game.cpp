@@ -10,6 +10,8 @@
 
 
 
+
+
 extern void ExitGame() noexcept;
 
 using namespace DirectX;
@@ -78,16 +80,8 @@ void Game::InitUI(HWND window)
 			
 }
 #pragma region Init InitializeSky
-void Game::InitializeSky()
+void Game::InitializeSky(const char* EnvMap)
 {
-	if(rdoc_api)
-	{
-		rdoc_api->StartFrameCapture(NULL, NULL);
-	}
-
-	
-
-
 
 	m_deviceResources->PIXBeginEvent(L"Init Sky");
 	auto context = m_deviceResources->GetD3DDeviceContext();
@@ -105,7 +99,7 @@ void Game::InitializeSky()
 		{
 
 			John::ComputeProgram equirectToCubeProgram = John::CreateComputeProgram(John::CompileShader(L"Shaders/Compute/CubemapConversion.hlsl", "main", "cs_5_0"), device);
-			John::Texture envTextureEquirect = John::CreateTexture(device, context, John::Image::FromFile("Content/environment.hdr"), DXGI_FORMAT_R32G32B32A32_FLOAT,1);
+			John::Texture envTextureEquirect = John::CreateTexture(device, context, John::Image::FromFile( EnvMap), DXGI_FORMAT_R32G32B32A32_FLOAT,1);
 
 
 			context->CSSetShaderResources(0, 1, envTextureEquirect.SRV.GetAddressOf());
@@ -189,13 +183,9 @@ void Game::InitializeSky()
 		context->CSSetUnorderedAccessViews(0, 1, nullUAV, nullptr);
 	}
 
-	m_Skydome = John::LoadMeshFromFile("Content/skyDome.obj");
-	m_Skydome->Build(device);
+
 	m_deviceResources->PIXEndEvent();
-	if(rdoc_api)
-	{
-		rdoc_api->EndFrameCapture(NULL, NULL);
-	}
+
 }
 #pragma endregion
 #pragma region Frame Update
@@ -217,16 +207,29 @@ void Game::TickUI()
 	ImGui::NewFrame();
 
 	ImGui::Begin("Editor");
-	bool open = true;
 	if(ImGui::BeginTabBar("TabBar"))
 	{
 		static bool bCameraOpen = true;
-		if(ImGui::BeginTabItem("Camera", &open))
+		static bool bEnvironmentOpen = true;
+		if(ImGui::BeginTabItem("Camera", &bCameraOpen))
 		{
 
-// 			ImGui::DragFloat("Movement Speed", &m_CamSettings.MovementSpeed, .1f, 0.f);
-// 			ImGui::DragFloat("Mouse Sensitivity", &m_CamSettings.MouseLookSensitivity, .1f, 0.f);
-// 			ImGui::DragFloat("Maya Controls Sensitivity", &m_CamSettings.MouseOrbitSensitivity, .1f, 0.f);
+ 			ImGui::DragFloat("Movement Speed", &m_Camera->m_MovementSettings.MovementSpeed, .1f, 0.f);
+
+			ImGui::EndTabItem();
+		}
+		if ( ImGui::BeginTabItem( "Environment", &bEnvironmentOpen ) )
+		{
+			if ( ImGui::Button( "Change Sky" ) )
+			{
+				COMDLG_FILTERSPEC FileTypes[] =
+				{
+					L"Image", L"*.hdr;*.exr"
+				};
+
+				std::string NewEnvMap = ImportFile( FileTypes, _countof( FileTypes ) );
+				InitializeSky( NewEnvMap.c_str() );
+			}
 			ImGui::EndTabItem();
 		}
 		ImGui::EndTabBar();
@@ -236,9 +239,9 @@ void Game::TickUI()
 }
 
 // Updates the world.
-void Game::Update(DX::StepTimer const& timer)
+void Game::Update( DX::StepTimer const& timer )
 {
-    float elapsedTime = float(timer.GetElapsedSeconds());
+	float elapsedTime = float( timer.GetElapsedSeconds() );
 
 
 	Movement(elapsedTime);
@@ -545,6 +548,59 @@ void Game::OnWindowSizeChanged(int width, int height)
     // TODO: Game window is being resized.
 }
 
+std::string Game::ImportFile( COMDLG_FILTERSPEC* FilterTypes, UINT NumFilters )
+{
+	IFileOpenDialog* FileOpen;
+
+	HRESULT hr = CoCreateInstance( CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, reinterpret_cast<void**>(&FileOpen) );
+
+	FileOpen->SetFileTypes( NumFilters, FilterTypes );
+	
+	WCHAR cPath[MAX_PATH] = L"";
+	GetCurrentDirectoryW( sizeof( cPath ) / sizeof( cPath[0] ), cPath );
+
+
+
+
+	IShellItem* psi;
+	HRESULT parse = SHCreateItemFromParsingName( cPath, NULL, IID_PPV_ARGS( &psi ) );
+	
+
+	if(SUCCEEDED(parse))
+	{
+		FileOpen->SetFolder( psi );
+	}
+	if(SUCCEEDED(hr))
+	{
+		hr = FileOpen->Show( NULL );
+		if(SUCCEEDED(hr))
+		{
+			IShellItem* Item;
+			hr = FileOpen->GetResult( &Item );
+			if(SUCCEEDED(hr))
+			{
+				PWSTR pszFilePath;
+				char buffer[MAX_PATH];
+				hr = Item->GetDisplayName( SIGDN_FILESYSPATH, &pszFilePath );
+				if(wcslen(pszFilePath) >= 0)
+				{
+					int size_needed = WideCharToMultiByte( CP_UTF8, 0, pszFilePath, -1, NULL, 0, NULL, NULL );
+					std::string FileName( size_needed, 0 );
+					WideCharToMultiByte( CP_UTF8, 0, pszFilePath, wcslen( pszFilePath ), &FileName[0], size_needed, NULL, NULL );
+
+					if(SUCCEEDED(hr))
+					{
+						return FileName;
+					}
+
+				}
+			}
+		}
+	}
+	return std::string();
+
+}
+
 // Properties
 void Game::GetDefaultSize(int& width, int& height) const noexcept
 {
@@ -563,9 +619,10 @@ void Game::CreateDeviceDependentResources()
 	auto context = m_deviceResources->GetD3DDeviceContext();
 
 	InitUI(window);
-	InitializeSky();
+	InitializeSky("Content/environment.hdr");
 	
-
+	m_Skydome = John::LoadMeshFromFile( "Content/skyDome.obj" );
+	m_Skydome->Build( device );
 
 	m_Mesh = John::LoadMeshFromFile("Content/sphere.obj");
 	m_Mesh->Build(device);
@@ -654,6 +711,24 @@ void Game::CreateWindowSizeDependentResources()
 
 void Game::ReloadShaders( John::ShaderProgram InProgram )
 {
+
+}
+
+void Game::ImportNewSky( const char* EnvMap )
+{
+	m_EnvMap.texture.Reset();
+	m_EnvMap.UAV.Reset();
+	m_EnvMap.SRV.Reset();
+
+	m_IrradianceMap.texture.Reset();
+	m_IrradianceMap.UAV.Reset();
+	m_IrradianceMap.SRV.Reset();
+
+	m_BRDF_LUT.texture.Reset();
+	m_BRDF_LUT.UAV.Reset();
+	m_BRDF_LUT.SRV.Reset();
+
+	InitializeSky( EnvMap );
 
 }
 

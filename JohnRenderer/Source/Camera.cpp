@@ -18,8 +18,8 @@ Camera::Camera()
 	m_FocalPosition = Vector3::Zero;
 	m_Distance = 3.f;
 	
-	m_MovementSettings.MovementSpeed = 3.f;
-	m_MovementSettings.MouseLookSensitivity = 110.f;
+	m_MovementSettings.MovementSpeed = 6.f;
+	m_MovementSettings.MouseLookSensitivity = 150.f;
 	m_MovementSettings.MouseOrbitSensitivity = .2f;
 
 	UpdateFocalPosition();

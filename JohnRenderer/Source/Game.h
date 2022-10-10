@@ -30,7 +30,7 @@ public:
     // Initialization and management
     void Initialize(HWND window, int width, int height);
 	void InitUI(HWND window);
-	void InitializeSky();
+	void InitializeSky(const char* EnvMap);
 
     // Basic game loop
     void Tick();
@@ -47,6 +47,8 @@ public:
     void OnWindowMoved();
     void OnDisplayChange();
     void OnWindowSizeChanged(int width, int height);
+
+	std::string ImportFile( COMDLG_FILTERSPEC* FilterTypes, UINT NumFilters );
 
 
     // Properties
@@ -69,6 +71,8 @@ private:
     void CreateWindowSizeDependentResources();
 
 	void ReloadShaders( John::ShaderProgram InProgram );
+
+	void ImportNewSky( const char* EnvMap );
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
@@ -109,10 +113,10 @@ private:
 	John::Texture m_BrickMetallic;
 
 
+	John::Texture m_EnvMap;
 	John::Texture m_IrradianceMap;
 	John::Texture m_BRDF_LUT;
 
-	John::Texture m_EnvMap;
 
 
 };
