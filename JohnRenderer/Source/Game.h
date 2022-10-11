@@ -29,9 +29,12 @@ public:
 
     // Initialization and management
     void Initialize(HWND window, int width, int height);
+	void InitializeUI();
+
 
     // Basic game loop
     void Tick();
+	void TickUI();
 
     // IDeviceNotify
     void OnDeviceLost() override;
@@ -55,6 +58,7 @@ private:
 	void Movement( float DeltaTime );
 	
     void Render();
+	void RenderUI();
 
     void Clear();
 
@@ -62,6 +66,8 @@ private:
     void CreateWindowSizeDependentResources();
 
 	bool CanMoveCamera() const;
+
+	void ReloadShaders();
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
@@ -83,7 +89,8 @@ private:
 	std::unique_ptr<DirectX::Keyboard> m_Keyboard;
 	DirectX::Keyboard::KeyboardStateTracker m_Keys;
 	DirectX::Mouse::ButtonStateTracker m_MouseButtons;
-
+	Vector2 m_MouseDelta;
+	Vector3 m_LightPos;
 	bool m_bIsRelativeMode = false;
 
 };

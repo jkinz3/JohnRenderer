@@ -81,6 +81,10 @@
 #include "RenderTexture.h"
 #include "SkyboxEffect.h"
 
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_dx11.h"
+#include "ImGui/imgui_impl_win32.h"
+
 #ifdef _DEBUG
 #include <dxgidebug.h>
 #endif

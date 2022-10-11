@@ -22,32 +22,28 @@ float4 main(PSInput pin) : SV_TARGET
 	//diffuse 
 
 	float3 N = normalize(pin.Normal);
-	float3 L = normalize(LightPos - pin.PositionWS);
-	float diffuse= max(dot(L, N), 0);
+	float3 lightVec = LightPos - pin.PositionWS;
+	float3 L = normalize(lightVec);
+
+	float diff = max(dot(L, N), 0);
+	float3 diffuse = diff * objectColor;
 	
+	//specular 
+	float specularStrength = .5f;
+	float3 V = normalize(CameraPos - pin.PositionWS);
+	float3 R = reflect(-L, N);
+	float3 H = normalize(L + V);
+	float spec = pow(max(dot(H, N), 0.0), 16) * (diff > 0);
+	float3 specular = specularStrength * spec;
 	
-	float3 result = diffuse * objectColor;
+	float distance = length(lightVec);
+	float attenuation = 1.0 / (distance * distance);
 	
+	diffuse *= attenuation;
+	specular *= attenuation;
+	
+	float3 result = (ambient + diffuse + specular);
 	
 	return float4(result, 1.f);
-	
-	////diffuse lighting
-	//float3 N = normalize(NormalMap.Sample(standardSampler, pin.TexCoord));
-	//N = normalize(mul(pin.TangentBasis, N));
-	//float3 L = normalize(LightPos - pin.PositionWS);
-	//float diffuseLight = max(dot(L, N), 0);
-	//float3 diffuse = diffuseLight;
-	
-	//float3 View = normalize(pin.PositionWS.xyz - CameraPos);
-	//float3 Reflect = reflect(View, normalize(N));
-	//float3 Specular = EnvMap.SampleLevel(standardSampler, Reflect, 0).xyz;
-	//return float4(objectColor + Specular, 1.f);
-	
-//	//specular lighting
-//	float specularStrength = 1.5f;
-//	float3 V = normalize(CameraPos - pin.PositionWS.xyz);
-//	float3 R = reflect(-L, N);
-//	float3 spec = pow(max(dot(V, R), 0.0), 64);
-//	float3 specular = specularStrength * spec;
-//	return float4((ambient + diffuse * objectColor) + specular, 1.f); //	+diffuse + specularLight, 1.0f);
+
 }

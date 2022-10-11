@@ -54,6 +54,8 @@ public:
 
 	CameraMovementSettings m_MovementSettings;
 
+	Vector2 GetRotationInRadians() const;
+
 private:
 
 	float m_FOV;

@@ -19,7 +19,7 @@ Camera::Camera()
 	m_Distance = 3.f;
 	
 	m_MovementSettings.MovementSpeed = 6.f;
-	m_MovementSettings.MouseLookSensitivity = 150.f;
+	m_MovementSettings.MouseLookSensitivity = 1.5f;
 	m_MovementSettings.MouseOrbitSensitivity = 8.f;
 
 	UpdateFocalPosition();
@@ -62,8 +62,21 @@ void Camera::UpdateProjection()
 void Camera::MoveAndRotateCamera(DirectX::SimpleMath::Vector3 DeltaLoc, DirectX::SimpleMath::Vector2 MouseDelta)
 {
 	m_Position += DeltaLoc * m_MovementSettings.MovementSpeed;
-	m_Rotation.x += MouseDelta.y * m_MovementSettings.MouseLookSensitivity;
-	m_Rotation.y += MouseDelta.x * m_MovementSettings.MouseLookSensitivity;
+	Vector2 radRot = GetRotationInRadians();
+
+	radRot.x += MouseDelta.y * m_MovementSettings.MouseLookSensitivity;
+	radRot.y += MouseDelta.x * m_MovementSettings.MouseLookSensitivity;
+
+	m_Rotation = Vector2( XMConvertToDegrees( radRot.x ), XMConvertToDegrees( radRot.y ) );
+
+	if(m_Rotation.y >= 360.f)
+	{
+		m_Rotation.y -= 360.f;
+	}
+	if(m_Rotation.y <= -360.f)
+	{
+		m_Rotation.y += 360.f;
+	}
 
 	UpdateFocalPosition();
 
@@ -133,18 +146,19 @@ void Camera::SetFOV(float NewFOV)
 
 void Camera::MouseOrbit(DirectX::SimpleMath::Vector2 MouseDelta)
 {
-	float degPitchDelta = XMConvertToDegrees( MouseDelta.y );
-	float degYawDelta = XMConvertToDegrees( MouseDelta.x );
+	Vector2 RadRot = GetRotationInRadians();
+
 	float yawSign = GetUpVector().y < 0 ? -1.f : 1.f;
-	m_Rotation.y += yawSign * degYawDelta * m_MovementSettings.MouseOrbitSensitivity;
-	m_Rotation.x += degPitchDelta* m_MovementSettings.MouseOrbitSensitivity;
+	RadRot.y += yawSign * MouseDelta.x * m_MovementSettings.MouseOrbitSensitivity;
+	RadRot.x += MouseDelta.y * m_MovementSettings.MouseOrbitSensitivity;
+	m_Rotation = Vector2( XMConvertToDegrees( RadRot.x ), XMConvertToDegrees( RadRot.y ) );
 	UpdateCameraPosition();
 }
 
 void Camera::MousePan(DirectX::SimpleMath::Vector2 MouseDelta)
 {
 
-
+	MouseDelta /= .03f;
 	const float x = std::min( (float)m_ImageWidth  / 1000.0f, 2.4f);
 	const float xSpeed = .0366f * (x * x) - .1778f * x + .3021f;
 
@@ -165,7 +179,7 @@ void Camera::MousePan(DirectX::SimpleMath::Vector2 MouseDelta)
 
 void Camera::Mousezoom(DirectX::SimpleMath::Vector2 MouseDelta)
 {
-	float distance = m_Distance * .2f;
+	float distance = m_Distance * .8f;
 	distance = std::max( distance, 0.f );
 	float speed = distance * distance;
 	speed = std::min( speed, 100.f );
@@ -196,4 +210,9 @@ void Camera::FocusOnPosition( Vector3 NewPos )
 	m_FocalPosition = NewPos;
 	m_Distance = 3.f;
 	UpdateCameraPosition();
+}
+
+Vector2 Camera::GetRotationInRadians() const
+{
+	return Vector2( XMConvertToRadians( m_Rotation.x ), XMConvertToRadians( m_Rotation.y ) );
 }

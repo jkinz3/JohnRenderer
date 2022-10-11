@@ -26,6 +26,14 @@
     <ClInclude Include="Source\Types.h" />
     <ClInclude Include="Source\JohnMesh.h" />
     <ClInclude Include="Source\Camera.h" />
+    <ClInclude Include="ThirdParty\ImGui\imconfig.h" />
+    <ClInclude Include="ThirdParty\ImGui\imgui.h" />
+    <ClInclude Include="ThirdParty\ImGui\imgui_impl_dx11.h" />
+    <ClInclude Include="ThirdParty\ImGui\imgui_impl_win32.h" />
+    <ClInclude Include="ThirdParty\ImGui\imgui_internal.h" />
+    <ClInclude Include="ThirdParty\ImGui\imstb_rectpack.h" />
+    <ClInclude Include="ThirdParty\ImGui\imstb_textedit.h" />
+    <ClInclude Include="ThirdParty\ImGui\imstb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\pch.cpp" />
@@ -40,6 +48,13 @@
     <ClCompile Include="Source\Resources.cpp" />
     <ClCompile Include="Source\JohnMesh.cpp" />
     <ClCompile Include="Source\Camera.cpp" />
+    <ClCompile Include="ThirdParty\ImGui\imgui.cpp" />
+    <ClCompile Include="ThirdParty\ImGui\imgui_demo.cpp" />
+    <ClCompile Include="ThirdParty\ImGui\imgui_draw.cpp" />
+    <ClCompile Include="ThirdParty\ImGui\imgui_impl_dx11.cpp" />
+    <ClCompile Include="ThirdParty\ImGui\imgui_impl_win32.cpp" />
+    <ClCompile Include="ThirdParty\ImGui\imgui_tables.cpp" />
+    <ClCompile Include="ThirdParty\ImGui\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

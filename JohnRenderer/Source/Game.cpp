@@ -33,6 +33,8 @@ void Game::Initialize(HWND window, int width, int height)
     m_deviceResources->CreateWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
 
+	InitializeUI();
+
 	m_Keyboard = std::make_unique<DirectX::Keyboard>();
 	m_Mouse = std::make_unique<DirectX::Mouse>();
 	m_Mouse->SetWindow( window );
@@ -41,12 +43,28 @@ void Game::Initialize(HWND window, int width, int height)
 	m_Camera->SetImageSize( width, height );
 	m_Camera->SetPosition( Vector3( 0.f, 0.f, 3.f ) );
 	m_Camera->SetRotation( Vector2( 0.f, 180.f ) );
+
+	m_LightPos = Vector3( .6f, 1.f, 2.f );
+
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
     /*
     m_timer.SetFixedTimeStep(true);
     m_timer.SetTargetElapsedSeconds(1.0 / 60);
     */
+}
+
+void Game::InitializeUI()
+{
+	IMGUI_CHECKVERSION();
+
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	
+	ImGui::StyleColorsDark();
+	
+	ImGui_ImplWin32_Init( m_deviceResources->GetWindow() );
+	ImGui_ImplDX11_Init( m_deviceResources->GetD3DDevice(), m_deviceResources->GetD3DDeviceContext() );
 }
 
 #pragma region Frame Update
@@ -56,9 +74,23 @@ void Game::Tick()
     m_timer.Tick([&]()
     {
         Update(m_timer);
+		TickUI();
     });
 
     Render();
+}
+
+void Game::TickUI()
+{
+	ImGui_ImplWin32_NewFrame();
+	ImGui_ImplDX11_NewFrame();
+	ImGui::NewFrame();
+
+
+	ImGui::Begin( "Editor" );
+	ImGui::DragFloat3( "Light Position", &m_LightPos.x, .1f );
+	ImGui::End();
+
 }
 
 // Updates the world.
@@ -78,17 +110,19 @@ void Game::Movement( float DeltaTime )
 	auto mouse = m_Mouse->GetState();
 	m_Keys.Update( keyboard );
 	m_MouseButtons.Update( mouse );
-
 	if(m_Keys.pressed.R)
 	{
-		
+		ReloadShaders();
 	}
+
+	m_MouseDelta.x =  (float)mouse.x ;
+	m_MouseDelta.y = (float) mouse.y ;
 	
-	if ( CanMoveCamera())
+	if (mouse.positionMode == Mouse::MODE_RELATIVE)
 	{
 		if ( keyboard.LeftAlt )
 		{
-			Vector2 delta = Vector2( float( mouse.x ), float( mouse.y ) ) * .003f;
+			Vector2 delta = m_MouseDelta * .003f;
 			if ( mouse.middleButton )
 			{
 				m_Camera->MousePan( delta );
@@ -107,7 +141,7 @@ void Game::Movement( float DeltaTime )
 		{
 
 
-			Vector2 delta = Vector2( float( mouse.x ), float( mouse.y ) ) * DeltaTime;
+			Vector2 delta = m_MouseDelta * DeltaTime;
 
 			Vector3 move = Vector3::Zero;
 
@@ -145,6 +179,7 @@ void Game::Movement( float DeltaTime )
 		}
 	}
 	m_bIsRelativeMode = mouse.rightButton || keyboard.LeftAlt && (mouse.leftButton || mouse.middleButton || mouse.rightButton);
+
 	m_Mouse->SetMode( m_bIsRelativeMode ? Mouse::MODE_RELATIVE : Mouse::MODE_ABSOLUTE );
 
 	if(m_Keys.pressed.F)
@@ -189,7 +224,7 @@ void Game::Render()
 
 	John::PhongShadingCB shadingConstants;
 	shadingConstants.CamPos = m_Camera->GetPosition();
-	shadingConstants.LightPos = Vector3( 1.f, 1.f, 2.f );
+	shadingConstants.LightPos = m_LightPos;
 	
 	context->UpdateSubresource( m_PhongShadingCB.Get(), 0, nullptr, &shadingConstants, 0, 0 );
 
@@ -203,8 +238,16 @@ void Game::Render()
 
     m_deviceResources->PIXEndEvent();
 
+	RenderUI();
+
     // Show the new frame.
     m_deviceResources->Present();
+}
+
+void Game::RenderUI()
+{
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData( ImGui::GetDrawData() );
 }
 
 // Helper method to clear the back buffers.
@@ -322,6 +365,15 @@ void Game::CreateWindowSizeDependentResources()
 bool Game::CanMoveCamera() const
 {
 	return m_bIsRelativeMode;
+}
+
+void Game::ReloadShaders()
+{
+	m_PhongProgram.VertexShader.Reset();
+	m_PhongProgram.PixelShader.Reset();
+	m_PhongProgram.InputLayout.Reset();
+	
+	m_PhongProgram = John::CreateShaderProgram(m_deviceResources->GetD3DDevice(), m_PhongProgram.VertFileName, m_PhongProgram.PixelFileName );
 }
 
 void Game::OnDeviceLost()
