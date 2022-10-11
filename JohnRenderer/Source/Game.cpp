@@ -87,7 +87,13 @@ void Game::TickUI()
 	ImGui::NewFrame();
 
 
+	
 	ImGui::Begin( "Editor" );
+	for(auto mesh : m_Meshes)
+	{
+		DrawModelDetails(mesh.get());
+
+	}
 	ImGui::DragFloat3( "Light Position", &m_LightPos.x, .1f );
 	ImGui::End();
 
@@ -209,32 +215,9 @@ void Game::Render()
     // TODO: Add your rendering code here.
     context;
 
+	DrawScene();
 	
-	John::PhongTransformCB transformConstants;
 
-	Matrix model = m_Mesh->GetTransformationMatrix();
-	Matrix view = m_Camera->GetViewMatrix();
-	Matrix proj = m_Camera->GetProjectionMatrix();
-	Matrix MVP = model * view * proj;
-
-	transformConstants.MVP = MVP.Transpose();
-	transformConstants.Model = model.Transpose();
-
-	context->UpdateSubresource( m_PhongTransformCB.Get(), 0, nullptr, &transformConstants, 0, 0 );
-
-	John::PhongShadingCB shadingConstants;
-	shadingConstants.CamPos = m_Camera->GetPosition();
-	shadingConstants.LightPos = m_LightPos;
-	
-	context->UpdateSubresource( m_PhongShadingCB.Get(), 0, nullptr, &shadingConstants, 0, 0 );
-
-	context->VSSetConstantBuffers( 0, 1, m_PhongTransformCB.GetAddressOf() );
-	context->PSSetConstantBuffers( 0, 1, m_PhongShadingCB.GetAddressOf() );
-	context->VSSetShader( m_PhongProgram.VertexShader.Get(), nullptr, 0 );
-	context->VSSetShader( m_PhongProgram.VertexShader.Get(), nullptr, 0 );
-	context->PSSetShader( m_PhongProgram.PixelShader.Get(), nullptr, 0 );
-	context->IASetInputLayout( m_PhongProgram.InputLayout.Get() );
-	m_Mesh->Draw( context );
 
     m_deviceResources->PIXEndEvent();
 
@@ -248,6 +231,52 @@ void Game::RenderUI()
 {
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData( ImGui::GetDrawData() );
+}
+
+void Game::DrawScene()
+{
+	auto context = m_deviceResources->GetD3DDeviceContext();
+
+	John::PhongShadingCB shadingConstants;
+	shadingConstants.CamPos = m_Camera->GetPosition();
+	shadingConstants.LightPos = m_LightPos;
+
+	context->UpdateSubresource( m_PhongShadingCB.Get(), 0, nullptr, &shadingConstants, 0, 0 );
+	for(auto mesh : m_Meshes)
+	{
+		DrawMesh( mesh.get() );
+	}
+}
+
+void Game::DrawMesh( JohnMesh* MeshToDraw )
+{
+	if(MeshToDraw == nullptr)
+	{
+		return;
+	}
+	auto context = m_deviceResources->GetD3DDeviceContext();
+
+	John::PhongTransformCB transformConstants;
+
+	Matrix model = MeshToDraw->GetTransformationMatrix();
+	Matrix view = m_Camera->GetViewMatrix();
+	Matrix proj = m_Camera->GetProjectionMatrix();
+	Matrix MVP = model * view * proj;
+
+	transformConstants.MVP = MVP.Transpose();
+	transformConstants.Model = model.Transpose();
+
+	context->UpdateSubresource( m_PhongTransformCB.Get(), 0, nullptr, &transformConstants, 0, 0 );
+
+
+	context->VSSetConstantBuffers( 0, 1, m_PhongTransformCB.GetAddressOf() );
+	context->PSSetConstantBuffers( 0, 1, m_PhongShadingCB.GetAddressOf() );
+	context->VSSetShader( m_PhongProgram.VertexShader.Get(), nullptr, 0 );
+	context->VSSetShader( m_PhongProgram.VertexShader.Get(), nullptr, 0 );
+	context->PSSetShader( m_PhongProgram.PixelShader.Get(), nullptr, 0 );
+	context->IASetInputLayout( m_PhongProgram.InputLayout.Get() );
+	MeshToDraw->Draw( context );
+
 }
 
 // Helper method to clear the back buffers.
@@ -335,8 +364,10 @@ void Game::CreateDeviceDependentResources()
     // TODO: Initialize device dependent objects here (independent of window size).
     device;
 
-	m_Mesh = John::LoadMeshFromFile( "Content/sphere.obj" );
-	m_Mesh->Build( device );
+	std::shared_ptr<JohnMesh> MonkeyMesh = John::LoadMeshFromFile( "Content/monkey.obj" );
+	MonkeyMesh->Build( device );
+
+	m_Meshes.push_back( MonkeyMesh );
 
 	m_PhongProgram = John::CreateShaderProgram( device, L"Shaders/PhongVS.hlsl", L"Shaders/PhongPS.hlsl" );
 
@@ -374,6 +405,26 @@ void Game::ReloadShaders()
 	m_PhongProgram.InputLayout.Reset();
 	
 	m_PhongProgram = John::CreateShaderProgram(m_deviceResources->GetD3DDevice(), m_PhongProgram.VertFileName, m_PhongProgram.PixelFileName );
+}
+
+void Game::DrawModelDetails(JohnMesh* Mesh)
+{
+	Vector3 ModelTrans = Mesh->GetPosition();
+	Vector3 ModelRot = Mesh->GetRotationEuler();
+	Vector3 ModelScale = Mesh->GetScale();
+
+	if(ImGui::DragFloat3("Translation", &ModelTrans.x, .1f))
+	{
+		Mesh->SetPosition( ModelTrans );
+	}
+	if ( ImGui::DragFloat3( "Rotation", &ModelRot.x, .1f ) )
+	{
+		Mesh->SetRotationEuler( ModelRot);
+	}
+	if ( ImGui::DragFloat3( "Scale", &ModelScale.x, .1f ) )
+	{
+		Mesh->SetScale( ModelScale);
+	}
 }
 
 void Game::OnDeviceLost()

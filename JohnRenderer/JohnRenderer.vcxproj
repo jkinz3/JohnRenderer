@@ -101,6 +101,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Source\PointLight.h" />
     <ClInclude Include="Source\Camera.h" />
     <ClInclude Include="Source\DebugDraw.h" />
     <ClInclude Include="Source\DeviceResources.h" />
@@ -123,6 +124,7 @@
     <ClInclude Include="ThirdParty\ImGui\imstb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\PointLight.cpp" />
     <ClCompile Include="Source\Camera.cpp" />
     <ClCompile Include="Source\DebugDraw.cpp" />
     <ClCompile Include="Source\DeviceResources.cpp" />

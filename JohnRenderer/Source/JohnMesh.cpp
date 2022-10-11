@@ -3,6 +3,7 @@
 
 using namespace DirectX::SimpleMath;
 
+
 void JohnMesh::Build(ID3D11Device* device)
 {
 	assert(m_Vertices.size() != 0);
@@ -85,7 +86,65 @@ std::vector<Face>* JohnMesh::GetFaces()
 	return &m_Faces;
 }
 
-DirectX::SimpleMath::Matrix JohnMesh::GetTransformationMatrix()
+Matrix JohnMesh::GetTransformationMatrix()
 {
-	return Matrix::Identity;
+	Matrix TransMat = Matrix::CreateTranslation( m_Transform.Position );
+	Matrix RotMat = Matrix::CreateFromQuaternion( m_Transform.Rotation );
+	Matrix ScaleMat = Matrix::CreateScale( m_Transform.Scale );
+	Matrix ModelMatrix = ScaleMat * RotMat * TransMat;
+	return ModelMatrix;
+	
+}
+
+John::Transform JohnMesh::GetTransform() const
+{
+	return m_Transform;
+}
+
+void JohnMesh::SetTransform( John::Transform val )
+{
+	m_Transform = val;
+}
+
+Vector3 JohnMesh::GetPosition() const
+{
+	return m_Transform.Position;
+}
+
+void JohnMesh::SetPosition( Vector3 val )
+{
+	m_Transform.Position = val;
+}
+
+Quaternion JohnMesh::GetRotation() const
+{
+	return m_Transform.Rotation;
+}
+
+void JohnMesh::SetRotation( Quaternion val )
+{
+	m_Transform.Rotation = val;
+}
+
+Vector3 JohnMesh::GetScale() const
+{
+	return m_Transform.Scale;
+}
+
+void JohnMesh::SetScale( Vector3 val )
+{
+	m_Transform.Scale = val;
+}
+
+Vector3 JohnMesh::GetRotationEuler() const
+{
+	Vector3 EulerRot = m_Transform.Rotation.ToEuler();
+	Vector3 EulerDegRot = John::EulerRadiansToDegrees( EulerRot );
+	return EulerDegRot;
+}
+
+void JohnMesh::SetRotationEuler( Vector3 NewEuler )
+{
+	Vector3 EulerRadRot = John::EulerDegreesToRadians( NewEuler );
+	m_Transform.Rotation = Quaternion::CreateFromYawPitchRoll( EulerRadRot.y, EulerRadRot.x, EulerRadRot.z );
 }

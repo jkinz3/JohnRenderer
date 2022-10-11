@@ -1,12 +1,17 @@
 #pragma once
+#include "Types.h"
+
+using Microsoft::WRL::ComPtr;
+using namespace DirectX;
+using namespace DirectX::SimpleMath;
 
 struct Vertex
 {
-	DirectX::SimpleMath::Vector3 Position;
-	DirectX::SimpleMath::Vector3 Normal;
-	DirectX::SimpleMath::Vector2 TexCoord;
-	DirectX::SimpleMath::Vector3 Tangent;
-	DirectX::SimpleMath::Vector3 Bitangent;
+	Vector3 Position;
+	Vector3 Normal;
+	Vector2 TexCoord;
+	Vector3 Tangent;
+	Vector3 Bitangent;
 };
 
 struct Face
@@ -24,7 +29,20 @@ public:
 	std::vector<Vertex>* GetVertices();
 	std::vector<Face>* GetFaces();
 
-	DirectX::SimpleMath::Matrix GetTransformationMatrix();
+	Matrix GetTransformationMatrix();
+
+	John::Transform GetTransform() const;
+	void SetTransform( John::Transform val );
+
+	Vector3 GetPosition() const;
+	void SetPosition( Vector3 val );
+	Quaternion GetRotation() const;
+	void SetRotation( Quaternion val );
+	Vector3 GetScale() const;
+	void SetScale( Vector3 val );
+	
+	Vector3 GetRotationEuler() const;
+	void SetRotationEuler( Vector3 NewEuler );
 
 private:
 
@@ -36,8 +54,9 @@ private:
 
 	UINT m_NumIndices;
 
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_VertexBuffer;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_IndexBuffer;
+	ComPtr<ID3D11Buffer> m_VertexBuffer;
+	ComPtr<ID3D11Buffer> m_IndexBuffer;
 
+	John::Transform m_Transform;
 };
 

@@ -59,7 +59,8 @@ private:
 	
     void Render();
 	void RenderUI();
-
+	void DrawScene();
+	void DrawMesh(JohnMesh* MeshToDraw);
     void Clear();
 
     void CreateDeviceDependentResources();
@@ -68,6 +69,8 @@ private:
 	bool CanMoveCamera() const;
 
 	void ReloadShaders();
+
+	void DrawModelDetails(JohnMesh* Mesh);
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
@@ -83,7 +86,8 @@ private:
 	ComPtr<ID3D11Buffer> m_PhongTransformCB;
 	ComPtr<ID3D11Buffer> m_PhongShadingCB;
 
-	std::shared_ptr<JohnMesh> m_Mesh;
+	std::vector<std::shared_ptr<JohnMesh>> m_Meshes;
+
 	std::unique_ptr<Camera> m_Camera;
 	std::unique_ptr<DirectX::Mouse> m_Mouse;
 	std::unique_ptr<DirectX::Keyboard> m_Keyboard;
