@@ -3120,8 +3120,35 @@ inline void Quaternion::RotateTowards(const Quaternion& target, float maxAngle) 
     RotateTowards(target, maxAngle, *this);
 }
 
+
+inline float Quaternion::ClampAxis(float Angle) const noexcept
+{
+    Angle = std::fmodf(Angle, 360.f);
+    if(Angle < 0.f)
+    {
+        Angle += 360.f;
+    }
+
+    return Angle;
+}
+inline float Quaternion::NormalizeAxis(float Angle) const noexcept
+{
+    Angle = ClampAxis(Angle);
+    if (Angle > 180.f)
+    {
+        Angle -= 360.f;
+    }
+
+    return Angle;
+}
+
+
+
+
 inline Vector3 Quaternion::ToEuler() const noexcept
 {
+    /* replacing algorithm with Epic's implementation */
+#if 0
     const float xx = x * x;
     const float yy = y * y;
     const float zz = z * z;
@@ -3146,6 +3173,39 @@ inline Vector3 Quaternion::ToEuler() const noexcept
 
         return Vector3(cx, 0.f, atan2f(-m21, m11));
     }
+#endif
+
+    const float SingularityTest = z * x - w * y;
+    const float YawY = 2.f * (w * z + x * y);
+    const float YawX = (1.f - 2.f * ((y*y) + (z*z)));
+
+    const float SINGULARITY_THRESHOLD = .4999995f;
+    const float RAD_TO_DEG = (180.f / XM_PI);
+    float Pitch, Yaw, Roll;
+    if (SingularityTest < -SINGULARITY_THRESHOLD)
+    {
+        Pitch = -90.f;
+        Yaw = (std::atan2(YawY, YawX));
+        Roll = NormalizeAxis(-Yaw - (2.f * std::atan2(x, w) ));
+
+    }
+    else if (SingularityTest > SINGULARITY_THRESHOLD)
+    {
+        Pitch = 90.f;
+        Yaw = (std::atan2(YawY, YawX) );
+        Roll = NormalizeAxis(Yaw - (2.f * std::atan2(x, w) ));
+    }
+    else
+    {
+        Pitch = (std::asinf(2.f * SingularityTest));
+        Yaw = (std::atan2(YawY, YawX));
+        Roll = (std::atan2(-2.f * (w*x + y*z), (1.f - 2.f * ((x*x) + (y*y)))));
+    }
+
+    Vector3 EulerRot = Vector3(-Roll, -Pitch, Yaw);
+
+    return EulerRot;
+
 }
 
 //------------------------------------------------------------------------------

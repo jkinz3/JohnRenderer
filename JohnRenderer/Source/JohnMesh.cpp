@@ -139,8 +139,8 @@ void JohnMesh::SetScale( Vector3 val )
 Vector3 JohnMesh::GetRotationEuler() const
 {
 	Vector3 EulerRot = m_Transform.Rotation.ToEuler();
-	Vector3 EulerDegRot = John::EulerRadiansToDegrees( EulerRot );
-	return EulerDegRot;
+
+	return John::EulerRadiansToDegrees( EulerRot );
 }
 
 void JohnMesh::SetRotationEuler( Vector3 NewEuler )

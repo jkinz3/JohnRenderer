@@ -105,6 +105,11 @@ void Game::Update(DX::StepTimer const& timer)
     float elapsedTime = float(timer.GetElapsedSeconds());
 
 	Movement( elapsedTime );
+	
+	if(m_MouseButtons.leftButton == Mouse::ButtonStateTracker::PRESSED)
+	{
+		MousePicking();
+	}
 
     // TODO: Add your game logic here.
     elapsedTime;
@@ -407,6 +412,12 @@ void Game::ReloadShaders()
 	m_PhongProgram = John::CreateShaderProgram(m_deviceResources->GetD3DDevice(), m_PhongProgram.VertFileName, m_PhongProgram.PixelFileName );
 }
 
+void Game::TickGizmo()
+{
+
+
+}
+
 void Game::DrawModelDetails(JohnMesh* Mesh)
 {
 	Vector3 ModelTrans = Mesh->GetPosition();
@@ -424,6 +435,100 @@ void Game::DrawModelDetails(JohnMesh* Mesh)
 	if ( ImGui::DragFloat3( "Scale", &ModelScale.x, .1f ) )
 	{
 		Mesh->SetScale( ModelScale);
+	}
+}
+
+void Game::SelectModel( JohnMesh* ModelToSelect )
+{
+	m_SelectedModel = ModelToSelect;
+
+	if(m_SelectedModel)
+	{
+		char buffer[256] = {};
+		sprintf_s( buffer, "You've slected a model with %d vertices!", m_SelectedModel->GetVertices()->size() );
+		OutputDebugStringA( buffer );
+	}
+}
+
+void Game::DeselectAll()
+{
+	m_SelectedModel = nullptr;
+}
+
+void Game::MousePicking()
+{
+	if(m_Meshes.size() == 0)
+	{
+		return;
+	}
+
+	auto mouse = m_Mouse->GetState();
+
+	uint32_t x, y;
+	x = mouse.x;
+	y = mouse.y;
+
+	auto size = m_deviceResources->GetOutputSize();
+	float width = size.right;
+	float height = size.bottom;
+
+	Matrix proj = m_Camera->GetProjectionMatrix();
+	Matrix view = m_Camera->GetViewMatrix();
+	Matrix inverseView = view.Invert();
+
+	
+	float pointX = ((2.f * (float)x) / width) - 1.f;
+	float pointY = (((2.f * (float)y) / height) - 1.f) * -1.f;
+	
+	Vector3 rayOrigViewSpace( 0.f, 0.f, 0.f );
+	Vector3 rayDirViewSpace( pointX, pointY, 1.f );
+
+	Vector3 rayOrigWorldSpace = Vector3::Transform( rayOrigViewSpace, inverseView );
+	Vector3 rayDirWorldSpace = Vector3::TransformNormal( rayDirViewSpace, inverseView );
+
+	rayDirWorldSpace.Normalize();
+
+	float hitDistance = FLT_MAX;
+
+	bool bResult = false;
+	JohnMesh* ActorToSelect = nullptr;
+
+	for(auto& mesh : m_Meshes)
+	{
+		Ray ray;
+		ray.direction = rayDirWorldSpace;
+		ray.position = rayOrigWorldSpace;
+		auto vertices = *mesh->GetVertices();
+		for(auto face : *mesh->GetFaces())
+		{
+			uint32_t Index1 = face.v1;
+			uint32_t Index2 = face.v2;
+			uint32_t Index3 = face.v3;
+
+			Vertex Vertex1 = vertices[Index1];
+			Vertex Vertex2 = vertices[Index2];
+			Vertex Vertex3 = vertices[Index3];
+
+			float dist = 100.f;
+			bResult = ray.Intersects( Vertex1.Position, Vertex2.Position, Vertex3.Position, dist );
+
+			if(bResult)
+			{
+				hitDistance = std::min( hitDistance, dist );
+				ActorToSelect = mesh.get();
+				break;
+				
+			}
+			
+			
+
+
+		}
+
+	}
+	if(bResult)
+	{
+		SelectModel( ActorToSelect );
 	}
 }
 

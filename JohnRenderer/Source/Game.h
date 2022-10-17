@@ -70,7 +70,17 @@ private:
 
 	void ReloadShaders();
 
+	void TickGizmo();
+
 	void DrawModelDetails(JohnMesh* Mesh);
+
+
+
+	void SelectModel( JohnMesh* ModelToSelect );
+
+	void DeselectAll();
+
+	void MousePicking();
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
@@ -79,9 +89,9 @@ private:
     DX::StepTimer                           m_timer;
 
 
-
 	//my sheeit
 	John::ShaderProgram m_PhongProgram;
+	JohnMesh* m_SelectedModel = nullptr;
 
 	ComPtr<ID3D11Buffer> m_PhongTransformCB;
 	ComPtr<ID3D11Buffer> m_PhongShadingCB;
@@ -96,5 +106,9 @@ private:
 	Vector2 m_MouseDelta;
 	Vector3 m_LightPos;
 	bool m_bIsRelativeMode = false;
+
+	ImGuizmo::MODE m_CurrentGizmoMode = ImGuizmo::MODE::WORLD;
+	ImGuizmo::OPERATION m_CurrentGizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+
 
 };
