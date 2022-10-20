@@ -1,5 +1,5 @@
 // Physically Based Rendering
-// Copyright (c) 2017-2018 Michal Siejak
+// Copyright (c) 2017-2018 Michał Siejak
 
 // Computes diffuse irradiance cubemap convolution for image-based lighting.
 // Uses quasi Monte Carlo sampling with Hammersley sequence.
@@ -34,49 +34,14 @@ float2 sampleHammersley(uint i)
 	return float2(i * InvNumSamples, radicalInverse_VdC(i));
 }
 
-float DistributionGGX(float3 N, float3 H)
-{
-	float a = 1;
-	float a2 = a * a;
-	float NdotH = max(dot(N, H), 0.0);
-	float NdotH2 = NdotH * NdotH;
-
-	float nom = a2;
-	float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-	denom = PI * denom * denom;
-
-	return nom / denom;
-}
-
 // Uniformly sample point on a hemisphere.
 // Cosine-weighted sampling would be a better fit for Lambertian BRDF but since this
 // compute shader runs only once as a pre-processing step performance is not *that* important.
 // See: "Physically Based Rendering" 2nd ed., section 13.6.1.
 float3 sampleHemisphere(float u1, float u2)
 {
-	const float u1p = sqrt(max(0.0, 1.0 - u1 * u1));
-	return float3(cos(TwoPI * u2) * u1p, sin(TwoPI * u2) * u1p, u1);
-}
-
-float3 SampleGGX(float2 Xi, float3 N)
-{
-	float a = 1;
-
-	float phi = 2.0 * PI * Xi.x;
-	float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a * a - 1.0) * Xi.y));
-	float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
-
-	float3 H;
-	H.x = cos(phi) * sinTheta;
-	H.y = sin(phi) * sinTheta;
-	H.z = cosTheta;
-
-	float3 up = abs(N.z) < .999 ? float3(0.0, 0.0, 1.0) : float3 (1.0, 1.0, 1.0);
-	float3 tangent = normalize(cross(up, N));
-	float3 bitangent = cross(N, tangent);
-
-	float3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
-	return normalize(sampleVec);
+	const float u1p = sqrt(max(0.0, 1.0 - u1*u1));
+	return float3(cos(TwoPI*u2) * u1p, sin(TwoPI*u2) * u1p, u1);
 }
 
 // Calculate normalized sampling direction vector based on current fragment coordinates.
@@ -87,33 +52,21 @@ float3 getSamplingVector(uint3 ThreadID)
 	float outputWidth, outputHeight, outputDepth;
 	outputTexture.GetDimensions(outputWidth, outputHeight, outputDepth);
 
-	float2 st = ThreadID.xy / float2(outputWidth, outputHeight);
-	float2 uv = 2.0 * float2(st.x, 1.0 - st.y) - 1.0;
+    float2 st = ThreadID.xy/float2(outputWidth, outputHeight);
+    float2 uv = 2.0 * float2(st.x, 1.0-st.y) - 1.0;
 
 	// Select vector based on cubemap face index.
 	float3 ret;
-	switch (ThreadID.z)
+	switch(ThreadID.z)
 	{
-		case 0:
-			ret = float3(1.0, uv.y, -uv.x);
-			break;
-		case 1:
-			ret = float3(-1.0, uv.y, uv.x);
-			break;
-		case 2:
-			ret = float3(uv.x, 1.0, -uv.y);
-			break;
-		case 3:
-			ret = float3(uv.x, -1.0, uv.y);
-			break;
-		case 4:
-			ret = float3(uv.x, uv.y, 1.0);
-			break;
-		case 5:
-			ret = float3(-uv.x, uv.y, -1.0);
-			break;
+	case 0: ret = float3(1.0,  uv.y, -uv.x); break;
+	case 1: ret = float3(-1.0, uv.y,  uv.x); break;
+	case 2: ret = float3(uv.x, 1.0, -uv.y); break;
+	case 3: ret = float3(uv.x, -1.0, uv.y); break;
+	case 4: ret = float3(uv.x, uv.y, 1.0); break;
+	case 5: ret = float3(-uv.x, uv.y, -1.0); break;
 	}
-	return normalize(ret);
+    return normalize(ret);
 }
 
 // Compute orthonormal basis for converting from tanget/shading space to world space.
@@ -137,7 +90,7 @@ float3 tangentToWorld(const float3 v, const float3 N, const float3 S, const floa
 void main(uint3 ThreadID : SV_DispatchThreadID)
 {
 	float3 N = getSamplingVector(ThreadID);
-	float3 V = N;
+	
 	float3 S, T;
 	computeBasisVectors(N, S, T);
 
@@ -145,32 +98,13 @@ void main(uint3 ThreadID : SV_DispatchThreadID)
 	// As a small optimization this also includes Lambertian BRDF assuming perfectly white surface (albedo of 1.0)
 	// so we don't need to normalize in PBR fragment shader (so technically it encodes exitant radiance rather than irradiance).
 	float3 irradiance = 0.0;
-	for (uint i = 0; i < NumSamples; ++i)
-	{
-		float2 u = sampleHammersley(i);
-		float3 Li = tangentToWorld(sampleHemisphere(u.x, u.y), N, S, T);//SampleGGX(u, N); //
+	for(uint i=0; i<NumSamples; ++i) {
+		float2 u  = sampleHammersley(i);
+		float3 Li = tangentToWorld(sampleHemisphere(u.x, u.y), N, S, T);
 		float cosTheta = max(0.0, dot(Li, N));
-		float3 L = normalize(2.0 * dot(V, Li) * Li - V);
 
-		float NdotL = max(dot(N, L), 0.0);
-		if (NdotL > 0.0)
-		{
-
-			float D = DistributionGGX(N, Li);
-			float NdotH = max(dot(N, Li), 0.0);
-			float HdotV = max(dot(Li, V), 0.0);
-			float pdf = D * NdotH / (4.0 * HdotV) + 0.0001;
-
-
-			float resolution = 1024;
-			float saTexel = 4.0 * PI / (6.0 * resolution * resolution);
-			float saSample = 1.0 / (float(NumSamples) * pdf + .0001);
-
-			float mipLevel = 0.5 * log2(saSample / saTexel);
-
-			// PIs here cancel out because of division by pdf.
-			irradiance += 2.0 * inputTexture.SampleLevel(defaultSampler, Li, mipLevel).rgb * cosTheta;
-		}
+		// PIs here cancel out because of division by pdf.
+		irradiance += 2.0 * inputTexture.SampleLevel(defaultSampler, Li, 0).rgb * cosTheta;
 	}
 	irradiance /= float(NumSamples);
 

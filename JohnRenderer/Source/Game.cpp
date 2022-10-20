@@ -67,6 +67,29 @@ void Game::InitializeUI()
 	ImGui_ImplDX11_Init( m_deviceResources->GetD3DDevice(), m_deviceResources->GetD3DDeviceContext() );
 }
 
+void Game::InitializeSky( const char* EnvMapFile )
+{
+	auto device = m_deviceResources->GetD3DDevice();
+	auto context = m_deviceResources->GetD3DDeviceContext();
+	m_Environment = John::CreateEnvironmentFromFile( device, context, EnvMapFile );
+	m_brdfSampler = John::CreateSamplerState( device, D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_CLAMP );
+	m_Sky = GeometricPrimitive::CreateGeoSphere( context, 2.f, 3.f, false );
+	m_SkyEffect = std::make_unique<DX::SkyboxEffect>( device );
+
+	m_Sky->CreateInputLayout( m_SkyEffect.get(), m_SkyInputLayout.ReleaseAndGetAddressOf() );
+
+	m_SkyEffect->SetTexture( m_Environment.SpecularIBL.SRV.Get() );
+
+
+
+
+}
+
+void Game::CleanSky()
+{
+
+}
+
 #pragma region Frame Update
 // Executes the basic game loop.
 void Game::Tick()
@@ -86,16 +109,49 @@ void Game::TickUI()
 	ImGui_ImplDX11_NewFrame();
 	ImGui::NewFrame();
 
+	auto mouse = m_Mouse->GetState();
+	ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar;
+	ImGui::Begin( "Outliner", NULL, window_flags );
+	DrawSceneOutliner();
 
-	
-	ImGui::Begin( "Editor" );
-	for(auto mesh : m_Meshes)
+	ImGui::Separator();
+	if(m_SelectedModel)
 	{
-		DrawModelDetails(mesh.get());
+		DrawModelDetails( m_SelectedModel );
+	}
+	ImGui::End();
+	ImGui::Begin( "Editor" );
+	ImGui::DragFloat3( "Light Position", &m_LightPos.x, .1f );
+	ImGui::Text( "Drag Amount: %f, %f", m_DragAmount.x, m_DragAmount.y );
+	ImGui::End();
+
+	if(m_SelectedModel != nullptr)
+	{
+		TickGizmo();
+	}
+	static bool s_bRelativeLastFrame = false;
+
+	if(!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) &&  m_MouseButtons.rightButton == Mouse::ButtonStateTracker::RELEASED && !m_bIsRelativeMode && m_DragAmount == Vector2::Zero)
+	{
+
+		ImGui::OpenPopup( "RightClick" );
 
 	}
-	ImGui::DragFloat3( "Light Position", &m_LightPos.x, .1f );
-	ImGui::End();
+	if(m_SelectedModel != nullptr)
+	{
+
+	if(ImGui::BeginPopup("RightClick"))
+	{
+		if(ImGui::Button("Reset Transformations"))
+		{
+			m_SelectedModel->ResetTransformations();
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+	}
+	s_bRelativeLastFrame = m_bIsRelativeMode;
+
 
 }
 
@@ -108,7 +164,31 @@ void Game::Update(DX::StepTimer const& timer)
 	
 	if(m_MouseButtons.leftButton == Mouse::ButtonStateTracker::PRESSED)
 	{
-		MousePicking();
+		SelectModel(MousePicking());
+	}
+
+	if(!m_bIsRelativeMode)
+	{
+		if ( m_Keys.pressed.Q )
+		{
+			DeselectAll();
+		}
+		else if(m_Keys.pressed.W)
+		{
+			m_CurrentGizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+		}
+		else if ( m_Keys.pressed.E )
+		{
+			m_CurrentGizmoOperation = ImGuizmo::OPERATION::ROTATE;
+		}
+		else if ( m_Keys.pressed.R )
+		{
+			m_CurrentGizmoOperation = ImGuizmo::OPERATION::SCALE;
+		}
+		if(m_Keys.pressed.Z)
+		{
+			m_CurrentGizmoMode = m_CurrentGizmoMode == ImGuizmo::MODE::WORLD ? ImGuizmo::MODE::LOCAL : ImGuizmo::MODE::WORLD;
+		}
 	}
 
     // TODO: Add your game logic here.
@@ -126,31 +206,47 @@ void Game::Movement( float DeltaTime )
 		ReloadShaders();
 	}
 
+
+
 	m_MouseDelta.x =  (float)mouse.x ;
 	m_MouseDelta.y = (float) mouse.y ;
 	
+	if(m_MouseButtons.rightButton == Mouse::ButtonStateTracker::PRESSED)
+	{
+		m_DragAmount = Vector2::Zero;
+	}
+
+	if(mouse.positionMode == Mouse::MODE_RELATIVE)
+	{
+		m_DragAmount += m_MouseDelta;
+	}
+
 	if (mouse.positionMode == Mouse::MODE_RELATIVE)
 	{
-		if ( keyboard.LeftAlt )
+		if ( keyboard.LeftAlt && m_MouseDelta != Vector2::Zero)
 		{
 			Vector2 delta = m_MouseDelta * .003f;
+			bool move = false;
 			if ( mouse.middleButton )
 			{
 				m_Camera->MousePan( delta );
+				move = true;
 			}
 			else if ( mouse.leftButton )
 			{
 				m_Camera->MouseOrbit( delta );
+				move = true;
 			}
 			else if ( mouse.rightButton )
 			{
 				m_Camera->Mousezoom( delta );
+				move = true;
 			}
+			m_bWasCameraMoved = move;
 
 		}
 		else
 		{
-
 
 			Vector2 delta = m_MouseDelta * DeltaTime;
 
@@ -187,6 +283,14 @@ void Game::Movement( float DeltaTime )
 				int x = 5;
 			}
 			m_Camera->MoveAndRotateCamera( move, delta );
+			if ( m_MouseDelta != Vector2::Zero )
+			{
+				m_bWasCameraMoved = true;
+			}
+			else
+			{
+				m_bWasCameraMoved = false;
+			}
 		}
 	}
 	m_bIsRelativeMode = mouse.rightButton || keyboard.LeftAlt && (mouse.leftButton || mouse.middleButton || mouse.rightButton);
@@ -222,6 +326,7 @@ void Game::Render()
 
 	DrawScene();
 	
+	DrawSky();
 
 
     m_deviceResources->PIXEndEvent();
@@ -251,6 +356,12 @@ void Game::DrawScene()
 	{
 		DrawMesh( mesh.get() );
 	}
+}
+
+void Game::DrawSky()
+{
+	m_SkyEffect->SetView( m_Camera->GetViewMatrix().Transpose() );
+	m_Sky->Draw( m_SkyEffect.get(), m_SkyInputLayout.Get() );
 }
 
 void Game::DrawMesh( JohnMesh* MeshToDraw )
@@ -355,8 +466,8 @@ void Game::OnWindowSizeChanged(int width, int height)
 void Game::GetDefaultSize(int& width, int& height) const noexcept
 {
     // TODO: Change to desired default window size (note minimum size is 320x200).
-    width = 800;
-    height = 600;
+    width = 1280;
+    height = 720;
 }
 #pragma endregion
 
@@ -379,6 +490,7 @@ void Game::CreateDeviceDependentResources()
 	m_PhongTransformCB = John::CreateConstantBuffer<John::PhongTransformCB>( device );
 	m_PhongShadingCB = John::CreateConstantBuffer<John::PhongShadingCB>( device );
 
+	InitializeSky( "Content/environment.hdr" );
 
 
 	
@@ -394,6 +506,8 @@ void Game::CreateWindowSizeDependentResources()
 	if(m_Camera)
 	{
 		m_Camera->SetImageSize( rect.right, rect.bottom );
+
+		m_SkyEffect->SetProjection( m_Camera->GetProjectionMatrix().Transpose() );
 	}
 }
 
@@ -414,7 +528,103 @@ void Game::ReloadShaders()
 
 void Game::TickGizmo()
 {
+	ImGuiIO& io = ImGui::GetIO();
 
+	ImGuizmo::Enable( true );
+	ImGuizmo::SetOrthographic( false );
+	ImGuizmo::BeginFrame();
+
+	ImGuizmo::SetRect( 0, 0, io.DisplaySize.x, io.DisplaySize.y );
+	Matrix view = m_Camera->GetViewMatrix();
+	Matrix proj = m_Camera->GetProjectionMatrix();
+	Matrix model = m_SelectedModel->GetTransformationMatrix();
+
+	ImGuizmo::SetID( 0 );
+	bool bManipulated = ImGuizmo::Manipulate( *view.m, *proj.m, m_CurrentGizmoOperation, m_CurrentGizmoMode, *model.m );
+
+	if(bManipulated)
+	{
+		Vector3 NewTrans;
+		Quaternion NewRot;
+		Vector3 NewScale;
+
+		model.Decompose( NewScale, NewRot, NewTrans );
+		John::Transform NewTransform;
+		NewTransform.Position = NewTrans;
+		NewTransform.Rotation = NewRot;
+		NewTransform.Scale = NewScale;
+
+		m_SelectedModel->SetTransform( NewTransform );
+	}
+}
+
+void Game::DrawSceneOutliner()
+{
+
+	if(ImGui::BeginMenuBar())
+	{
+		if(ImGui::BeginMenu("Add"))
+		{
+			if(ImGui::MenuItem("Mesh"))
+			{
+
+			}
+			ImGui::EndMenu();
+		}
+		if(ImGui::Button("Change Sky"))
+		{
+
+		}
+		ImGui::EndMenuBar();
+	}
+
+	
+	for(auto& mesh : m_Meshes)
+	{
+		ImGuiTreeNodeFlags flags = ((m_SelectedModel == mesh.get()) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
+		bool opened = ImGui::TreeNodeEx( (void*)(uint64_t)(uint32_t)mesh.get(), flags, mesh->GetName().c_str() );
+		if(ImGui::IsItemClicked())
+		{
+			SelectModel( mesh.get() );
+		}
+
+		bool bEntityDeleted = false;
+		if(ImGui::BeginPopupContextItem())
+		{
+			if(ImGui::MenuItem("DeleteActor"))
+			{
+				bEntityDeleted = true;
+			}
+			if(ImGui::MenuItem("Reset Transform"))
+			{
+				if(m_SelectedModel)
+				{
+					m_SelectedModel->ResetTransformations();
+				}
+
+			}
+			ImGui::EndPopup();
+		}
+		if(opened)
+		{
+			ImGuiTreeNodeFlags selectflags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+			bool opened = ImGui::TreeNodeEx((void*)9817239, selectflags, mesh->GetName().c_str());
+			if(opened)
+			{
+				ImGui::TreePop();
+			}
+			ImGui::TreePop();
+		}
+		if(bEntityDeleted)
+		{
+			if(m_SelectedModel)
+			{
+				DeleteMesh( mesh );
+				DeselectAll();
+			}
+		}
+	}
 
 }
 
@@ -438,15 +648,18 @@ void Game::DrawModelDetails(JohnMesh* Mesh)
 	}
 }
 
+void Game::DeleteMesh( std::shared_ptr<JohnMesh> MeshToDelete )
+{
+	m_Meshes.erase( std::remove( m_Meshes.begin(), m_Meshes.end(), MeshToDelete ) );
+}
+
+
+
 void Game::SelectModel( JohnMesh* ModelToSelect )
 {
-	m_SelectedModel = ModelToSelect;
-
-	if(m_SelectedModel)
+	if(ModelToSelect != nullptr)
 	{
-		char buffer[256] = {};
-		sprintf_s( buffer, "You've slected a model with %d vertices!", m_SelectedModel->GetVertices()->size() );
-		OutputDebugStringA( buffer );
+		m_SelectedModel = ModelToSelect;
 	}
 }
 
@@ -455,11 +668,11 @@ void Game::DeselectAll()
 	m_SelectedModel = nullptr;
 }
 
-void Game::MousePicking()
+JohnMesh* Game::MousePicking()
 {
 	if(m_Meshes.size() == 0)
 	{
-		return;
+		return nullptr;
 	}
 
 	auto mouse = m_Mouse->GetState();
@@ -528,7 +741,11 @@ void Game::MousePicking()
 	}
 	if(bResult)
 	{
-		SelectModel( ActorToSelect );
+		return ActorToSelect;
+	}
+	else
+	{
+		return nullptr;
 	}
 }
 

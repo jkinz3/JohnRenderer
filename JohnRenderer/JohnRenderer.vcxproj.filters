@@ -41,6 +41,7 @@
     <ClInclude Include="ThirdParty\ImGuizmo\ImGradient.h" />
     <ClInclude Include="ThirdParty\ImGuizmo\ImGuizmo.h" />
     <ClInclude Include="ThirdParty\ImGuizmo\ImSequencer.h" />
+    <ClInclude Include="ThirdParty\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\pch.cpp" />
@@ -81,5 +82,12 @@
     <Manifest Include="settings.manifest">
       <Filter>Assets</Filter>
     </Manifest>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\SkyboxCommon.hlsli" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders\SkyboxPS.hlsl" />
+    <FxCompile Include="Shaders\SkyboxVS.hlsl" />
   </ItemGroup>
 </Project>

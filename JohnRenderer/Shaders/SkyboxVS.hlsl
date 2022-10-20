@@ -1,13 +1,12 @@
 #include "SkyboxCommon.hlsli"
 
-
-
-PSInput main( VSInput vin)
+VSOutput main(float4 position : SV_Position)
 {
-	PSInput vout;
-	vout.PositionPS = mul(vin.Position, MVP);
-	vout.PositionPS.z = vout.PositionPS.w;
-	vout.TexCoord = vin.Position.xyz;
+	VSOutput vout;
+
+	vout.PositionPS = mul(position, WorldViewProj);
+	vout.PositionPS.z = vout.PositionPS.w; // Draw on far plane
+	vout.TexCoord = position.xyz;
 
 	return vout;
 }

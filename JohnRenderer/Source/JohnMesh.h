@@ -44,6 +44,10 @@ public:
 	Vector3 GetRotationEuler() const;
 	void SetRotationEuler( Vector3 NewEuler );
 
+	void ResetTransformations();
+
+	std::string GetName() const;
+	void SetName( std::string val );
 private:
 
 	std::vector<Vertex> m_Vertices;
@@ -58,5 +62,7 @@ private:
 	ComPtr<ID3D11Buffer> m_IndexBuffer;
 
 	John::Transform m_Transform;
+	
+	std::string m_Name = std::string("Model");
 };
 

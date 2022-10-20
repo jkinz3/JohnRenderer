@@ -30,8 +30,8 @@ public:
     // Initialization and management
     void Initialize(HWND window, int width, int height);
 	void InitializeUI();
-
-
+	void InitializeSky( const char* EnvMapFile );
+	void CleanSky();
     // Basic game loop
     void Tick();
 	void TickUI();
@@ -60,6 +60,7 @@ private:
     void Render();
 	void RenderUI();
 	void DrawScene();
+	void DrawSky();
 	void DrawMesh(JohnMesh* MeshToDraw);
     void Clear();
 
@@ -72,7 +73,11 @@ private:
 
 	void TickGizmo();
 
+	void DrawSceneOutliner();
 	void DrawModelDetails(JohnMesh* Mesh);
+
+
+	void DeleteMesh( std::shared_ptr<JohnMesh> MeshToDelete );
 
 
 
@@ -80,7 +85,7 @@ private:
 
 	void DeselectAll();
 
-	void MousePicking();
+	JohnMesh* MousePicking();
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
@@ -96,6 +101,10 @@ private:
 	ComPtr<ID3D11Buffer> m_PhongTransformCB;
 	ComPtr<ID3D11Buffer> m_PhongShadingCB;
 
+	ComPtr<ID3D11SamplerState> m_StandardSampler;
+	ComPtr<ID3D11SamplerState> m_brdfSampler;
+	
+
 	std::vector<std::shared_ptr<JohnMesh>> m_Meshes;
 
 	std::unique_ptr<Camera> m_Camera;
@@ -106,9 +115,20 @@ private:
 	Vector2 m_MouseDelta;
 	Vector3 m_LightPos;
 	bool m_bIsRelativeMode = false;
+	bool m_bWasCameraMoved = false;
+
+	Vector2 m_DragAmount = Vector2::Zero;
 
 	ImGuizmo::MODE m_CurrentGizmoMode = ImGuizmo::MODE::WORLD;
 	ImGuizmo::OPERATION m_CurrentGizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+
+	John::Environment m_Environment;
+
+	std::unique_ptr<DirectX::GeometricPrimitive> m_Sky;
+	std::unique_ptr<DX::SkyboxEffect> m_SkyEffect;
+
+	ComPtr<ID3D11InputLayout> m_SkyInputLayout;
+	
 
 
 };

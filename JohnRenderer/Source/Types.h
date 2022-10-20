@@ -32,6 +32,22 @@ namespace John
 		XMVECTOR CamPos;
 	};
 
+	struct Texture
+	{
+		ComPtr<ID3D11Texture2D> Texture2D;
+		ComPtr<ID3D11ShaderResourceView> SRV;
+		ComPtr<ID3D11UnorderedAccessView> UAV;
+		UINT width, height;
+		UINT levels;
+	};
+
+	struct Environment
+	{
+		Texture SpecularIBL;
+		Texture DiffuseIBL;
+		Texture BRDF_Lut;
+	};
+
 	struct Transform
 	{
 		Vector3 Position;

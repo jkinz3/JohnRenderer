@@ -148,3 +148,21 @@ void JohnMesh::SetRotationEuler( Vector3 NewEuler )
 	Vector3 EulerRadRot = John::EulerDegreesToRadians( NewEuler );
 	m_Transform.Rotation = Quaternion::CreateFromYawPitchRoll( EulerRadRot.y, EulerRadRot.x, EulerRadRot.z );
 }
+
+void JohnMesh::ResetTransformations()
+{
+	m_Transform.Position = Vector3::Zero;
+	m_Transform.Rotation = Quaternion::Identity;
+	m_Transform.Scale = Vector3::One;
+
+}
+
+std::string JohnMesh::GetName() const
+{
+	return m_Name;
+}
+
+void JohnMesh::SetName( std::string val )
+{
+	m_Name = val;
+}
