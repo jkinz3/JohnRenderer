@@ -8,9 +8,8 @@ cbuffer ShadingConstants : register(b0)
 	
 }
 
-Texture2D BrickColor : register(t0);
-Texture2D NormalMap : register(t1);
-TextureCube<float4> EnvMap: register(t2);
+//Texture2D BrickColor : register(t0);
+Texture2D NormalMap : register(t0);
 SamplerState standardSampler : register(s0);
 
 float4 main(PSInput pin) : SV_TARGET
@@ -18,10 +17,14 @@ float4 main(PSInput pin) : SV_TARGET
 	float3 objectColor = float3(1, 0, 0); //BrickColor.Sample(standardSampler, pin.TexCoord, 0).rgb;
 	float ambientStrength = .1f;
 	float3 ambient = objectColor * ambientStrength;
+	float2 texCoord = pin.TexCoord * 2.f;
 	
 	//diffuse 
 
-	float3 N = normalize(pin.Normal);
+	float3 N = normalize(2.0 * NormalMap.Sample(standardSampler, texCoord).rgb - 1.0);
+	N = normalize(mul(pin.TangentBasis, N));
+
+	
 	float3 lightVec = LightPos - pin.PositionWS;
 	float3 L = normalize(lightVec);
 
@@ -44,6 +47,6 @@ float4 main(PSInput pin) : SV_TARGET
 	
 	float3 result = (ambient + diffuse + specular);
 	
-	return float4(result, 1.f);
+	return float4(N, 1.f);
 
 }

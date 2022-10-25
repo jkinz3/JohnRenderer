@@ -13,6 +13,10 @@ using namespace DirectX;
 using namespace DirectX::SimpleMath;
 using Microsoft::WRL::ComPtr;
 
+#ifdef _DEBUG
+RENDERDOC_API_1_5_0* rdoc_api = NULL;
+#endif
+
 Game::Game() noexcept(false)
 {
     m_deviceResources = std::make_unique<DX::DeviceResources>();
@@ -25,6 +29,18 @@ Game::Game() noexcept(false)
 // Initialize the Direct3D resources required to run.
 void Game::Initialize(HWND window, int width, int height)
 {
+#ifdef _DEBUG
+	// At init, on windows
+	if ( HMODULE mod = GetModuleHandleA( "renderdoc.dll" ) )
+	{
+		pRENDERDOC_GetAPI RENDERDOC_GetAPI =
+			(pRENDERDOC_GetAPI)GetProcAddress( mod, "RENDERDOC_GetAPI" );
+		int ret = RENDERDOC_GetAPI( eRENDERDOC_API_Version_1_5_0, (void **)&rdoc_api );
+		assert( ret == 1 );
+	}
+#endif // DEBUG
+
+
     m_deviceResources->SetWindow(window, width, height);
 
     m_deviceResources->CreateDeviceResources();
@@ -69,11 +85,18 @@ void Game::InitializeUI()
 
 void Game::InitializeSky( const char* EnvMapFile )
 {
+#ifdef _DEBUG
+	if(rdoc_api)
+	{
+		rdoc_api->StartFrameCapture( NULL, NULL );
+	}
+#endif // DEBUG
+
 	auto device = m_deviceResources->GetD3DDevice();
 	auto context = m_deviceResources->GetD3DDeviceContext();
 	m_Environment = John::CreateEnvironmentFromFile( device, context, EnvMapFile );
 	m_brdfSampler = John::CreateSamplerState( device, D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_CLAMP );
-	m_Sky = GeometricPrimitive::CreateGeoSphere( context, 2.f, 3.f, false );
+	m_Sky = GeometricPrimitive::CreateGeoSphere( context, 2.f, 3.f, true );
 	m_SkyEffect = std::make_unique<DX::SkyboxEffect>( device );
 
 	m_Sky->CreateInputLayout( m_SkyEffect.get(), m_SkyInputLayout.ReleaseAndGetAddressOf() );
@@ -81,6 +104,12 @@ void Game::InitializeSky( const char* EnvMapFile )
 	m_SkyEffect->SetTexture( m_Environment.SpecularIBL.SRV.Get() );
 
 
+#ifdef _DEBUG
+	if(rdoc_api)
+	{
+		rdoc_api->EndFrameCapture( NULL, NULL );
+	}
+#endif // DEBUG
 
 
 }
@@ -360,7 +389,8 @@ void Game::DrawScene()
 
 void Game::DrawSky()
 {
-	m_SkyEffect->SetView( m_Camera->GetViewMatrix().Transpose() );
+	m_SkyEffect->SetView( m_Camera->GetViewMatrix());
+	m_SkyEffect->SetProjection( m_Camera->GetProjectionMatrix() );
 	m_Sky->Draw( m_SkyEffect.get(), m_SkyInputLayout.Get() );
 }
 
@@ -384,7 +414,18 @@ void Game::DrawMesh( JohnMesh* MeshToDraw )
 
 	context->UpdateSubresource( m_PhongTransformCB.Get(), 0, nullptr, &transformConstants, 0, 0 );
 
+	ID3D11ShaderResourceView* const srvs[] =
+	{
+		m_BrickNormal.Get()
+	};
 
+	ID3D11SamplerState* const states[] =
+	{
+		m_StandardSampler.Get()
+	};
+
+	context->PSSetShaderResources(0, _countof(srvs), srvs);
+	context->PSSetSamplers( 0, _countof( states ), states );
 	context->VSSetConstantBuffers( 0, 1, m_PhongTransformCB.GetAddressOf() );
 	context->PSSetConstantBuffers( 0, 1, m_PhongShadingCB.GetAddressOf() );
 	context->VSSetShader( m_PhongProgram.VertexShader.Get(), nullptr, 0 );
@@ -480,7 +521,7 @@ void Game::CreateDeviceDependentResources()
     // TODO: Initialize device dependent objects here (independent of window size).
     device;
 
-	std::shared_ptr<JohnMesh> MonkeyMesh = John::LoadMeshFromFile( "Content/monkey.obj" );
+	std::shared_ptr<JohnMesh> MonkeyMesh = John::LoadMeshFromFile( "Content/sphere.obj" );
 	MonkeyMesh->Build( device );
 
 	m_Meshes.push_back( MonkeyMesh );
@@ -490,9 +531,13 @@ void Game::CreateDeviceDependentResources()
 	m_PhongTransformCB = John::CreateConstantBuffer<John::PhongTransformCB>( device );
 	m_PhongShadingCB = John::CreateConstantBuffer<John::PhongShadingCB>( device );
 
+	DX::ThrowIfFailed(
+		CreateWICTextureFromFile(device, L"Content/Brick_Wall_Normal.jpg", nullptr, m_BrickNormal.ReleaseAndGetAddressOf())
+	);
+
 	InitializeSky( "Content/environment.hdr" );
 
-
+	m_StandardSampler = John::CreateSamplerState(device, D3D11_FILTER_ANISOTROPIC, D3D11_TEXTURE_ADDRESS_WRAP);
 	
 }
 
@@ -507,7 +552,7 @@ void Game::CreateWindowSizeDependentResources()
 	{
 		m_Camera->SetImageSize( rect.right, rect.bottom );
 
-		m_SkyEffect->SetProjection( m_Camera->GetProjectionMatrix().Transpose() );
+		m_SkyEffect->SetProjection( m_Camera->GetProjectionMatrix() );
 	}
 }
 

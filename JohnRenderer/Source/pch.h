@@ -91,6 +91,7 @@
 
 #ifdef _DEBUG
 #include <dxgidebug.h>
+#include <renderdoc_app.h>
 #endif
 
 namespace DX

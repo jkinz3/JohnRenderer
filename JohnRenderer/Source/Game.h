@@ -128,6 +128,8 @@ private:
 	std::unique_ptr<DX::SkyboxEffect> m_SkyEffect;
 
 	ComPtr<ID3D11InputLayout> m_SkyInputLayout;
+
+	ComPtr<ID3D11ShaderResourceView> m_BrickNormal;
 	
 
 

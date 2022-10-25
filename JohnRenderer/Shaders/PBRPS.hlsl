@@ -4,10 +4,10 @@ TextureCube SpecularTexture : register(t0);
 TextureCube IrradianceMap : register(t1);
 Texture2D BRDF_LUT: register(t2);
 
-Texture2D BaseColorMap : register(t3);
-Texture2D RoughnessMap : register(t4);
+//Texture2D BaseColorMap : register(t3);
+//Texture2D RoughnessMap : register(t4);
 Texture2D NormalMap : register(t5);
-Texture2D MetallicMap : register(t6);
+//Texture2D MetallicMap : register(t6);
 
 SamplerState defaultSampler : register(s0);
 SamplerState BRDF_Sampler : register(s1);

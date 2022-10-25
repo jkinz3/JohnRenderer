@@ -215,20 +215,7 @@ namespace John
 		Texture texture;
 		texture.width = width;
 		texture.height = height;
-		if(levels > 0)
-		{
-			texture.levels = levels;
-		}
-		else
-		{
-			UINT numMipMapLevels = 1;
-			while((width|height) >> levels)
-			{
-				++levels;
-			}
-			texture.levels = numMipMapLevels;
-
-		}
+		texture.levels = (levels > 0) ? levels : NumMipMapLevels( width, height );
 
 		D3D11_TEXTURE2D_DESC texDesc = {};
 		texDesc.Width = width;
@@ -264,6 +251,21 @@ namespace John
 	John::Texture CreateTextureFromFile( ID3D11Device* device, ID3D11DeviceContext* context,const char* ImageFile, DXGI_FORMAT format, UINT levels /*= 0 */ )
 	{
 		Image image; //???
+		
+		John::Texture DDStexture;
+		DX::ThrowIfFailed(
+			CreateDDSTextureFromFile(device, L"Content/environment.dds", nullptr,  DDStexture.SRV.ReleaseAndGetAddressOf())
+		);
+
+		DDStexture.SRV->GetResource(reinterpret_cast<ID3D11Resource**>( DDStexture.Texture2D.ReleaseAndGetAddressOf()) );
+
+		D3D11_TEXTURE2D_DESC ddsDesc = {};
+		DDStexture.Texture2D->GetDesc( &ddsDesc );
+		DDStexture.width = ddsDesc.Width;
+		DDStexture.height = ddsDesc.Height;
+		DDStexture.levels = ddsDesc.MipLevels;
+
+		return DDStexture;
 
 		int width;
 		int height;
@@ -306,20 +308,7 @@ namespace John
 		Texture texture;
 		texture.width = width;
 		texture.height = height;
-		if ( levels > 0 )
-		{
-			texture.levels = levels;
-		}
-		else
-		{
-			UINT numMipMapLevels = 1;
-			while ( (width | height) >> levels )
-			{
-				++levels;
-			}
-			texture.levels = numMipMapLevels;
-
-		}
+		texture.levels = (levels > 0) ? levels : NumMipMapLevels( width, height );
 
 		D3D11_TEXTURE2D_DESC texDesc = {};
 		texDesc.Width = width;

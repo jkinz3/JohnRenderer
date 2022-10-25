@@ -49,6 +49,16 @@ namespace John
 		}
 	};
 
+	template<typename T> static constexpr T NumMipMapLevels(T width, T height)
+	{
+		T levels = 1;
+		while((width|height) >> levels)
+		{
+			++levels;
+		}
+		return levels;
+	}
+
 	Texture CreateTexture( ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels = 0 );
 	Texture CreateTextureFromFile(ID3D11Device* device, ID3D11DeviceContext* context, const char* ImageFile, DXGI_FORMAT format , UINT levels = 0 );
 	Texture CreateTextureCube(ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels = 0 );
