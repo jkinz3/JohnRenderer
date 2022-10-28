@@ -64,6 +64,12 @@ namespace John
 
 	};
 
+	enum class EScrollDirection
+	{
+		ScrollUp,
+		ScrollDown
+	};
+
 	inline Vector3 EulerDegreesToRadians( Vector3 DegEuler )
 	{
 		Vector3 RadEuler = Vector3( XMConvertToRadians( DegEuler.x ), XMConvertToRadians( DegEuler.y ), XMConvertToRadians( DegEuler.z ) );

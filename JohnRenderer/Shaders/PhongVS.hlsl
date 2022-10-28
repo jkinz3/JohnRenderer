@@ -15,8 +15,13 @@ PSInput main(VSInput input)
 	vout.PositionWS = mul(input.pos, Model);
 	vout.Normal = mul(input.norm, (float3x3)Model);
 	vout.TexCoord = input.texCoord;
-	float3x3 TBN = float3x3(input.tangent, input.bitangent, input.norm);
-	vout.TangentBasis = mul((float3x3) Model, transpose(TBN));
+	
+	float3 T = normalize(mul(input.tangent, (float3x3)Model));
+	float3 B = normalize(mul(input.bitangent, (float3x3)Model));
+	float3 N = normalize(mul(input.norm, (float3x3)Model));
+	vout.TangentBasis = float3x3(T, B, N);
+	
+
 	
 	return vout;
 

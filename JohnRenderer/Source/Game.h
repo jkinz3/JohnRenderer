@@ -8,6 +8,7 @@
 #include "StepTimer.h"
 #include "Types.h"
 #include "Camera.h"
+#include "MouseDeltaTracker.h"
 class JohnMesh;
 
 using Microsoft::WRL::ComPtr;
@@ -47,6 +48,7 @@ public:
     void OnResuming();
     void OnWindowMoved();
     void OnDisplayChange();
+	void OnMouseMove();
     void OnWindowSizeChanged(int width, int height);
 
     // Properties
@@ -83,6 +85,8 @@ private:
 
 	void SelectModel( JohnMesh* ModelToSelect );
 
+	void PrepareInputState();
+
 	void DeselectAll();
 
 	JohnMesh* MousePicking();
@@ -108,11 +112,15 @@ private:
 	std::vector<std::shared_ptr<JohnMesh>> m_Meshes;
 
 	std::unique_ptr<Camera> m_Camera;
+
 	std::unique_ptr<DirectX::Mouse> m_Mouse;
 	std::unique_ptr<DirectX::Keyboard> m_Keyboard;
+	Mouse::State m_MouseState;
+	Keyboard::State m_KeyboardState;
 	DirectX::Keyboard::KeyboardStateTracker m_Keys;
 	DirectX::Mouse::ButtonStateTracker m_MouseButtons;
 	Vector2 m_MouseDelta;
+	John::MouseDeltaTracker m_MouseDeltaTracker;
 	Vector3 m_LightPos;
 	bool m_bIsRelativeMode = false;
 	bool m_bWasCameraMoved = false;
@@ -131,6 +139,7 @@ private:
 
 	ComPtr<ID3D11ShaderResourceView> m_BrickNormal;
 	
+	bool m_bShowImGuiDemoWindow = false;
 
 
 };

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Camera.h"
 
+
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
@@ -18,9 +19,9 @@ Camera::Camera()
 	m_FocalPosition = Vector3::Zero;
 	m_Distance = 3.f;
 	
-	m_MovementSettings.MovementSpeed = 6.f;
-	m_MovementSettings.MouseLookSensitivity = 1.5f;
-	m_MovementSettings.MouseOrbitSensitivity = 8.f;
+	m_MovementSettings.MovementSpeed = 10.f;
+	m_MovementSettings.MouseLookSensitivity = .007f;
+	m_MovementSettings.MouseOrbitSensitivity = 1.665f;
 
 	UpdateFocalPosition();
 
@@ -61,24 +62,73 @@ void Camera::UpdateProjection()
 
 void Camera::MoveAndRotateCamera(DirectX::SimpleMath::Vector3 DeltaLoc, DirectX::SimpleMath::Vector2 MouseDelta)
 {
-	m_Position += DeltaLoc * m_MovementSettings.MovementSpeed;
+	m_Position += DeltaLoc * m_MovementSettings.MovementSpeed * m_SpeedScale;
 	Vector2 radRot = GetRotationInRadians();
 
-	radRot.x += MouseDelta.y * m_MovementSettings.MouseLookSensitivity;
-	radRot.y += MouseDelta.x * m_MovementSettings.MouseLookSensitivity;
+	Vector2 radDelta = Vector2( XMConvertToRadians( MouseDelta.x ), XMConvertToRadians( MouseDelta.y ) );
+	Vector2 degDelta = Vector2( XMConvertToDegrees( MouseDelta.x ), XMConvertToDegrees( MouseDelta.y ) );
 
-	m_Rotation = Vector2( XMConvertToDegrees( radRot.x ), XMConvertToDegrees( radRot.y ) );
+	radRot.x += radDelta.y * m_MovementSettings.MouseLookSensitivity;
+	radRot.y += radDelta.x * m_MovementSettings.MouseLookSensitivity;
 
-	if(m_Rotation.y >= 360.f)
+
+	m_Rotation.x += MouseDelta.y * m_MovementSettings.MouseLookSensitivity;
+	m_Rotation.y += MouseDelta.x * m_MovementSettings.MouseLookSensitivity;
+
+	if(m_Rotation.y > XM_PI)
 	{
-		m_Rotation.y -= 360.f;
+		m_Rotation.y -= XM_2PI;
 	}
-	if(m_Rotation.y <= -360.f)
+	if(m_Rotation.y < -XM_PI)
 	{
-		m_Rotation.y += 360.f;
+		m_Rotation.y += XM_2PI;
 	}
 
 	UpdateFocalPosition();
+
+}
+
+void Camera::AdjustSpeed( John::EScrollDirection Direction)
+{
+	if(Direction == John::EScrollDirection::ScrollUp)
+	{
+		if(m_SpeedScale >= 2.f)
+		{
+			m_SpeedScale += 0.5f;
+		}
+		else if (m_SpeedScale >= 1.f)
+		{
+			m_SpeedScale += .2f;
+		}
+		else
+		{
+			m_SpeedScale += .1f;
+		}
+	}
+	else if(Direction == John::EScrollDirection::ScrollDown)
+	{
+		if ( m_SpeedScale > 2.49f )
+		{
+			m_SpeedScale -= 0.5f;
+		}
+		else if ( m_SpeedScale >= 1.19f )
+		{
+			m_SpeedScale -= 0.2f;
+		}
+		else
+		{
+			m_SpeedScale -= 0.1f;
+		}
+	}
+
+	//clamp between .1 and 10
+	m_SpeedScale = std::clamp( m_SpeedScale, .1f, 10.f );
+
+	float SmallNumberCheck = std::abs( m_SpeedScale - 1.f);
+	if(SmallNumberCheck <= .01f)
+	{
+		m_SpeedScale = 1.f;
+	}
 
 }
 
@@ -107,7 +157,7 @@ void Camera::SetRotation(DirectX::SimpleMath::Vector2 NewRot)
 
 Quaternion Camera::GetOrientation() const
 {
-	return Quaternion::CreateFromYawPitchRoll( XMConvertToRadians( m_Rotation.y ), XMConvertToRadians( m_Rotation.x ), 0.f );
+	return Quaternion::CreateFromYawPitchRoll( m_Rotation.y ,m_Rotation.x , 0.f );
 }
 
 Vector3 Camera::GetForwardVector() const
@@ -146,12 +196,10 @@ void Camera::SetFOV(float NewFOV)
 
 void Camera::MouseOrbit(DirectX::SimpleMath::Vector2 MouseDelta)
 {
-	Vector2 RadRot = GetRotationInRadians();
 
 	float yawSign = GetUpVector().y < 0 ? -1.f : 1.f;
-	RadRot.y += yawSign * MouseDelta.x * m_MovementSettings.MouseOrbitSensitivity;
-	RadRot.x += MouseDelta.y * m_MovementSettings.MouseOrbitSensitivity;
-	m_Rotation = Vector2( XMConvertToDegrees( RadRot.x ), XMConvertToDegrees( RadRot.y ) );
+	m_Rotation.y += yawSign * MouseDelta.x * m_MovementSettings.MouseOrbitSensitivity;
+	m_Rotation.x += MouseDelta.y * m_MovementSettings.MouseOrbitSensitivity;
 	UpdateCameraPosition();
 }
 
@@ -214,5 +262,5 @@ void Camera::FocusOnPosition( Vector3 NewPos )
 
 Vector2 Camera::GetRotationInRadians() const
 {
-	return Vector2( XMConvertToRadians( m_Rotation.x ), XMConvertToRadians( m_Rotation.y ) );
+	return m_Rotation;
 }

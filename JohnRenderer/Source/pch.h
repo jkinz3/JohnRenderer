@@ -55,6 +55,7 @@
 #include <stdexcept>
 #include <system_error>
 #include <tuple>
+#include <algorithm>
 
 //directxtk
 #include "BufferHelpers.h"

@@ -1,12 +1,21 @@
 #pragma once
-
+#include "Types.h"
 using namespace DirectX::SimpleMath;
+
+#define MINMOUSELOOKSPEED .0001f;
+#define MAXMOUSELOOKSPEED .02f;
+
+#define MINMOUSEORBITSPEED 1.f;
+#define MAXMOUSEORBITSPEED 10.f;
+
+
 
 struct CameraMovementSettings
 {
 	float MovementSpeed = 5.f;
 	float MouseLookSensitivity = 110.f;
-	float MouseOrbitSensitivity = 50.f;
+	float MouseOrbitSensitivity = 8.f;
+
 
 };
 
@@ -26,6 +35,8 @@ public:
 	void UpdateProjection();
 
 	void MoveAndRotateCamera(Vector3 DeltaLoc, Vector2 MouseDelta);
+
+	void AdjustSpeed( John::EScrollDirection Direction);
 
 	Vector3 GetPosition() const;
 	void SetPosition(Vector3 NewPos);
@@ -72,6 +83,8 @@ private:
 	int m_ImageHeight;
 
 	float m_Distance;
+
+	float m_SpeedScale = 1.f;
 
 	
 };

@@ -242,7 +242,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		PostQuitMessage( 0 );
 		break;
 	case WM_ACTIVATE:
-	case WM_INPUT:
+	case WM_INPUT:		
+		Mouse::ProcessMessage( message, wParam, lParam );
+		if(game)
+		{
+
+		game->OnMouseMove();
+		}
+		break;
 	case WM_MOUSEMOVE:
 	case WM_LBUTTONDOWN:
 	case WM_LBUTTONUP:

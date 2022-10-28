@@ -21,8 +21,9 @@ float4 main(PSInput pin) : SV_TARGET
 	
 	//diffuse 
 
-	float3 N = normalize(2.0 * NormalMap.Sample(standardSampler, texCoord).rgb - 1.0);
-	N = normalize(mul(pin.TangentBasis, N));
+	float3 N = NormalMap.Sample(standardSampler, pin.TexCoord);
+	N = (N * 2.f) - 1.f;
+	N = pin.Normal; //normalize(mul(pin.TangentBasis, N));
 
 	
 	float3 lightVec = LightPos - pin.PositionWS;
@@ -47,6 +48,6 @@ float4 main(PSInput pin) : SV_TARGET
 	
 	float3 result = (ambient + diffuse + specular);
 	
-	return float4(N, 1.f);
+	return float4(result, 1.f);
 
 }

@@ -87,28 +87,6 @@ float4 main(PSInput pin) : SV_TARGET
 	//ambient lighting from image
 	float3 ambientLighting;
 	{
-		float3 irradiance = IrradianceMap.Sample(defaultSampler, N).rgb;
-		
-		//calculate fresnel term for ambient lighting
-		float3 F = fresnelSchlick(F0, cosLo);
-		
-		//get diffuse constribution factor
-		float3 kd = lerp(1.0 - F, 0.0, Metalness);
-		
-		float3 diffuseIBL = kd * BaseColor * irradiance;
-		
-		//sample pre-filtered specular env at correct mip level
-		uint specLevels = QuerySpecularTextureLevels();
-		float3 specularIrradiance = SpecularTexture.SampleLevel(defaultSampler, R, Roughness * specLevels).rgb;
-		
-		//split sum for cook-torrance specular brdf
-		float2 specularBRDF = BRDF_LUT.Sample(BRDF_Sampler, float2(cosLo, Roughness)).rg;
-		
-		//total specular IBL contribution
-		float3 specularIBL = (F0 * specularBRDF.x + specularBRDF.y) * specularIrradiance;
-		
-		//total ambient light
-		ambientLighting = diffuseIBL + specularIBL;
 
 	}
 	

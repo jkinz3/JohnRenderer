@@ -58,7 +58,7 @@ void Game::Initialize(HWND window, int width, int height)
 	m_Camera = std::make_unique<Camera>();
 	m_Camera->SetImageSize( width, height );
 	m_Camera->SetPosition( Vector3( 0.f, 0.f, 3.f ) );
-	m_Camera->SetRotation( Vector2( 0.f, 180.f ) );
+	m_Camera->SetRotation( Vector2( 0.f, XM_PI) );
 
 	m_LightPos = Vector3( .6f, 1.f, 2.f );
 
@@ -130,6 +130,9 @@ void Game::Tick()
     });
 
     Render();
+
+
+	
 }
 
 void Game::TickUI()
@@ -138,9 +141,35 @@ void Game::TickUI()
 	ImGui_ImplDX11_NewFrame();
 	ImGui::NewFrame();
 
-	auto mouse = m_Mouse->GetState();
+	if(ImGui::BeginMainMenuBar())
+	{
+		if(ImGui::BeginMenu("File"))
+		{
+			if(ImGui::MenuItem("Quit"))
+			{
+				PostQuitMessage(0);
+			}
+			ImGui::EndMenu();
+		}
+		if(ImGui::BeginMenu("Help"))
+		{
+			if(ImGui::MenuItem("Show ImGuiDemoWindow"))
+			{
+				m_bShowImGuiDemoWindow = !m_bShowImGuiDemoWindow;
+			}
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
+	}
+
+	if(m_bShowImGuiDemoWindow)
+	{
+	ImGui::ShowDemoWindow( &m_bShowImGuiDemoWindow );
+
+	}
+
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar;
-	ImGui::Begin( "Outliner", NULL, window_flags );
+	ImGui::Begin( "Scene", NULL, window_flags );
 	DrawSceneOutliner();
 
 	ImGui::Separator();
@@ -151,7 +180,18 @@ void Game::TickUI()
 	ImGui::End();
 	ImGui::Begin( "Editor" );
 	ImGui::DragFloat3( "Light Position", &m_LightPos.x, .1f );
-	ImGui::Text( "Drag Amount: %f, %f", m_DragAmount.x, m_DragAmount.y );
+	ImGui::Text( "Camera" );
+	if(ImGui::TreeNode( "Camera Settings" ))
+	{
+		ImGui::SliderFloat( "Mouse Sensitivity", &m_Camera->m_MovementSettings.MouseLookSensitivity, .0001f, .02f);
+		ImGui::SliderFloat( "Orbit Speed", &m_Camera->m_MovementSettings.MouseOrbitSensitivity, 1.f, 10.f);
+		ImGui::DragFloat( "Movement Speed", &m_Camera->m_MovementSettings.MovementSpeed, .1f, 0.f );
+		ImGui::TreePop();
+
+	}
+	
+	ImGui::Text( "Camera Rotation: %f, %f", m_Camera->GetRotation().x, m_Camera->GetRotation().y );
+
 	ImGui::End();
 
 	if(m_SelectedModel != nullptr)
@@ -189,6 +229,8 @@ void Game::Update(DX::StepTimer const& timer)
 {
     float elapsedTime = float(timer.GetElapsedSeconds());
 
+	PrepareInputState();
+
 	Movement( elapsedTime );
 	
 	if(m_MouseButtons.leftButton == Mouse::ButtonStateTracker::PRESSED)
@@ -219,54 +261,52 @@ void Game::Update(DX::StepTimer const& timer)
 			m_CurrentGizmoMode = m_CurrentGizmoMode == ImGuizmo::MODE::WORLD ? ImGuizmo::MODE::LOCAL : ImGuizmo::MODE::WORLD;
 		}
 	}
-
+	m_MouseDeltaTracker.EndFrame();
     // TODO: Add your game logic here.
     elapsedTime;
 }
 
 void Game::Movement( float DeltaTime )
 {
-	auto keyboard = m_Keyboard->GetState();
-	auto mouse = m_Mouse->GetState();
-	m_Keys.Update( keyboard );
-	m_MouseButtons.Update( mouse );
+	
 	if(m_Keys.pressed.R)
 	{
 		ReloadShaders();
 	}
 
+	int x, y;
+	m_MouseDeltaTracker.GetMouseDelta( x, y );
+	m_MouseDelta.x = (float)x;
+	m_MouseDelta.y = (float)y;
 
-
-	m_MouseDelta.x =  (float)mouse.x ;
-	m_MouseDelta.y = (float) mouse.y ;
 	
 	if(m_MouseButtons.rightButton == Mouse::ButtonStateTracker::PRESSED)
 	{
 		m_DragAmount = Vector2::Zero;
 	}
 
-	if(mouse.positionMode == Mouse::MODE_RELATIVE)
+	if(m_MouseState.positionMode == Mouse::MODE_RELATIVE)
 	{
 		m_DragAmount += m_MouseDelta;
 	}
 
-	if (mouse.positionMode == Mouse::MODE_RELATIVE)
+	if (m_MouseState.positionMode == Mouse::MODE_RELATIVE)
 	{
-		if ( keyboard.LeftAlt && m_MouseDelta != Vector2::Zero)
+		if ( m_KeyboardState.LeftAlt && m_MouseDelta != Vector2::Zero)
 		{
-			Vector2 delta = m_MouseDelta * .003f;
+			Vector2 delta = m_MouseDelta * .00314f;
 			bool move = false;
-			if ( mouse.middleButton )
+			if ( m_MouseState.middleButton )
 			{
 				m_Camera->MousePan( delta );
 				move = true;
 			}
-			else if ( mouse.leftButton )
+			else if ( m_MouseState.leftButton )
 			{
 				m_Camera->MouseOrbit( delta );
 				move = true;
 			}
-			else if ( mouse.rightButton )
+			else if ( m_MouseState.rightButton )
 			{
 				m_Camera->Mousezoom( delta );
 				move = true;
@@ -277,39 +317,34 @@ void Game::Movement( float DeltaTime )
 		else
 		{
 
-			Vector2 delta = m_MouseDelta * DeltaTime;
+			Vector2 delta = m_MouseDelta;
 
 			Vector3 move = Vector3::Zero;
 
 
-			if ( keyboard.E )
+			if ( m_KeyboardState.E )
 			{
 				move += (Vector3::Up * DeltaTime);
 			}
-			if ( keyboard.Q )
+			if ( m_KeyboardState.Q )
 			{
 				move -= Vector3::Up * DeltaTime;
 			}
-			if ( keyboard.A )
+			if ( m_KeyboardState.A )
 			{
 				move -= m_Camera->GetRightVector() * DeltaTime;
 			}
-			if ( keyboard.D )
+			if ( m_KeyboardState.D )
 			{
 				move += m_Camera->GetRightVector() * DeltaTime;
 			}
-			if ( keyboard.W )
+			if ( m_KeyboardState.W )
 			{
 				move += m_Camera->GetForwardVector() * DeltaTime;
 			}
-			if ( keyboard.S )
+			if ( m_KeyboardState.S )
 			{
 				move -= m_Camera->GetForwardVector() * DeltaTime;
-			}
-
-			if ( mouse.scrollWheelValue != 0 )
-			{
-				int x = 5;
 			}
 			m_Camera->MoveAndRotateCamera( move, delta );
 			if ( m_MouseDelta != Vector2::Zero )
@@ -320,9 +355,22 @@ void Game::Movement( float DeltaTime )
 			{
 				m_bWasCameraMoved = false;
 			}
+
+
+
+			if(m_MouseState.scrollWheelValue > 0.f)
+			{
+				m_Camera->AdjustSpeed( John::EScrollDirection::ScrollUp );
+			}
+			else if (m_MouseState.scrollWheelValue < 0.f)
+			{
+				m_Camera->AdjustSpeed( John::EScrollDirection::ScrollDown );
+			}
+
+			m_Mouse->ResetScrollWheelValue();
 		}
 	}
-	m_bIsRelativeMode = mouse.rightButton || keyboard.LeftAlt && (mouse.leftButton || mouse.middleButton || mouse.rightButton);
+	m_bIsRelativeMode = m_MouseState.rightButton || m_KeyboardState.LeftAlt && (m_MouseState.leftButton || m_MouseState.middleButton || m_MouseState.rightButton);
 
 	m_Mouse->SetMode( m_bIsRelativeMode ? Mouse::MODE_RELATIVE : Mouse::MODE_ABSOLUTE );
 
@@ -330,6 +378,8 @@ void Game::Movement( float DeltaTime )
 	{
 		m_Camera->FocusOnPosition( Vector3::Zero );
 	}
+
+
 
 }
 
@@ -493,6 +543,11 @@ void Game::OnDisplayChange()
     m_deviceResources->UpdateColorSpace();
 }
 
+void Game::OnMouseMove()
+{
+	m_MouseDeltaTracker.UpdateState( m_Mouse->GetState());
+}
+
 void Game::OnWindowSizeChanged(int width, int height)
 {
     if (!m_deviceResources->WindowSizeChanged(width, height))
@@ -605,7 +660,7 @@ void Game::TickGizmo()
 
 void Game::DrawSceneOutliner()
 {
-
+	ImGui::Text( "Outliner" );
 	if(ImGui::BeginMenuBar())
 	{
 		if(ImGui::BeginMenu("Add"))
@@ -626,7 +681,7 @@ void Game::DrawSceneOutliner()
 	
 	for(auto& mesh : m_Meshes)
 	{
-		ImGuiTreeNodeFlags flags = ((m_SelectedModel == mesh.get()) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+		ImGuiTreeNodeFlags flags = ((m_SelectedModel == mesh.get()) ? ImGuiTreeNodeFlags_Selected : 0) ;
 		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
 		bool opened = ImGui::TreeNodeEx( (void*)(uint64_t)(uint32_t)mesh.get(), flags, mesh->GetName().c_str() );
 		if(ImGui::IsItemClicked())
@@ -653,12 +708,6 @@ void Game::DrawSceneOutliner()
 		}
 		if(opened)
 		{
-			ImGuiTreeNodeFlags selectflags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-			bool opened = ImGui::TreeNodeEx((void*)9817239, selectflags, mesh->GetName().c_str());
-			if(opened)
-			{
-				ImGui::TreePop();
-			}
 			ImGui::TreePop();
 		}
 		if(bEntityDeleted)
@@ -708,6 +757,14 @@ void Game::SelectModel( JohnMesh* ModelToSelect )
 	}
 }
 
+void Game::PrepareInputState()
+{
+	m_MouseState = m_Mouse->GetState();
+	m_KeyboardState = m_Keyboard->GetState();
+	m_Keys.Update( m_KeyboardState );
+	m_MouseButtons.Update( m_MouseState );
+}
+
 void Game::DeselectAll()
 {
 	m_SelectedModel = nullptr;
@@ -720,11 +777,11 @@ JohnMesh* Game::MousePicking()
 		return nullptr;
 	}
 
-	auto mouse = m_Mouse->GetState();
 
 	uint32_t x, y;
-	x = mouse.x;
-	y = mouse.y;
+	x = m_MouseState.x;
+	y = m_MouseState.y;
+	
 
 	auto size = m_deviceResources->GetOutputSize();
 	float width = size.right;
