@@ -9,11 +9,12 @@ cbuffer TransformConstants : register(b0)
 
 cbuffer ShadingConstants : register(b0)
 {
-	float3 CamPos;
 	float3 LightPos;
-};
-
-struct VSInput
+	float pack1;
+	float3 CameraPos;
+}
+	
+	struct VSInput
 {
 	float4 pos : POSITION;
 	float3 norm : NORMAL;

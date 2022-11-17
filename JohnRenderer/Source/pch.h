@@ -56,6 +56,7 @@
 #include <system_error>
 #include <tuple>
 #include <algorithm>
+#include <map>
 
 //directxtk
 #include "BufferHelpers.h"

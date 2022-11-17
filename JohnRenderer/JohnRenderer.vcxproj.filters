@@ -91,5 +91,7 @@
   <ItemGroup>
     <FxCompile Include="Shaders\SkyboxPS.hlsl" />
     <FxCompile Include="Shaders\SkyboxVS.hlsl" />
+    <FxCompile Include="Shaders\PBRPS.hlsl" />
+    <FxCompile Include="Shaders\PBRVS.hlsl" />
   </ItemGroup>
 </Project>

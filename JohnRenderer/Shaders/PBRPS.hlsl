@@ -21,29 +21,48 @@ static const float Epsilon = .00001;
 
 float DistributionGGX(float3 N, float3 H, float roughness)
 {
-	
-	return 0.f;
+	float a = roughness * roughness;
+	float a2 = a * a;
+	float NdotH = max(dot(N, H), 0.0);
+	float NdotH2 = NdotH * NdotH;
+
+	float nom = a2;
+	float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+	denom = PI * denom * denom;
+
+	return nom / denom;
 }
 // ----------------------------------------------------------------------------
 float GeometrySchlickGGX(float NdotV, float roughness)
 {
-	return 0.f;
+	float r = (roughness + 1.0);
+	float k = (r * r) / 8.0;
+	
+	float nom = NdotV;
+	float denom = NdotV * (1.0 - k) + k;
+	
+	return nom /denom;
 
 }
 // ----------------------------------------------------------------------------
 float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
 {
-	return 0.f;
+	float NdotV = max(dot(N, V), 0.0);
+	float NdotL = max(dot(N, L), 0.0);
+	float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+	float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+	return ggx1 * ggx2;
 
 }
 // ----------------------------------------------------------------------------
-float3 fresnelSchlick(float3 F0, float cosTheta)
+float3 FresnelSchlick(float3 F0, float cosTheta)
 {
-	return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+	return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 
 }
 // ----------------------------------------------------------------------------
-float3 fresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
+float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
 {
 	return 0.f;
 
@@ -62,30 +81,56 @@ float4 main(PSInput pin) : SV_TARGET
 
 	
 	const float2 texCoord = pin.TexCoord * 1.f;
-	const float Roughness = RoughnessMap.Sample(defaultSampler, texCoord).r;
-	const float Metalness = MetallicMap.Sample(defaultSampler, texCoord).r;
-	const float3 BaseColor = BaseColorMap.Sample(defaultSampler, texCoord);
+	const float Roughness = .2f; //RoughnessMap.Sample(defaultSampler, texCoord).r;
+	const float Metalness = 0.f; //MetallicMap.Sample(defaultSampler, texCoord).r;
+	const float3 BaseColor = float3(1.f, 0.f, 0.f); //BaseColorMap.Sample(defaultSampler, texCoord);
 	float3 N = normalize(2.0 * NormalMap.Sample(defaultSampler, texCoord).rgb - 1.0);
 	N = normalize(mul(pin.TangentBasis, N));
+	N = pin.Normal;
+
+	float3 V = normalize(CameraPos - pin.PositionWS);
+	float3 R = reflect(-V, N);
 	
-	//direction from fragment to eye
-	float3 Lo = normalize(CamPos - pin.PositionWS);
+	float3 F0 = float3(0.04, .04, .04);
+	F0 = lerp(F0, BaseColor, Metalness);
 	
-	float cosLo = max(0.0, dot(N, Lo));
-	
-	float3 R = 2.0 * cosLo * N - Lo;
-	
-	//fresnel reflectance at normal, incidence
-	float3 F0 = lerp(FDielectric, BaseColor, Metalness);
 	
 	//direct light for analytical lights
 	float3 directLighting = 0.0;
 	{
-		//not yet actually
+		for (int i = 0; i < 1; ++i)
+		{
+			float3 L = normalize(LightPos - pin.PositionWS);
+			float3 H = normalize(V + L);
+			float distance = length(LightPos - pin.PositionWS);
+			float attenuation = 1.0 / (distance * distance);
+			float3 radiance = float3(1.f, 1.f, 1.f) * attenuation;
+			
+			//cook-torrance brdf
+			float NDF = DistributionGGX(N, H, Roughness);
+			float G = GeometrySmith(N, V, L, Roughness);
+			float3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
+
+			float3 Numerator = NDF * G * F;
+			float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + .0001;
+			float3 specular = Numerator / denominator;
+			
+			float3 kS = F;
+			
+			float3 kD = float3(1.0, 1.0, 1.0) - kS;
+			
+			kD *= 1.0 - Metalness;
+			
+			float NdotL = max(dot(N, L), 0.0);
+			
+			directLighting += (kD * BaseColor / PI + specular) * radiance * NdotL;
+
+		}
+
 	}
 	
 	//ambient lighting from image
-	float3 ambientLighting;
+	float3 ambientLighting = float3(.3f, 0.f, 0.f);
 	{
 
 	}

@@ -9,6 +9,7 @@
 #include "Types.h"
 #include "Camera.h"
 #include "MouseDeltaTracker.h"
+
 class JohnMesh;
 
 using Microsoft::WRL::ComPtr;
@@ -76,6 +77,7 @@ private:
 	void TickGizmo();
 
 	void DrawSceneOutliner();
+	void DrawModelInOutliner( const char* prefix, int uid, std::shared_ptr<JohnMesh> mesh);
 	void DrawModelDetails(JohnMesh* Mesh);
 
 
@@ -88,6 +90,8 @@ private:
 	void PrepareInputState();
 
 	void DeselectAll();
+
+	
 
 	JohnMesh* MousePicking();
 
@@ -102,12 +106,13 @@ private:
 	John::ShaderProgram m_PhongProgram;
 	JohnMesh* m_SelectedModel = nullptr;
 
-	ComPtr<ID3D11Buffer> m_PhongTransformCB;
-	ComPtr<ID3D11Buffer> m_PhongShadingCB;
+	ComPtr<ID3D11Buffer> m_TransformCB;
+	ComPtr<ID3D11Buffer> m_ShadingCB;
 
 	ComPtr<ID3D11SamplerState> m_StandardSampler;
 	ComPtr<ID3D11SamplerState> m_brdfSampler;
 	
+	John::ShaderProgram m_PBRProgram;
 
 	std::vector<std::shared_ptr<JohnMesh>> m_Meshes;
 
@@ -141,5 +146,8 @@ private:
 	
 	bool m_bShowImGuiDemoWindow = false;
 
+	std::map<int, John::ShaderProgram> m_Shaders;
+
+	int m_CurrentShaderIndex = 0;
 
 };

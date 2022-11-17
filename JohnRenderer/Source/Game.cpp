@@ -189,8 +189,19 @@ void Game::TickUI()
 		ImGui::TreePop();
 
 	}
+
+
+
 	
 	ImGui::Text( "Camera Rotation: %f, %f", m_Camera->GetRotation().x, m_Camera->GetRotation().y );
+
+	if ( ImGui::BeginMenu( "Switch Shader" ) )
+	{
+		ImGui::RadioButton( "Blinn Phong", &m_CurrentShaderIndex, 0 );
+		ImGui::RadioButton( "PBR", &m_CurrentShaderIndex, 1 );
+
+		ImGui::EndMenu();
+	}
 
 	ImGui::End();
 
@@ -430,7 +441,7 @@ void Game::DrawScene()
 	shadingConstants.CamPos = m_Camera->GetPosition();
 	shadingConstants.LightPos = m_LightPos;
 
-	context->UpdateSubresource( m_PhongShadingCB.Get(), 0, nullptr, &shadingConstants, 0, 0 );
+	context->UpdateSubresource( m_ShadingCB.Get(), 0, nullptr, &shadingConstants, 0, 0 );
 	for(auto mesh : m_Meshes)
 	{
 		DrawMesh( mesh.get() );
@@ -462,7 +473,7 @@ void Game::DrawMesh( JohnMesh* MeshToDraw )
 	transformConstants.MVP = MVP.Transpose();
 	transformConstants.Model = model.Transpose();
 
-	context->UpdateSubresource( m_PhongTransformCB.Get(), 0, nullptr, &transformConstants, 0, 0 );
+	context->UpdateSubresource( m_TransformCB.Get(), 0, nullptr, &transformConstants, 0, 0 );
 
 	ID3D11ShaderResourceView* const srvs[] =
 	{
@@ -474,14 +485,18 @@ void Game::DrawMesh( JohnMesh* MeshToDraw )
 		m_StandardSampler.Get()
 	};
 
+	John::ShaderProgram ProgramToUse = m_Shaders.find(m_CurrentShaderIndex)->second;
+
 	context->PSSetShaderResources(0, _countof(srvs), srvs);
 	context->PSSetSamplers( 0, _countof( states ), states );
-	context->VSSetConstantBuffers( 0, 1, m_PhongTransformCB.GetAddressOf() );
-	context->PSSetConstantBuffers( 0, 1, m_PhongShadingCB.GetAddressOf() );
-	context->VSSetShader( m_PhongProgram.VertexShader.Get(), nullptr, 0 );
-	context->VSSetShader( m_PhongProgram.VertexShader.Get(), nullptr, 0 );
-	context->PSSetShader( m_PhongProgram.PixelShader.Get(), nullptr, 0 );
-	context->IASetInputLayout( m_PhongProgram.InputLayout.Get() );
+	context->VSSetConstantBuffers( 0, 1, m_TransformCB.GetAddressOf() );
+	context->PSSetConstantBuffers( 0, 1, m_ShadingCB.GetAddressOf() );
+	context->VSSetShader( ProgramToUse.VertexShader.Get(), nullptr, 0 );
+	context->VSSetShader( ProgramToUse.VertexShader.Get(), nullptr, 0 );
+	context->PSSetShader( ProgramToUse.PixelShader.Get(), nullptr, 0 );
+	context->IASetInputLayout( ProgramToUse.InputLayout.Get() );
+
+
 	MeshToDraw->Draw( context );
 
 }
@@ -583,8 +598,13 @@ void Game::CreateDeviceDependentResources()
 
 	m_PhongProgram = John::CreateShaderProgram( device, L"Shaders/PhongVS.hlsl", L"Shaders/PhongPS.hlsl" );
 
-	m_PhongTransformCB = John::CreateConstantBuffer<John::PhongTransformCB>( device );
-	m_PhongShadingCB = John::CreateConstantBuffer<John::PhongShadingCB>( device );
+	m_PBRProgram = John::CreateShaderProgram( device, L"Shaders/PBRVS.hlsl", L"Shaders/PBRPS.hlsl" );
+
+	m_Shaders.emplace(0, m_PhongProgram);
+	m_Shaders.emplace(1, m_PBRProgram);
+
+	m_TransformCB = John::CreateConstantBuffer<John::PhongTransformCB>( device );
+	m_ShadingCB = John::CreateConstantBuffer<John::PhongShadingCB>( device );
 
 	DX::ThrowIfFailed(
 		CreateWICTextureFromFile(device, L"Content/Brick_Wall_Normal.jpg", nullptr, m_BrickNormal.ReleaseAndGetAddressOf())
@@ -624,6 +644,13 @@ void Game::ReloadShaders()
 	m_PhongProgram.InputLayout.Reset();
 	
 	m_PhongProgram = John::CreateShaderProgram(m_deviceResources->GetD3DDevice(), m_PhongProgram.VertFileName, m_PhongProgram.PixelFileName );
+
+
+		m_PBRProgram.VertexShader.Reset();
+		m_PBRProgram.PixelShader.Reset();
+		m_PBRProgram.InputLayout.Reset();
+
+		m_PBRProgram = John::CreateShaderProgram( m_deviceResources->GetD3DDevice(), m_PBRProgram.VertFileName, m_PBRProgram.PixelFileName );
 }
 
 void Game::TickGizmo()
@@ -678,13 +705,37 @@ void Game::DrawSceneOutliner()
 		ImGui::EndMenuBar();
 	}
 
-	
-	for(auto& mesh : m_Meshes)
+	if(ImGui::BeginTable("Split", 1, ImGuiTableFlags_BordersOuter))
 	{
-		ImGuiTreeNodeFlags flags = ((m_SelectedModel == mesh.get()) ? ImGuiTreeNodeFlags_Selected : 0) ;
-		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
-		bool opened = ImGui::TreeNodeEx( (void*)(uint64_t)(uint32_t)mesh.get(), flags, mesh->GetName().c_str() );
-		if(ImGui::IsItemClicked())
+
+		int uid = 0;
+		for ( auto& mesh : m_Meshes )
+		{
+
+			DrawModelInOutliner( "Object: ", uid , mesh);
+			uid++;
+
+		}
+
+
+		ImGui::EndTable();
+	
+	}
+
+}
+
+void Game::DrawModelInOutliner( const char* prefix, int uid, std::shared_ptr<JohnMesh> mesh )
+{
+	ImGui::PushID( uid );
+	ImGui::TableNextRow();
+	ImGui::TableSetColumnIndex( 0 );
+	ImGui::AlignTextToFramePadding();
+	bool node_open = ImGui::TreeNode( mesh->GetName().c_str() );
+/*	ImGui::TableSetColumnIndex( 1 );*/
+	
+	if(node_open)
+	{
+		if ( ImGui::IsItemClicked() )
 		{
 			SelectModel( mesh.get() );
 		}
@@ -704,22 +755,21 @@ void Game::DrawSceneOutliner()
 				}
 
 			}
+			if ( bEntityDeleted )
+			{
+				if ( m_SelectedModel )
+				{
+					DeleteMesh( mesh );
+					DeselectAll();
+				}
+			}
 			ImGui::EndPopup();
 		}
-		if(opened)
-		{
-			ImGui::TreePop();
-		}
-		if(bEntityDeleted)
-		{
-			if(m_SelectedModel)
-			{
-				DeleteMesh( mesh );
-				DeselectAll();
-			}
-		}
-	}
 
+
+		ImGui::TreePop();
+	}
+	ImGui::PopID();
 }
 
 void Game::DrawModelDetails(JohnMesh* Mesh)
