@@ -6,9 +6,18 @@ class JohnMesh;
 
 namespace John
 {
+	template<typename T> static constexpr T NumMipmapLevels( T width, T height )
+	{
+		T levels = 1;
+		while ( (width | height) >> levels ) {
+			++levels;
+		}
+		return levels;
+	}
+
 	std::shared_ptr<JohnMesh> LoadMeshFromFile( const char* FileName );
 
-	ShaderProgram CreateShaderProgram( ID3D11Device* device, const std::wstring& vsFile, const std::wstring& psFile);
+	ShaderProgram CreateShaderProgram( ID3D11Device* device, const std::wstring& vsFile, const std::wstring& psFile,const std::string& VSEntryPoint = "main", const std::string& PSEntryPoint = "main");
 
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> CreateComputeShader( ID3D11Device* device, const std::wstring& csFile );
 
@@ -38,33 +47,15 @@ namespace John
 
 	}
 
-	struct Image
-	{
-		std::unique_ptr<unsigned char> pixels;
 
-		template<typename T>
-		const T* GetPixels() const
-		{
-			return reinterpret_cast<const T*> (pixels.get());
-		}
-	};
+	Texture CreateTexture( ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels = 0 ) ;
+	Texture CreateTexture( ID3D11Device* device, ID3D11DeviceContext* context, const std::shared_ptr<class Image>& image, DXGI_FORMAT format, UINT levels=0 ) ;
+	Texture CreateTextureCube( ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels = 0 ) ;
 
-	template<typename T> static constexpr T NumMipMapLevels(T width, T height)
-	{
-		T levels = 1;
-		while((width|height) >> levels)
-		{
-			++levels;
-		}
-		return levels;
-	}
-
-	Texture CreateTexture( ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels = 0 );
-	Texture CreateTextureFromFile(ID3D11Device* device, ID3D11DeviceContext* context, const char* ImageFile, DXGI_FORMAT format , UINT levels = 0 );
-	Texture CreateTextureCube(ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels = 0 );
 
 	void CreateTextureUAV( ID3D11Device* device,Texture& texture, UINT mipSplice);
 
+	FrameBuffer CreateFrameBuffer( ID3D11Device* device, UINT width, UINT height, UINT samples, DXGI_FORMAT colorFormat, DXGI_FORMAT depthStencilFormat ) ;
 
 	Environment CreateEnvironmentFromFile( ID3D11Device* device, ID3D11DeviceContext* context, const char* EnvMapFile );
 

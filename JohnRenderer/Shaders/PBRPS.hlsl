@@ -4,8 +4,8 @@ TextureCube SpecularTexture : register(t0);
 TextureCube IrradianceMap : register(t1);
 Texture2D BRDF_LUT: register(t2);
 
-//Texture2D BaseColorMap : register(t3);
-//Texture2D RoughnessMap : register(t4);
+Texture2D BaseColorMap : register(t3);
+Texture2D RoughnessMap : register(t4);
 Texture2D NormalMap : register(t5);
 //Texture2D MetallicMap : register(t6);
 
@@ -18,55 +18,39 @@ static const float FDielectric = .04f;
 static const float PI = 3.1415926535897f;
 static const float Epsilon = .00001;
 
+static const float3 Fdielectirc = float3(.04, .04, .04);
 
-float DistributionGGX(float3 N, float3 H, float roughness)
+// GGX/Towbridge-Reitz normal distribution function.
+// Uses Disney's reparametrization of alpha = roughness^2.
+float NdfGGX(float cosLh, float roughness)
 {
-	float a = roughness * roughness;
-	float a2 = a * a;
-	float NdotH = max(dot(N, H), 0.0);
-	float NdotH2 = NdotH * NdotH;
+	float alpha = roughness * roughness;
+	float alphaSq = alpha * alpha;
 
-	float nom = a2;
-	float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-	denom = PI * denom * denom;
-
-	return nom / denom;
+	float denom = (cosLh * cosLh) * (alphaSq - 1.0) + 1.0;
+	return alphaSq / (PI * denom * denom);
 }
-// ----------------------------------------------------------------------------
-float GeometrySchlickGGX(float NdotV, float roughness)
+// Single term for separable Schlick-GGX below.
+float GaSchlickG1(float cosTheta, float k)
 {
-	float r = (roughness + 1.0);
-	float k = (r * r) / 8.0;
-	
-	float nom = NdotV;
-	float denom = NdotV * (1.0 - k) + k;
-	
-	return nom /denom;
-
+	return cosTheta / (cosTheta * (1.0 - k) + k);
 }
-// ----------------------------------------------------------------------------
-float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
+
+// Schlick-GGX approximation of geometric attenuation function using Smith's method.
+float GaSchlickGGX(float cosLi, float V, float roughness)
 {
-	float NdotV = max(dot(N, V), 0.0);
-	float NdotL = max(dot(N, L), 0.0);
-	float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-	float ggx1 = GeometrySchlickGGX(NdotL, roughness);
-
-	return ggx1 * ggx2;
-
+	float r = roughness + 1.0;
+	float k = (r * r) / 8.0; // Epic suggests using this roughness remapping for analytic lights.
+	return GaSchlickG1(cosLi, k) * GaSchlickG1(V, k);
 }
-// ----------------------------------------------------------------------------
+
+// Shlick's approximation of the Fresnel factor.
 float3 FresnelSchlick(float3 F0, float cosTheta)
 {
-	return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
-
+	return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
-// ----------------------------------------------------------------------------
-float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
-{
-	return 0.f;
 
-}
+
 
 // Returns number of mipmap levels for specular IBL environment map.
 uint QuerySpecularTextureLevels()
@@ -78,62 +62,77 @@ uint QuerySpecularTextureLevels()
 
 float4 main(PSInput pin) : SV_TARGET
 {
+	uint width, height, levels;
+	BaseColorMap.GetDimensions(0, width, height, levels);
 
 	
 	const float2 texCoord = pin.TexCoord * 1.f;
-	const float Roughness = .2f; //RoughnessMap.Sample(defaultSampler, texCoord).r;
+	const float Roughness = RoughnessMap.Sample(defaultSampler, texCoord).r;
 	const float Metalness = 0.f; //MetallicMap.Sample(defaultSampler, texCoord).r;
-	const float3 BaseColor = float3(1.f, 0.f, 0.f); //BaseColorMap.Sample(defaultSampler, texCoord);
+	const float3 BaseColor = BaseColorMap.Sample(defaultSampler, texCoord);
 	float3 N = normalize(2.0 * NormalMap.Sample(defaultSampler, texCoord).rgb - 1.0);
 	N = normalize(mul(pin.TangentBasis, N));
-	N = pin.Normal;
+	N = normalize(pin.Normal);
 
 	float3 V = normalize(CameraPos - pin.PositionWS);
-	float3 R = reflect(-V, N);
 	
-	float3 F0 = float3(0.04, .04, .04);
-	F0 = lerp(F0, BaseColor, Metalness);
+	float cosLo = max(0, dot(N, V));
 	
+	float3 Lr = 2.0 * cosLo * N - V;
 	
-	//direct light for analytical lights
+	float3 F0 = lerp(Fdielectirc, BaseColor, Metalness);
+	
 	float3 directLighting = 0.0;
 	{
-		for (int i = 0; i < 1; ++i)
+		for (uint i = 0; i < 1; ++i)
 		{
-			float3 L = normalize(LightPos - pin.PositionWS);
-			float3 H = normalize(V + L);
-			float distance = length(LightPos - pin.PositionWS);
-			float attenuation = 1.0 / (distance * distance);
-			float3 radiance = float3(1.f, 1.f, 1.f) * attenuation;
+			float3 Li = normalize(LightPos - pin.PositionWS);
+			float3 Lradiance = float3(1.0, 1.0, 1.0);
 			
-			//cook-torrance brdf
-			float NDF = DistributionGGX(N, H, Roughness);
-			float G = GeometrySmith(N, V, L, Roughness);
-			float3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
-
-			float3 Numerator = NDF * G * F;
-			float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + .0001;
-			float3 specular = Numerator / denominator;
+			float3 Lh = normalize(Li + V);
 			
-			float3 kS = F;
+			float cosLi = max(0.0, dot(N, Li));
+			float cosLh = max(0.0, dot(N, Lh));
 			
-			float3 kD = float3(1.0, 1.0, 1.0) - kS;
+			float3 F = FresnelSchlick(F0, max(0.0, dot(Lh, V)));
 			
-			kD *= 1.0 - Metalness;
+			float D = NdfGGX(cosLh, Roughness);
 			
-			float NdotL = max(dot(N, L), 0.0);
+			float G = GaSchlickGGX(cosLi, cosLo, Roughness);
 			
-			directLighting += (kD * BaseColor / PI + specular) * radiance * NdotL;
+			float3 kD = lerp(float3(1, 1, 1) - F, float3(0, 0, 0), Metalness);
+			
+			float3 diffuseBRDF = kD * BaseColor;
+			
+			float3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * cosLo);
+			
+			directLighting += (diffuseBRDF + specularBRDF) * Lradiance * cosLi;
 
 		}
+		
 
 	}
 	
-	//ambient lighting from image
-	float3 ambientLighting = float3(.3f, 0.f, 0.f);
-	{
+	float3 ambientLighting = 0.f;
+		{
+		float3 irradiance = IrradianceMap.Sample(defaultSampler, N).rgb;
+			
+		float3 F = FresnelSchlick(F0, cosLo);
+			
+		float3 kD = lerp(1.0 - F, 0.0, Metalness);
+			
+		float3 diffuseIBL = kD * BaseColor * irradiance;
+			
+		uint specularTextureLevels = QuerySpecularTextureLevels();
+		float lod = Roughness * specularTextureLevels;
+		float3 specularIrradiance = SpecularTexture.SampleLevel(defaultSampler, Lr, Roughness * specularTextureLevels ).rgb;
+			
+		float2 specularBRDF = BRDF_LUT.Sample(BRDF_Sampler, float2(cosLo, Roughness)).rg;
+			
+		float3 specularIBL = (F0 * specularBRDF.x + specularBRDF.y) * specularIrradiance;
+		ambientLighting = diffuseIBL + specularIBL;
+}
 
-	}
 	
 	return float4(directLighting + ambientLighting, 1.0);
 

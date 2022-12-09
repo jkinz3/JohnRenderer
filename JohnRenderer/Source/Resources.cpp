@@ -84,7 +84,7 @@ namespace John
 		return newMesh;
 	}
 
-	ShaderProgram CreateShaderProgram( ID3D11Device* device, const std::wstring& vsFile, const std::wstring& psFile )
+	ShaderProgram CreateShaderProgram( ID3D11Device* device, const std::wstring& vsFile, const std::wstring& psFile, const std::string& VSEntryPoint , const std::string& PSEntryPoint )
 	{
 		UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
 #ifdef _DEBUG
@@ -100,7 +100,7 @@ namespace John
 				vsFile.c_str(),
 				nullptr,
 				D3D_COMPILE_STANDARD_FILE_INCLUDE,
-				"main",
+				VSEntryPoint.c_str(),
 				"vs_5_0",
 				flags,
 				0,
@@ -114,7 +114,7 @@ namespace John
 				psFile.c_str(),
 				nullptr,
 				D3D_COMPILE_STANDARD_FILE_INCLUDE,
-				"main",
+				PSEntryPoint.c_str(),
 				"ps_5_0",
 				flags,
 				0,
@@ -196,10 +196,12 @@ namespace John
 	{
 		D3D11_SAMPLER_DESC desc = {};
 		desc.Filter = filter;
-		desc.AddressU = desc.AddressV = desc.AddressW = addressMode;
+		desc.AddressU = addressMode;
+		desc.AddressV = addressMode;
+		desc.AddressW = addressMode;
 		desc.MaxAnisotropy = (filter == D3D11_FILTER_ANISOTROPIC) ? D3D11_REQ_MAXANISOTROPY : 1;
 		desc.MinLOD = 0;
-		desc.MaxAnisotropy = D3D11_FLOAT32_MAX;
+		desc.MaxLOD = D3D11_FLOAT32_MAX;
 
 		ComPtr<ID3D11SamplerState> samplerState;
 		DX::ThrowIfFailed(
@@ -215,7 +217,7 @@ namespace John
 		Texture texture;
 		texture.width = width;
 		texture.height = height;
-		texture.levels = (levels > 0) ? levels : NumMipMapLevels( width, height );
+		texture.levels = (levels > 0) ? levels : NumMipmapLevels( width, height );
 
 		D3D11_TEXTURE2D_DESC texDesc = {};
 		texDesc.Width = width;
@@ -248,59 +250,16 @@ namespace John
 		return texture;
 	}
 
-	John::Texture CreateTextureFromFile( ID3D11Device* device, ID3D11DeviceContext* context,const char* ImageFile, DXGI_FORMAT format, UINT levels /*= 0 */ )
+
+	John::Texture CreateTexture( ID3D11Device* device, ID3D11DeviceContext* context, const std::shared_ptr<class Image>& image, DXGI_FORMAT format, UINT levels )
 	{
-		Image image; //???
-		
-		John::Texture DDStexture;
-		DX::ThrowIfFailed(
-			CreateDDSTextureFromFile(device, L"Content/environment.dds", nullptr,  DDStexture.SRV.ReleaseAndGetAddressOf())
-		);
-
-		DDStexture.SRV->GetResource(reinterpret_cast<ID3D11Resource**>( DDStexture.Texture2D.ReleaseAndGetAddressOf()) );
-
-		D3D11_TEXTURE2D_DESC ddsDesc = {};
-		DDStexture.Texture2D->GetDesc( &ddsDesc );
-		DDStexture.width = ddsDesc.Width;
-		DDStexture.height = ddsDesc.Height;
-		DDStexture.levels = ddsDesc.MipLevels;
-
-		return DDStexture;
-
-		int width;
-		int height;
-		int channels;
-		bool bHdr = false;
-		float* tmpHDr;
-		if(stbi_is_hdr(ImageFile))
-		{
-			float* hdrPixels = stbi_loadf( ImageFile, &width, &height, &channels, levels );
-			tmpHDr = hdrPixels;
-			if(hdrPixels)
-			{
-				image.pixels.reset( reinterpret_cast<unsigned char*>(hdrPixels) );
-				bHdr = true;
-			}
-		}
-		else
-		{
-			unsigned char* standardPixels = stbi_load( ImageFile, &width, &height, &channels, levels );
-			if(standardPixels)
-			{
-				image.pixels.reset( standardPixels );
-
-			}
-			
-		}
-		John::Texture texture = CreateTexture( device, width, height, format, levels );
-		int bytesPerPixel = channels * bHdr ? sizeof( float ) : sizeof( unsigned char );
-		context->UpdateSubresource( texture.Texture2D.Get(), 0, nullptr, reinterpret_cast<void*>(image.pixels.get()), 0, 0 );
+		Texture texture = CreateTexture(device,  image->width(), image->height(), format, levels );
+		context->UpdateSubresource( texture.Texture2D.Get(), 0, nullptr, image->pixels<void>(), image->pitch(), 0 );
 		if(levels == 0)
 		{
 			context->GenerateMips( texture.SRV.Get() );
 		}
 		return texture;
-		
 	}
 
 	John::Texture CreateTextureCube( ID3D11Device* device,UINT width, UINT height, DXGI_FORMAT format, UINT levels /*= 0 */ )
@@ -308,7 +267,7 @@ namespace John
 		Texture texture;
 		texture.width = width;
 		texture.height = height;
-		texture.levels = (levels > 0) ? levels : NumMipMapLevels( width, height );
+		texture.levels = (levels > 0) ? levels : NumMipmapLevels( width, height );
 
 		D3D11_TEXTURE2D_DESC texDesc = {};
 		texDesc.Width = width;
@@ -375,6 +334,73 @@ namespace John
 
 	}
 
+	John::FrameBuffer CreateFrameBuffer( ID3D11Device* device, UINT width, UINT height, UINT samples, DXGI_FORMAT colorFormat, DXGI_FORMAT depthStencilFormat ) 
+	{
+		FrameBuffer fb;
+		fb.Width = width;
+		fb.Height = height;
+		fb.Samples = samples;
+
+		D3D11_TEXTURE2D_DESC desc = {};
+		desc.Width = width;
+		desc.Height = height;
+		desc.MipLevels = 1;
+		desc.ArraySize = 1;
+		desc.SampleDesc.Count = samples;
+
+		if(colorFormat != DXGI_FORMAT_UNKNOWN)
+		{
+			desc.Format = colorFormat;
+			desc.BindFlags = D3D11_BIND_RENDER_TARGET;
+			if(samples <= 1)
+			{
+				desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+			}
+			DX::ThrowIfFailed(
+				device->CreateTexture2D(&desc, nullptr, fb.ColorTexture.ReleaseAndGetAddressOf())
+			);
+
+			D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+			rtvDesc.Format = desc.Format;
+			rtvDesc.ViewDimension = (samples > 1) ? D3D11_RTV_DIMENSION_TEXTURE2DMS : D3D11_RTV_DIMENSION_TEXTURE2D;
+			DX::ThrowIfFailed(
+				device->CreateRenderTargetView(fb.ColorTexture.Get(), &rtvDesc, fb.RTV.ReleaseAndGetAddressOf())
+			);
+
+			if(samples <= 1)
+			{
+				D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+				srvDesc.Format = desc.Format;
+				srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+				srvDesc.Texture2D.MostDetailedMip = 0;
+				srvDesc.Texture2D.MipLevels = 1;
+				DX::ThrowIfFailed(
+					device->CreateShaderResourceView(fb.ColorTexture.Get(), &srvDesc, fb.SRV.ReleaseAndGetAddressOf())
+				);
+			}
+
+
+
+		}
+
+		if(depthStencilFormat != DXGI_FORMAT_UNKNOWN)
+		{
+			desc.Format = depthStencilFormat;
+			desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+			DX::ThrowIfFailed(
+				device->CreateTexture2D(&desc, nullptr, fb.DepthStencilTexture.ReleaseAndGetAddressOf())
+			);
+
+			D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+			dsvDesc.Format = desc.Format;
+			dsvDesc.ViewDimension = (samples > 1) ? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D;
+			DX::ThrowIfFailed(
+				device->CreateDepthStencilView( fb.DepthStencilTexture.Get(), &dsvDesc, fb.DSV.ReleaseAndGetAddressOf())
+			);
+		}
+		return fb;
+	}
+
 	John::Environment CreateEnvironmentFromFile( ID3D11Device* device, ID3D11DeviceContext* context, const char* EnvMapFile )
 	{
 		ID3D11UnorderedAccessView* const nullUAV[] = { nullptr };
@@ -393,7 +419,7 @@ namespace John
 			{
 				//load and convert equirectangular env map to cubemap
 				ComPtr<ID3D11ComputeShader> equirectToCubemapProgram = CreateComputeShader( device, L"Shaders/Compute/equirect2cube.hlsl" );
-				Texture envTextureEquirect = CreateTextureFromFile( device, context, EnvMapFile, DXGI_FORMAT_R32G32B32A32_FLOAT , 1 );
+				Texture envTextureEquirect = CreateTexture( device,context,  Image::fromFile(EnvMapFile), DXGI_FORMAT_R32G32B32A32_FLOAT , 1 );
 
 				context->CSSetShaderResources( 0, 1, envTextureEquirect.SRV.GetAddressOf() );
 				context->CSSetUnorderedAccessViews( 0, 1, envMapUnfiltered.UAV.GetAddressOf(), nullptr );

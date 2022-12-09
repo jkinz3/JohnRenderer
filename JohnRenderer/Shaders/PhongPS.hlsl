@@ -48,6 +48,6 @@ float4 main(PSInput pin) : SV_TARGET
 	
 	float3 result = (ambient + diffuse + specular);
 	
-	return float4(result, 1.f);
+	return float4(0,0,0, 1.f);
 
 }

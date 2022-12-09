@@ -20,6 +20,17 @@ namespace John
 
 	};
 
+	struct FrameBuffer	
+	{
+		ComPtr<ID3D11Texture2D> ColorTexture;
+		ComPtr<ID3D11Texture2D> DepthStencilTexture;
+		ComPtr<ID3D11RenderTargetView> RTV;
+		ComPtr<ID3D11ShaderResourceView> SRV;
+		ComPtr<ID3D11DepthStencilView> DSV;
+		UINT Width, Height;
+		UINT Samples;
+	};
+
 	struct PhongTransformCB
 	{
 		XMMATRIX MVP;

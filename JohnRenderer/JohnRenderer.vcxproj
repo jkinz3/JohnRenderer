@@ -103,6 +103,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Image.h" />
     <ClInclude Include="Source\MouseDeltaTracker.h" />
     <ClInclude Include="Source\PointLight.h" />
     <ClInclude Include="Source\Camera.h" />
@@ -134,6 +135,7 @@
     <ClInclude Include="ThirdParty\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Image.cpp" />
     <ClCompile Include="Source\MouseDeltaTracker.cpp" />
     <ClCompile Include="Source\PointLight.cpp" />
     <ClCompile Include="Source\Camera.cpp" />

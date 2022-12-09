@@ -96,6 +96,8 @@
 #include <renderdoc_app.h>
 #endif
 
+#include "Image.h"
+
 namespace DX
 {
     // Helper class for COM exceptions

@@ -198,7 +198,7 @@ void Camera::MouseOrbit(DirectX::SimpleMath::Vector2 MouseDelta)
 {
 
 	float yawSign = GetUpVector().y < 0 ? -1.f : 1.f;
-	m_Rotation.y += yawSign * MouseDelta.x * m_MovementSettings.MouseOrbitSensitivity;
+	m_Rotation.y += MouseDelta.x * m_MovementSettings.MouseOrbitSensitivity;
 	m_Rotation.x += MouseDelta.y * m_MovementSettings.MouseOrbitSensitivity;
 	UpdateCameraPosition();
 }

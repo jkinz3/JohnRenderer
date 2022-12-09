@@ -86,10 +86,10 @@ void Game::InitializeUI()
 void Game::InitializeSky( const char* EnvMapFile )
 {
 #ifdef _DEBUG
-	if(rdoc_api)
-	{
-		rdoc_api->StartFrameCapture( NULL, NULL );
-	}
+// 	if(rdoc_api)
+// 	{
+// 		rdoc_api->StartFrameCapture( NULL, NULL );
+// 	}
 #endif // DEBUG
 
 	auto device = m_deviceResources->GetD3DDevice();
@@ -104,12 +104,12 @@ void Game::InitializeSky( const char* EnvMapFile )
 	m_SkyEffect->SetTexture( m_Environment.SpecularIBL.SRV.Get() );
 
 
-#ifdef _DEBUG
-	if(rdoc_api)
-	{
-		rdoc_api->EndFrameCapture( NULL, NULL );
-	}
-#endif // DEBUG
+// #ifdef _DEBUG
+// 	if(rdoc_api)
+// 	{
+// 		rdoc_api->EndFrameCapture( NULL, NULL );
+// 	}
+//#endif // DEBUG
 
 
 }
@@ -197,8 +197,8 @@ void Game::TickUI()
 
 	if ( ImGui::BeginMenu( "Switch Shader" ) )
 	{
-		ImGui::RadioButton( "Blinn Phong", &m_CurrentShaderIndex, 0 );
-		ImGui::RadioButton( "PBR", &m_CurrentShaderIndex, 1 );
+		ImGui::RadioButton( "PBR", &m_CurrentShaderIndex, 0 );
+		ImGui::RadioButton( "Blinn Phong", &m_CurrentShaderIndex, 1);
 
 		ImGui::EndMenu();
 	}
@@ -280,7 +280,7 @@ void Game::Update(DX::StepTimer const& timer)
 void Game::Movement( float DeltaTime )
 {
 	
-	if(m_Keys.pressed.R)
+	if(m_KeyboardState.LeftShift && m_KeyboardState.LeftControl && m_KeyboardState.OemComma)
 	{
 		ReloadShaders();
 	}
@@ -421,6 +421,8 @@ void Game::Render()
 
     m_deviceResources->PIXEndEvent();
 
+
+	DrawToneMapping();
 	RenderUI();
 
     // Show the new frame.
@@ -446,6 +448,8 @@ void Game::DrawScene()
 	{
 		DrawMesh( mesh.get() );
 	}
+		m_WorldGeo->Draw ( context );
+
 }
 
 void Game::DrawSky()
@@ -477,12 +481,18 @@ void Game::DrawMesh( JohnMesh* MeshToDraw )
 
 	ID3D11ShaderResourceView* const srvs[] =
 	{
-		m_BrickNormal.Get()
+		m_Environment.SpecularIBL.SRV.Get(),
+		m_Environment.DiffuseIBL.SRV.Get(),
+		m_Environment.BRDF_Lut.SRV.Get(),
+		m_BrickBaseColor.SRV.Get(),
+		m_BrickRoughness.SRV.Get(),
+		m_BrickNormal.SRV.Get()
 	};
 
 	ID3D11SamplerState* const states[] =
 	{
-		m_StandardSampler.Get()
+		m_StandardSampler.Get(),
+		m_brdfSampler.Get()
 	};
 
 	John::ShaderProgram ProgramToUse = m_Shaders.find(m_CurrentShaderIndex)->second;
@@ -501,6 +511,21 @@ void Game::DrawMesh( JohnMesh* MeshToDraw )
 
 }
 
+void Game::DrawToneMapping()
+{
+	auto context = m_deviceResources->GetD3DDeviceContext();
+	auto renderTarget = m_deviceResources->GetRenderTargetView();
+	context->OMSetRenderTargets( 1, &renderTarget, nullptr);
+	context->IASetInputLayout( nullptr );
+	context->VSSetShader( m_ToneMapProgram.VertexShader.Get(), nullptr, 0 );
+	context->PSSetShader( m_ToneMapProgram.PixelShader.Get(), nullptr, 0 );
+	context->PSSetShaderResources( 0, 1, m_DefaultFrameBuffer.SRV.GetAddressOf() );
+	context->PSSetSamplers( 0, 1, m_ComputeSampler.GetAddressOf() );
+	context->Draw( 3, 0 );
+
+
+}
+
 // Helper method to clear the back buffers.
 void Game::Clear()
 {
@@ -508,12 +533,20 @@ void Game::Clear()
 
     // Clear the views.
     auto context = m_deviceResources->GetD3DDeviceContext();
-    auto renderTarget = m_deviceResources->GetRenderTargetView();
-    auto depthStencil = m_deviceResources->GetDepthStencilView();
 
-    context->ClearRenderTargetView(renderTarget, Colors::CornflowerBlue);
-    context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    context->OMSetRenderTargets(1, &renderTarget, depthStencil);
+
+	ID3D11RenderTargetView* const nullRTV[] = { nullptr };
+
+	context->OMSetRenderTargets( _countof( nullRTV ), nullRTV, nullptr );
+
+    context->ClearRenderTargetView(m_DefaultFrameBuffer.RTV.Get(), Colors::CornflowerBlue);
+    context->ClearDepthStencilView(m_DefaultFrameBuffer.DSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    context->OMSetRenderTargets(1, m_DefaultFrameBuffer.RTV.GetAddressOf(), m_DefaultFrameBuffer.DSV.Get());
+
+	auto renderTarget = m_deviceResources->GetRenderTargetView();
+	auto depthStencil = m_deviceResources->GetDepthStencilView();
+	context->ClearRenderTargetView( renderTarget, Colors::CornflowerBlue );
+	context->ClearDepthStencilView( depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0 );
 
     // Set the viewport.
     auto const viewport = m_deviceResources->GetScreenViewport();
@@ -587,33 +620,60 @@ void Game::GetDefaultSize(int& width, int& height) const noexcept
 void Game::CreateDeviceDependentResources()
 {
     auto device = m_deviceResources->GetD3DDevice();
-
+	auto context = m_deviceResources->GetD3DDeviceContext();
     // TODO: Initialize device dependent objects here (independent of window size).
     device;
+
 
 	std::shared_ptr<JohnMesh> MonkeyMesh = John::LoadMeshFromFile( "Content/sphere.obj" );
 	MonkeyMesh->Build( device );
 
 	m_Meshes.push_back( MonkeyMesh );
 
-	m_PhongProgram = John::CreateShaderProgram( device, L"Shaders/PhongVS.hlsl", L"Shaders/PhongPS.hlsl" );
+	m_WorldGeo = std::make_shared<JohnMesh>();
 
-	m_PBRProgram = John::CreateShaderProgram( device, L"Shaders/PBRVS.hlsl", L"Shaders/PBRPS.hlsl" );
 
-	m_Shaders.emplace(0, m_PhongProgram);
-	m_Shaders.emplace(1, m_PBRProgram);
+
+	Vertex v1;
+	v1.Position = Vector3( 0, 0, 1 );
+	v1.Normal = Vector3( 0, 0, 1 );
+	v1.TexCoord = Vector2( 0, 0 );
+
+	Vertex v2;
+	v2.Position = Vector3( 1, 0, -1 );
+	v2.Normal = Vector3( 0, 0, 1 );
+	v2.TexCoord = Vector2( .5, 1 );
+
+	Vertex v3;
+	v3.Position = Vector3( -1, 0, -1 );
+	v3.Normal = Vector3( 0, 0, 1 );
+	v3.TexCoord = Vector2( 1, 0 );
+
+	m_WorldGeo->GetVertices ()->push_back ( v1 );
+	m_WorldGeo->GetVertices ()->push_back ( v2 );
+	m_WorldGeo->GetVertices ()->push_back ( v3 );
+
+	m_WorldGeo->GetFaces ()->push_back ( { 1, 2, 3 } );
+	m_WorldGeo->Build ( device );
+
+	m_Shaders.emplace(0, John::CreateShaderProgram( device, L"Shaders/PBRVS.hlsl", L"Shaders/PBRPS.hlsl" ));
+	m_Shaders.emplace(1,John::CreateShaderProgram( device, L"Shaders/PhongVS.hlsl", L"Shaders/PhongPS.hlsl" ));
+
+	m_ToneMapProgram = John::CreateShaderProgram( device, L"Shaders/Tonemap.hlsl", L"Shaders/Tonemap.hlsl", "VS_Main", "PS_Main" );
 
 	m_TransformCB = John::CreateConstantBuffer<John::PhongTransformCB>( device );
 	m_ShadingCB = John::CreateConstantBuffer<John::PhongShadingCB>( device );
 
-	DX::ThrowIfFailed(
-		CreateWICTextureFromFile(device, L"Content/Brick_Wall_Normal.jpg", nullptr, m_BrickNormal.ReleaseAndGetAddressOf())
-	);
+	m_BrickBaseColor = John::CreateTexture( device, context, Image::fromFile( "Content/Brick_Wall_BaseColor.jpg" ) , DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+	context->GenerateMips( m_BrickBaseColor.SRV.Get() );
+	m_BrickNormal = John::CreateTexture( device, context, Image::fromFile( "Content/Brick_Wall_Normal.jpg" ) , DXGI_FORMAT_R8G8B8A8_UNORM);
+	m_BrickRoughness = John::CreateTexture( device, context, Image::fromFile( "Content/Brick_Wall_Roughness.jpg" ) , DXGI_FORMAT_R8G8B8A8_UNORM);
 
 	InitializeSky( "Content/environment.hdr" );
 
-	m_StandardSampler = John::CreateSamplerState(device, D3D11_FILTER_ANISOTROPIC, D3D11_TEXTURE_ADDRESS_WRAP);
+	m_StandardSampler = John::CreateSamplerState(device,D3D11_FILTER_ANISOTROPIC, D3D11_TEXTURE_ADDRESS_WRAP);
 	
+	m_ComputeSampler = John::CreateSamplerState(device,  D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP );
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
@@ -629,8 +689,10 @@ void Game::CreateWindowSizeDependentResources()
 
 		m_SkyEffect->SetProjection( m_Camera->GetProjectionMatrix() );
 	}
-}
 
+	m_DefaultFrameBuffer = John::CreateFrameBuffer( m_deviceResources->GetD3DDevice(), rect.right, rect.bottom, 1, DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT );
+
+}
 
 bool Game::CanMoveCamera() const
 {
@@ -639,18 +701,16 @@ bool Game::CanMoveCamera() const
 
 void Game::ReloadShaders()
 {
-	m_PhongProgram.VertexShader.Reset();
-	m_PhongProgram.PixelShader.Reset();
-	m_PhongProgram.InputLayout.Reset();
+
+	John::ShaderProgram* ProgramToUse = &m_Shaders.find(m_CurrentShaderIndex)->second;
+	ProgramToUse->VertexShader.Reset();
+	ProgramToUse->PixelShader.Reset();
+	ProgramToUse->InputLayout.Reset();
+
+	*ProgramToUse = John::CreateShaderProgram( m_deviceResources->GetD3DDevice(), ProgramToUse->VertFileName, ProgramToUse->PixelFileName );
+
+
 	
-	m_PhongProgram = John::CreateShaderProgram(m_deviceResources->GetD3DDevice(), m_PhongProgram.VertFileName, m_PhongProgram.PixelFileName );
-
-
-		m_PBRProgram.VertexShader.Reset();
-		m_PBRProgram.PixelShader.Reset();
-		m_PBRProgram.InputLayout.Reset();
-
-		m_PBRProgram = John::CreateShaderProgram( m_deviceResources->GetD3DDevice(), m_PBRProgram.VertFileName, m_PBRProgram.PixelFileName );
 }
 
 void Game::TickGizmo()
@@ -731,45 +791,47 @@ void Game::DrawModelInOutliner( const char* prefix, int uid, std::shared_ptr<Joh
 	ImGui::TableSetColumnIndex( 0 );
 	ImGui::AlignTextToFramePadding();
 	bool node_open = ImGui::TreeNode( mesh->GetName().c_str() );
-/*	ImGui::TableSetColumnIndex( 1 );*/
-	
-	if(node_open)
+	/*	ImGui::TableSetColumnIndex( 1 );*/
+
+
+	if ( ImGui::IsItemClicked() )
 	{
-		if ( ImGui::IsItemClicked() )
+		SelectModel( mesh.get() );
+	}
+
+	bool bEntityDeleted = false;
+	if ( ImGui::BeginPopupContextItem() )
+	{
+		if ( ImGui::MenuItem( "DeleteActor" ) )
 		{
-			SelectModel( mesh.get() );
+			bEntityDeleted = true;
+		}
+		if ( ImGui::MenuItem( "Reset Transform" ) )
+		{
+			if ( m_SelectedModel )
+			{
+				m_SelectedModel->ResetTransformations();
+			}
+
 		}
 
-		bool bEntityDeleted = false;
-		if(ImGui::BeginPopupContextItem())
-		{
-			if(ImGui::MenuItem("DeleteActor"))
-			{
-				bEntityDeleted = true;
-			}
-			if(ImGui::MenuItem("Reset Transform"))
-			{
-				if(m_SelectedModel)
-				{
-					m_SelectedModel->ResetTransformations();
-				}
+		ImGui::EndPopup();
+	}
 
-			}
-			if ( bEntityDeleted )
-			{
-				if ( m_SelectedModel )
-				{
-					DeleteMesh( mesh );
-					DeselectAll();
-				}
-			}
-			ImGui::EndPopup();
-		}
-
-
+	if ( node_open )
+	{
 		ImGui::TreePop();
 	}
 	ImGui::PopID();
+
+	if ( bEntityDeleted )
+	{
+		if ( m_SelectedModel )
+		{
+			DeleteMesh( mesh );
+			DeselectAll();
+		}
+	}
 }
 
 void Game::DrawModelDetails(JohnMesh* Mesh)

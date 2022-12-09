@@ -43,6 +43,7 @@
     <ClInclude Include="ThirdParty\ImGuizmo\ImSequencer.h" />
     <ClInclude Include="ThirdParty\stb_image.h" />
     <ClInclude Include="Source\MouseDeltaTracker.h" />
+    <ClInclude Include="Source\Image.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\pch.cpp" />
@@ -71,6 +72,7 @@
     <ClCompile Include="ThirdParty\ImGuizmo\ImGuizmo.cpp" />
     <ClCompile Include="ThirdParty\ImGuizmo\ImSequencer.cpp" />
     <ClCompile Include="Source\MouseDeltaTracker.cpp" />
+    <ClCompile Include="Source\Image.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

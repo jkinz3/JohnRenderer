@@ -22,7 +22,7 @@ public:
 
     Game() noexcept(false);
     ~Game() = default;
-
+	
     Game(Game&&) = default;
     Game& operator= (Game&&) = default;
 
@@ -65,6 +65,7 @@ private:
 	void DrawScene();
 	void DrawSky();
 	void DrawMesh(JohnMesh* MeshToDraw);
+	void DrawToneMapping();
     void Clear();
 
     void CreateDeviceDependentResources();
@@ -103,7 +104,6 @@ private:
 
 
 	//my sheeit
-	John::ShaderProgram m_PhongProgram;
 	JohnMesh* m_SelectedModel = nullptr;
 
 	ComPtr<ID3D11Buffer> m_TransformCB;
@@ -111,10 +111,13 @@ private:
 
 	ComPtr<ID3D11SamplerState> m_StandardSampler;
 	ComPtr<ID3D11SamplerState> m_brdfSampler;
+	ComPtr<ID3D11SamplerState> m_ComputeSampler;
 	
-	John::ShaderProgram m_PBRProgram;
+	John::ShaderProgram m_ToneMapProgram;
 
 	std::vector<std::shared_ptr<JohnMesh>> m_Meshes;
+
+	std::shared_ptr<JohnMesh> m_WorldGeo;
 
 	std::unique_ptr<Camera> m_Camera;
 
@@ -142,12 +145,16 @@ private:
 
 	ComPtr<ID3D11InputLayout> m_SkyInputLayout;
 
-	ComPtr<ID3D11ShaderResourceView> m_BrickNormal;
+	John::Texture m_BrickBaseColor;
+	John::Texture m_BrickNormal;
+	John::Texture m_BrickRoughness;
 	
 	bool m_bShowImGuiDemoWindow = false;
 
 	std::map<int, John::ShaderProgram> m_Shaders;
 
 	int m_CurrentShaderIndex = 0;
+
+	John::FrameBuffer m_DefaultFrameBuffer;
 
 };
