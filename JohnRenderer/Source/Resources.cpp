@@ -304,6 +304,60 @@ namespace John
 		return texture;
 	}
 
+	John::Texture CreateDefaultBaseColor( ID3D11Device* device )
+	{
+		return CreateDefaultTexture( device, 0x000000, DXGI_FORMAT_R8G8B8A8_UNORM );
+	}
+
+	Texture CreateDefaultNormal( ID3D11Device * device )
+	{
+		return CreateDefaultTexture( device, 0x7f7f, DXGI_FORMAT_R8G8_UNORM );
+	}
+
+	Texture CreateDefaultRoughness( ID3D11Device * device )
+	{
+		return CreateDefaultTexture( device, 0x7f, DXGI_FORMAT_R8_UNORM );
+	}
+
+	Texture CreateDefaultMetallic( ID3D11Device * device )
+	{
+		return CreateDefaultTexture( device, 0x00, DXGI_FORMAT_R8_UNORM );
+	}
+
+
+	John::Texture CreateDefaultTexture( ID3D11Device* device, uint16_t color , DXGI_FORMAT format)
+	{
+
+
+		D3D11_SUBRESOURCE_DATA initData = { &color, sizeof( uint16_t ), 0 };
+
+		Texture DefaultTexture = {};
+
+		D3D11_TEXTURE2D_DESC desc = {};
+		desc.Width = desc.Height = desc.MipLevels = desc.ArraySize = 1;
+		desc.Format = format;
+		desc.SampleDesc.Count = 1;
+		desc.Usage = D3D11_USAGE_IMMUTABLE;
+		desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+		DX::ThrowIfFailed(
+			device->CreateTexture2D( &desc, &initData, DefaultTexture.Texture2D.ReleaseAndGetAddressOf() )
+		);
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC SRVdesc = {};
+		SRVdesc.Format = desc.Format;
+		SRVdesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		SRVdesc.Texture2D.MipLevels = 1;
+
+		DX::ThrowIfFailed(
+			device->CreateShaderResourceView( DefaultTexture.Texture2D.Get(), &SRVdesc, DefaultTexture.SRV.ReleaseAndGetAddressOf() )
+		);
+
+		DefaultTexture.height = DefaultTexture.width = DefaultTexture.levels = desc.Width;
+
+		return DefaultTexture;
+	}
+
 	void CreateTextureUAV( ID3D11Device* device, Texture& texture, UINT mipSplice )
 	{
 		assert( texture.Texture2D);

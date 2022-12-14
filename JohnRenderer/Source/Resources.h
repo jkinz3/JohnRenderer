@@ -52,6 +52,12 @@ namespace John
 	Texture CreateTexture( ID3D11Device* device, ID3D11DeviceContext* context, const std::shared_ptr<class Image>& image, DXGI_FORMAT format, UINT levels=0 ) ;
 	Texture CreateTextureCube( ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels = 0 ) ;
 
+	Texture CreateDefaultBaseColor( ID3D11Device* device );
+	Texture CreateDefaultNormal( ID3D11Device* device );
+	Texture CreateDefaultRoughness( ID3D11Device* device );
+	Texture CreateDefaultMetallic( ID3D11Device* device );
+
+	Texture CreateDefaultTexture( ID3D11Device* device, uint16_t color, DXGI_FORMAT format );
 
 	void CreateTextureUAV( ID3D11Device* device,Texture& texture, UINT mipSplice);
 

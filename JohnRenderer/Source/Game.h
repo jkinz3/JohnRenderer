@@ -127,7 +127,7 @@ private:
 	Keyboard::State m_KeyboardState;
 	DirectX::Keyboard::KeyboardStateTracker m_Keys;
 	DirectX::Mouse::ButtonStateTracker m_MouseButtons;
-	Vector2 m_MouseDelta;
+
 	John::MouseDeltaTracker m_MouseDeltaTracker;
 	Vector3 m_LightPos;
 	bool m_bIsRelativeMode = false;
