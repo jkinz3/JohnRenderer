@@ -11,6 +11,7 @@
 #include "MouseDeltaTracker.h"
 
 class JohnMesh;
+class CameraUserImpulseData;
 
 using Microsoft::WRL::ComPtr;
 
@@ -84,6 +85,8 @@ private:
 
 	void DeleteMesh( std::shared_ptr<JohnMesh> MeshToDelete );
 
+	void ConvertMovementDeltaToDragRot( Vector3& InOutDragDelta,  Vector3& OutDrag, Vector3& Rot );
+
 
 
 	void SelectModel( JohnMesh* ModelToSelect );
@@ -156,5 +159,11 @@ private:
 	int m_CurrentShaderIndex = 0;
 
 	John::FrameBuffer m_DefaultFrameBuffer;
+
+	Vector2 m_MouseDelta;
+
+	std::shared_ptr<CameraUserImpulseData> m_CameraUserImpulseData;
+
+	
 
 };

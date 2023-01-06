@@ -11,7 +11,7 @@ Camera::Camera()
 	m_ImageWidth = 720;
 	m_ImageHeight = 1280;
 	m_Position = Vector3::Zero;
-	m_Rotation = Vector2::Zero;
+	m_Rotation = Vector3::Zero;
 	
 	m_ViewMatrix = Matrix::Identity;
 	m_ProjectionMatrix = Matrix::Identity;
@@ -19,9 +19,11 @@ Camera::Camera()
 	m_FocalPosition = Vector3::Zero;
 	m_Distance = 3.f;
 	
-	m_MovementSettings.MovementSpeed = 10.f;
+	m_MovementSettings.MovementSpeed = 77.f;
 	m_MovementSettings.MouseLookSensitivity = .007f;
 	m_MovementSettings.MouseOrbitSensitivity = 1.665f;
+
+	MovementVelocity = Vector3( 0.f, 0.f, 0.f );
 
 	UpdateFocalPosition();
 
@@ -63,7 +65,7 @@ void Camera::UpdateProjection()
 void Camera::MoveAndRotateCamera(DirectX::SimpleMath::Vector3 DeltaLoc, DirectX::SimpleMath::Vector2 MouseDelta)
 {
 	m_Position += DeltaLoc * m_MovementSettings.MovementSpeed * m_SpeedScale;
-	Vector2 radRot = GetRotationInRadians();
+	Vector3 radRot = GetRotationInRadians();
 
 	Vector2 radDelta = Vector2( XMConvertToRadians( MouseDelta.x ), XMConvertToRadians( MouseDelta.y ) );
 	Vector2 degDelta = Vector2( XMConvertToDegrees( MouseDelta.x ), XMConvertToDegrees( MouseDelta.y ) );
@@ -143,21 +145,27 @@ void Camera::SetPosition(DirectX::SimpleMath::Vector3 NewPos)
 	UpdateFocalPosition();
 }
 
-Vector2 Camera::GetRotation() const
+Vector3 Camera::GetRotation() const
 {
 	return m_Rotation;
 }
 
-void Camera::SetRotation(DirectX::SimpleMath::Vector2 NewRot)
+void Camera::SetRotation(DirectX::SimpleMath::Vector3 NewRot)
 {
 	m_Rotation = NewRot;
 	UpdateFocalPosition();
 
 }
 
+void Camera::SetRotationDegrees( Vector3 NewRot )
+{
+	m_Rotation = Vector3( XMConvertToRadians( NewRot.x ), XMConvertToRadians( NewRot.y ), XMConvertToRadians( NewRot.z ) );
+	UpdateFocalPosition();
+}
+
 Quaternion Camera::GetOrientation() const
 {
-	return Quaternion::CreateFromYawPitchRoll( m_Rotation.y ,m_Rotation.x , 0.f );
+	return Quaternion::CreateFromYawPitchRoll( m_Rotation.y ,m_Rotation.x , m_Rotation.z );
 }
 
 Vector3 Camera::GetForwardVector() const
@@ -260,7 +268,116 @@ void Camera::FocusOnPosition( Vector3 NewPos )
 	UpdateCameraPosition();
 }
 
-Vector2 Camera::GetRotationInRadians() const
+Vector3 Camera::GetRotationInRadians() const
 {
 	return m_Rotation;
+}
+
+void Camera::UpdateSimulation( const CameraUserImpulseData& UserImpulseData, const float DeltaTime, const float MovementSpeedScale, Vector3& InOutCameraPosition, Vector3& InOutCameraEuler )
+{
+	bool bAnyUserImpulse = false;
+
+
+	if ( UserImpulseData.RotateYawVelocityModifier != 0.0f ||
+		UserImpulseData.RotatePitchVelocityModifier != 0.0f ||
+		UserImpulseData.RotateRollVelocityModifier != 0.0f ||
+		UserImpulseData.MoveForwardBackwardImpulse != 0.0f ||
+		UserImpulseData.MoveRightLeftImpulse != 0.0f ||
+		UserImpulseData.MoveUpDownImpulse != 0.0f ||
+		UserImpulseData.RotateYawImpulse != 0.0f ||
+		UserImpulseData.RotatePitchImpulse != 0.0f ||
+		UserImpulseData.RotateRollImpulse != 0.0f
+		)
+	{
+		bAnyUserImpulse = true;
+	}
+
+	Vector3 TranslationCameraEuler = InOutCameraEuler;
+
+	UpdatePosition( UserImpulseData, DeltaTime, MovementSpeedScale, TranslationCameraEuler, InOutCameraPosition );
+
+	UpdateRotation( UserImpulseData, DeltaTime, InOutCameraEuler );
+	
+
+}
+
+void Camera::UpdatePosition( const CameraUserImpulseData& UserImpulse, const float DeltaTime, const float MovementSpeedScale, const Vector3& CameraEuler, Vector3& InOutCameraPosition )
+{
+	Vector3 LocalSpaceImpulse;
+	{
+		LocalSpaceImpulse =
+			Vector3( UserImpulse.MoveRightLeftImpulse,
+				0.f,
+				UserImpulse.MoveForwardBackwardImpulse );
+		
+	}
+
+	Vector3 WorldSpaceAcceleration;
+	{
+		const Quaternion CameraOrientation = GetOrientation();
+		Vector3 WorldSpaceImpulse = Vector3::Transform(LocalSpaceImpulse, CameraOrientation);
+
+		WorldSpaceImpulse +=
+			Vector3( 0.f,
+				UserImpulse.MoveUpDownImpulse,
+				0.f
+				);
+		{
+
+		}
+		WorldSpaceAcceleration = WorldSpaceImpulse * MovementSpeedScale;
+
+
+	}
+
+	if(bUsePhysicsBasedMovement)
+	{
+		MovementVelocity += WorldSpaceAcceleration * DeltaTime;
+
+		//apply damping
+		{
+			const float DampingFactor = std::clamp( m_MovementSettings.MovementVelocityDampingAmount * DeltaTime, 0.f, .75f );
+
+			MovementVelocity += -MovementVelocity * DampingFactor;
+		}
+
+	}
+	else
+	{
+		MovementVelocity = WorldSpaceAcceleration;
+	}
+
+	if ( MovementVelocity.LengthSquared() > std::pow( m_MovementSettings.MaximumMovementSpeed * MovementSpeedScale ,2.f ))
+	{
+		MovementVelocity.Normalize();
+		MovementVelocity *= m_MovementSettings.MaximumMovementSpeed * MovementSpeedScale;
+	}
+
+	InOutCameraPosition = MovementVelocity * DeltaTime;
+
+	m_Position += MovementVelocity * DeltaTime;
+
+	UpdateFocalPosition();
+	UpdateView();
+}
+
+void Camera::UpdateRotation( const CameraUserImpulseData& UserImpulse, const float DeltaTime, Vector3& InOutCameraEuler )
+{
+
+}
+
+bool Camera::GetUsePhysicsBasedMovement() const
+{
+	return bUsePhysicsBasedMovement;
+}
+
+void Camera::SetUsePhysicsBasedMovement( bool val )
+{
+	bUsePhysicsBasedMovement = val;
+}
+
+Vector3 Camera::GetRotationInDegrees() const
+{
+	return Vector3( XMConvertToDegrees(m_Rotation.x),XMConvertToDegrees(m_Rotation.y), XMConvertToDegrees(m_Rotation.z));
+
 }

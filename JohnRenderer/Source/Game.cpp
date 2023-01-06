@@ -58,7 +58,9 @@ void Game::Initialize(HWND window, int width, int height)
 	m_Camera = std::make_unique<Camera>();
 	m_Camera->SetImageSize( width, height );
 	m_Camera->SetPosition( Vector3( 0.f, 0.f, 3.f ) );
-	m_Camera->SetRotation( Vector2( 0.f, XM_PI) );
+	m_Camera->SetRotation( Vector3( 0.f, XM_PI, 0.f) );
+
+	m_CameraUserImpulseData = std::make_shared<CameraUserImpulseData>();
 
 	m_LightPos = Vector3( .6f, 1.f, 2.f );
 
@@ -186,6 +188,9 @@ void Game::TickUI()
 		ImGui::SliderFloat( "Mouse Sensitivity", &m_Camera->m_MovementSettings.MouseLookSensitivity, .0001f, .02f);
 		ImGui::SliderFloat( "Orbit Speed", &m_Camera->m_MovementSettings.MouseOrbitSensitivity, 1.f, 10.f);
 		ImGui::DragFloat( "Movement Speed", &m_Camera->m_MovementSettings.MovementSpeed, .1f, 0.f );
+		bool bUsePhysicsBasedMovement = m_Camera->GetUsePhysicsBasedMovement();
+		ImGui::Checkbox( "Use Physics Based Movement", &bUsePhysicsBasedMovement );
+		m_Camera->SetUsePhysicsBasedMovement( bUsePhysicsBasedMovement );
 		ImGui::TreePop();
 
 	}
@@ -285,20 +290,101 @@ void Game::Movement( float DeltaTime )
 		ReloadShaders();
 	}
 
+
+
+	m_CameraUserImpulseData->MoveForwardBackwardImpulse = 0.f;
+	m_CameraUserImpulseData->MoveRightLeftImpulse = 0.f;
+	m_CameraUserImpulseData->MoveUpDownImpulse = 0.f;
+	m_CameraUserImpulseData->RotateYawImpulse = 0.f;
+	m_CameraUserImpulseData->RotatePitchImpulse = 0.f;
+	m_CameraUserImpulseData->RotateRollImpulse = 0.f;
+
+	bool bForwardKeyState = false;
+	bool bBackwardKeyState = false;
+	bool bRightKeyState = false;
+	bool bLeftKeyState = false;
+
+	bool bUpKeyState = false;
+	bool bDownKeyState = false;
+
+	bForwardKeyState |= m_KeyboardState.W;
+	bBackwardKeyState |= m_KeyboardState.S;
+	bRightKeyState |= m_KeyboardState.D;
+	bLeftKeyState |= m_KeyboardState.A;
+
+	bUpKeyState |= m_KeyboardState.E;
+	bDownKeyState |= m_KeyboardState.Q;
+
+	if(bForwardKeyState)
+	{
+		m_CameraUserImpulseData->MoveForwardBackwardImpulse += 1.f;
+	}
+	if(bBackwardKeyState)
+	{
+		m_CameraUserImpulseData->MoveForwardBackwardImpulse -= 1.f;
+	}
+	if(bRightKeyState)
+	{
+		m_CameraUserImpulseData->MoveRightLeftImpulse += 1.;
+	}
+	if(bLeftKeyState)
+	{
+		m_CameraUserImpulseData->MoveRightLeftImpulse -= 1.f;
+	}
+	if(bUpKeyState)
+	{
+		m_CameraUserImpulseData->MoveUpDownImpulse += 1.f;
+	}
+	if(bDownKeyState)
+	{
+		m_CameraUserImpulseData->MoveUpDownImpulse -= 1.f;
+	}
+
+	Vector3 NewViewLocation = m_Camera->GetPosition();
+	Vector3 NewViewEuler = m_Camera->GetRotationInDegrees();
+	const float CameraSpeed = m_Camera->m_MovementSettings.MovementSpeed;
+	float MovementDeltaUpperBound = 1.f;
+
+	const float VelModRotSpeed = 900.f;
+	const Vector3 RotEuler = m_Camera->GetRotationInDegrees();
+
+	const float MouseSensitivity = m_Camera->m_MovementSettings.MouseLookSensitivity;
+	m_CameraUserImpulseData->RotateRollVelocityModifier += VelModRotSpeed * RotEuler.x / MouseSensitivity;
+	m_CameraUserImpulseData->RotatePitchVelocityModifier += VelModRotSpeed * RotEuler.y / MouseSensitivity;
+	m_CameraUserImpulseData->RotateYawVelocityModifier += VelModRotSpeed * RotEuler.z / MouseSensitivity;
+
+	float bHasMovement = false;
+
+	if ( (*m_CameraUserImpulseData).RotateYawVelocityModifier != 0.0f ||
+		(*m_CameraUserImpulseData).RotatePitchVelocityModifier != 0.0f ||
+		(*m_CameraUserImpulseData).RotateRollVelocityModifier != 0.0f ||
+		(*m_CameraUserImpulseData).MoveForwardBackwardImpulse != 0.0f ||
+		(*m_CameraUserImpulseData).MoveRightLeftImpulse != 0.0f ||
+		(*m_CameraUserImpulseData).MoveUpDownImpulse != 0.0f ||
+		(*m_CameraUserImpulseData).RotateYawImpulse != 0.0f ||
+		(*m_CameraUserImpulseData).RotatePitchImpulse != 0.0f ||
+		(*m_CameraUserImpulseData).RotateRollImpulse != 0.0f
+		)
+	{
+		bHasMovement = true;
+	}
+
 	int x, y;
 	m_MouseDeltaTracker.GetMouseDelta( x, y );
 	m_MouseDelta.x = (float)x;
 	m_MouseDelta.y = (float)y;
 
-	
-	if(m_MouseButtons.rightButton == Mouse::ButtonStateTracker::PRESSED)
+
+	if ( m_MouseState.positionMode == Mouse::MODE_RELATIVE )
 	{
-		m_DragAmount = Vector2::Zero;
+
 	}
 
-	if(m_MouseState.positionMode == Mouse::MODE_RELATIVE)
+
+
+	if ( m_Keys.pressed.F )
 	{
-		m_DragAmount += m_MouseDelta;
+		m_Camera->FocusOnPosition( Vector3::Zero );
 	}
 
 	if (m_MouseState.positionMode == Mouse::MODE_RELATIVE)
@@ -327,37 +413,6 @@ void Game::Movement( float DeltaTime )
 		}
 		else
 		{
-
-			Vector2 delta = m_MouseDelta;
-
-			Vector3 move = Vector3::Zero;
-
-
-			if ( m_KeyboardState.E )
-			{
-				move += (Vector3::Up * DeltaTime);
-			}
-			if ( m_KeyboardState.Q )
-			{
-				move -= Vector3::Up * DeltaTime;
-			}
-			if ( m_KeyboardState.A )
-			{
-				move -= m_Camera->GetRightVector() * DeltaTime;
-			}
-			if ( m_KeyboardState.D )
-			{
-				move += m_Camera->GetRightVector() * DeltaTime;
-			}
-			if ( m_KeyboardState.W )
-			{
-				move += m_Camera->GetForwardVector() * DeltaTime;
-			}
-			if ( m_KeyboardState.S )
-			{
-				move -= m_Camera->GetForwardVector() * DeltaTime;
-			}
-			m_Camera->MoveAndRotateCamera( move, delta );
 			if ( m_MouseDelta != Vector2::Zero )
 			{
 				m_bWasCameraMoved = true;
@@ -367,7 +422,14 @@ void Game::Movement( float DeltaTime )
 				m_bWasCameraMoved = false;
 			}
 
+			m_Camera->MoveAndRotateCamera( Vector3( 0, 0, 0 ), m_MouseDelta );
 
+			m_Camera->UpdateSimulation( *m_CameraUserImpulseData,
+				std::min( DeltaTime, MovementDeltaUpperBound ),
+				CameraSpeed,
+				NewViewLocation,
+				NewViewEuler
+			);
 
 			if(m_MouseState.scrollWheelValue > 0.f)
 			{
@@ -381,14 +443,11 @@ void Game::Movement( float DeltaTime )
 			m_Mouse->ResetScrollWheelValue();
 		}
 	}
+
 	m_bIsRelativeMode = m_MouseState.rightButton || m_KeyboardState.LeftAlt && (m_MouseState.leftButton || m_MouseState.middleButton || m_MouseState.rightButton);
 
 	m_Mouse->SetMode( m_bIsRelativeMode ? Mouse::MODE_RELATIVE : Mouse::MODE_ABSOLUTE );
 
-	if(m_Keys.pressed.F)
-	{
-		m_Camera->FocusOnPosition( Vector3::Zero );
-	}
 
 
 
@@ -860,6 +919,16 @@ void Game::DeleteMesh( std::shared_ptr<JohnMesh> MeshToDelete )
 }
 
 
+
+void Game::ConvertMovementDeltaToDragRot(Vector3& InOutDragDelta,  Vector3& OutDrag, Vector3& Rot  )
+{
+	if(m_MouseState.rightButton && !m_MouseState.leftButton)
+	{
+		Rot.y = InOutDragDelta.x * m_Camera->m_MovementSettings.MouseLookSensitivity;
+		Rot.x = InOutDragDelta.y * m_Camera->m_MovementSettings.MouseLookSensitivity;
+
+	}
+}
 
 void Game::SelectModel( JohnMesh* ModelToSelect )
 {
