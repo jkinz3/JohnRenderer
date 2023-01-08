@@ -8,14 +8,59 @@ using namespace DirectX::SimpleMath;
 #define MINMOUSEORBITSPEED 1.f;
 #define MAXMOUSEORBITSPEED 10.f;
 
-
+#define MAX_FLT 3.402823466e+38F
 
 struct CameraMovementSettings
 {
-	float MovementSpeed = 5.f;
+	float MovementSpeed = 500.f;
 	float MouseLookSensitivity = 110.f;
 	float MouseOrbitSensitivity = 8.f;
+	float MovementAccelerationRate = 20000.f;
+	float MovementVelocityDampingAmount = 10.f;
+	float MaximumMovementSpeed = MAX_FLT;
+	float RotationAccelerationRate = 1600.f;
 
+	float RotationVelocityDampingAmount = 12.f;
+
+	float MaximumRotationSpeed = MAX_FLT;	
+
+};
+
+class CameraUserImpulseData
+{
+public:
+
+	float MoveForwardBackwardImpulse;
+
+	float MoveRightLeftImpulse;
+
+	float MoveUpDownImpulse;
+
+	float RotateYawImpulse;
+
+	float RotatePitchImpulse;
+	
+	float RotateRollImpulse;
+
+	float RotateYawVelocityModifier;
+
+	float RotatePitchVelocityModifier;
+
+	float RotateRollVelocityModifier;
+
+	CameraUserImpulseData()
+		: MoveForwardBackwardImpulse(0.f),
+		MoveRightLeftImpulse(0.f),
+		MoveUpDownImpulse(0.f),
+		RotateYawImpulse(0.f),
+		RotatePitchImpulse(0.f),
+		RotateRollImpulse(0.f),
+		RotateYawVelocityModifier(0.f),
+		RotatePitchVelocityModifier(0.f),
+		RotateRollVelocityModifier(0.f)
+	{
+
+	}
 
 };
 
@@ -41,8 +86,9 @@ public:
 	Vector3 GetPosition() const;
 	void SetPosition(Vector3 NewPos);
 
-	Vector2 GetRotation() const;
-	void SetRotation(Vector2 NewRot);
+	Vector3 GetRotation() const;
+	void SetRotation(Vector3 NewRot);
+	void SetRotationDegrees( Vector3 NewRot );
 
 	Quaternion GetOrientation() const;
 	Vector3 GetForwardVector() const;
@@ -65,8 +111,23 @@ public:
 
 	CameraMovementSettings m_MovementSettings;
 
-	Vector2 GetRotationInRadians() const;
+	Vector3 GetRotationInRadians() const;
 
+	void UpdateSimulation(
+		const CameraUserImpulseData& UserImpulseData,
+		const float DeltaTime,
+		const float MovementSpeedScale,
+		Vector3& InOutCameraPosition,
+		Vector3& InOutCameraEuler);
+
+	void UpdatePosition( const CameraUserImpulseData& UserImpulse, const float DeltaTime, const float MovementSpeedScale, const Vector3& CameraEuler, Vector3& InOutCameraPosition );
+
+	void UpdateRotation( const CameraUserImpulseData& UserImpulse, const float DeltaTime, Vector3& InOutCameraEuler );
+
+	bool GetUsePhysicsBasedMovement() const;
+	void SetUsePhysicsBasedMovement( bool val );
+
+	Vector3 GetRotationInDegrees() const;
 private:
 
 	float m_FOV;
@@ -74,7 +135,7 @@ private:
 	Vector3 m_Position;
 	Vector3 m_FocalPosition;
 
-	Vector2 m_Rotation;
+	Vector3 m_Rotation;
 
 	Matrix m_ViewMatrix;
 	Matrix m_ProjectionMatrix;
@@ -85,6 +146,10 @@ private:
 	float m_Distance;
 
 	float m_SpeedScale = 1.f;
+
+	Vector3 MovementVelocity;
+
+	bool bUsePhysicsBasedMovement = true;
 
 	
 };

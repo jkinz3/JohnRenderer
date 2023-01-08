@@ -13,6 +13,8 @@
 class JohnMesh;
 class Material;
 class RenderObject;
+class CameraUserImpulseData;
+
 using Microsoft::WRL::ComPtr;
 
 // A basic game implementation that creates a D3D11 device and
@@ -88,6 +90,8 @@ private:
 
 	void DeleteMesh( std::shared_ptr<RenderObject> MeshToDelete );
 
+	void ConvertMovementDeltaToDragRot( Vector3& InOutDragDelta,  Vector3& OutDrag, Vector3& Rot );
+
 
 	void SelectModel( RenderObject* ModelToSelect );
 
@@ -162,5 +166,11 @@ private:
 
 
 	John::FrameBuffer m_DefaultFrameBuffer;
+
+	Vector2 m_MouseDelta;
+
+	std::shared_ptr<CameraUserImpulseData> m_CameraUserImpulseData;
+
+	
 
 };
