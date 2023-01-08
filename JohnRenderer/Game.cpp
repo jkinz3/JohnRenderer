@@ -61,7 +61,7 @@ void Game::Initialize(HWND window, int width, int height)
 	m_Camera = std::make_unique<Camera>();
 	m_Camera->SetImageSize( width, height );
 	m_Camera->SetPosition( Vector3( 0.f, 0.f, 3.f ) );
-	m_Camera->SetRotation( Vector3( 0.f, 180.f, 0.f) );
+	m_Camera->SetRotation( Vector3( 0.f, XM_PI, 0.f) );
 
 	m_CameraUserImpulseData = std::make_shared<CameraUserImpulseData>();
 
@@ -249,8 +249,8 @@ void Game::TickUI()
 	ImGui::Text( "Camera" );
 	if(ImGui::TreeNode( "Camera Settings" ))
 	{
-		ImGui::DragFloat( "Mouse Sensitivity", &m_Camera->m_MovementSettings.MouseLookSensitivity, .0001f);
-		ImGui::DragFloat( "Orbit Speed", &m_Camera->m_MovementSettings.MouseOrbitSensitivity, 1.f);
+		ImGui::SliderFloat( "Mouse Sensitivity", &m_Camera->m_MovementSettings.MouseLookSensitivity, .0001f, .02f);
+		ImGui::SliderFloat( "Orbit Speed", &m_Camera->m_MovementSettings.MouseOrbitSensitivity, 1.f, 10.f);
 		ImGui::DragFloat( "Movement Speed", &m_Camera->m_MovementSettings.MovementSpeed, .1f, 0.f );
 		bool bUsePhysicsBasedMovement = m_Camera->GetUsePhysicsBasedMovement();
 		ImGui::Checkbox( "Use Physics Based Movement", &bUsePhysicsBasedMovement );
@@ -403,12 +403,12 @@ void Game::Movement( float DeltaTime )
 	}
 
 	Vector3 NewViewLocation = m_Camera->GetPosition();
-	Vector3 NewViewEuler = m_Camera->GetRotation ();
+	Vector3 NewViewEuler = m_Camera->GetRotationInDegrees();
 	const float CameraSpeed = m_Camera->m_MovementSettings.MovementSpeed;
 	float MovementDeltaUpperBound = 1.f;
 
 	const float VelModRotSpeed = 900.f;
-	const Vector3 RotEuler = m_Camera->GetRotation();
+	const Vector3 RotEuler = m_Camera->GetRotationInDegrees();
 
 	const float MouseSensitivity = m_Camera->m_MovementSettings.MouseLookSensitivity;
 	m_CameraUserImpulseData->RotateRollVelocityModifier += VelModRotSpeed * RotEuler.x / MouseSensitivity;
@@ -431,8 +431,20 @@ void Game::Movement( float DeltaTime )
 		bHasMovement = true;
 	}
 
+	int x, y;
+	m_MouseDeltaTracker.GetMouseDelta( x, y );
+<<<<<<< HEAD
+	x = m_MouseState.x;
+	y = m_MouseState.y;
+	Vector2 mouseDelta(x,y);
+	if(m_MouseButtons.rightButton == Mouse::ButtonStateTracker::PRESSED)
+=======
+	m_MouseDelta.x = (float)x;
+	m_MouseDelta.y = (float)y;
+
 
 	if ( m_MouseState.positionMode == Mouse::MODE_RELATIVE )
+>>>>>>> f80d26f73336034405e4c3ec968089fccdd199f0
 	{
 
 	}
@@ -441,14 +453,18 @@ void Game::Movement( float DeltaTime )
 
 	if ( m_Keys.pressed.F )
 	{
+<<<<<<< HEAD
+		m_DragAmount += mouseDelta;
+=======
 		m_Camera->FocusOnPosition( Vector3::Zero );
+>>>>>>> f80d26f73336034405e4c3ec968089fccdd199f0
 	}
 
 	if (m_MouseState.positionMode == Mouse::MODE_RELATIVE)
 	{
-		if ( m_KeyboardState.LeftAlt && m_MouseDelta != Vector2::Zero)
+		if ( m_KeyboardState.LeftAlt && mouseDelta != Vector2::Zero)
 		{
-			Vector2 delta = m_MouseDelta * .00314f;
+			Vector2 delta = mouseDelta * .00314f;
 			bool move = false;
 			if ( m_MouseState.middleButton )
 			{
@@ -470,7 +486,42 @@ void Game::Movement( float DeltaTime )
 		}
 		else
 		{
+<<<<<<< HEAD
+
+			Vector2 delta = mouseDelta;
+
+			Vector3 move = Vector3::Zero;
+
+
+			if ( m_KeyboardState.E )
+			{
+				move += (Vector3::Up * DeltaTime);
+			}
+			if ( m_KeyboardState.Q )
+			{
+				move -= Vector3::Up * DeltaTime;
+			}
+			if ( m_KeyboardState.A )
+			{
+				move -= m_Camera->GetRightVector() * DeltaTime;
+			}
+			if ( m_KeyboardState.D )
+			{
+				move += m_Camera->GetRightVector() * DeltaTime;
+			}
+			if ( m_KeyboardState.W )
+			{
+				move += m_Camera->GetForwardVector() * DeltaTime;
+			}
+			if ( m_KeyboardState.S )
+			{
+				move -= m_Camera->GetForwardVector() * DeltaTime;
+			}
+			m_Camera->MoveAndRotateCamera( move, delta );
+			if ( mouseDelta != Vector2::Zero )
+=======
 			if ( m_MouseDelta != Vector2::Zero )
+>>>>>>> f80d26f73336034405e4c3ec968089fccdd199f0
 			{
 				m_bWasCameraMoved = true;
 			}
@@ -688,7 +739,7 @@ void Game::OnDisplayChange()
 
 void Game::OnMouseMove()
 {
-	m_MouseDeltaTracker.UpdateState( m_Mouse->GetState());
+	//m_MouseDeltaTracker.UpdateState( m_Mouse->GetState());
 }
 
 void Game::OnWindowSizeChanged(int width, int height)
@@ -977,6 +1028,11 @@ void Game::DeleteMesh( std::shared_ptr<RenderObject> MeshToDelete )
 
 
 
+<<<<<<< HEAD
+
+
+void Game::SelectModel( RenderObject* ModelToSelect )
+=======
 void Game::ConvertMovementDeltaToDragRot(Vector3& InOutDragDelta,  Vector3& OutDrag, Vector3& Rot  )
 {
 	if(m_MouseState.rightButton && !m_MouseState.leftButton)
@@ -987,7 +1043,8 @@ void Game::ConvertMovementDeltaToDragRot(Vector3& InOutDragDelta,  Vector3& OutD
 	}
 }
 
-void Game::SelectModel( RenderObject* ModelToSelect )
+void Game::SelectModel( JohnMesh* ModelToSelect )
+>>>>>>> f80d26f73336034405e4c3ec968089fccdd199f0
 {
 	if(ModelToSelect != nullptr)
 	{
@@ -1001,12 +1058,6 @@ void Game::PrepareInputState()
 	m_KeyboardState = m_Keyboard->GetState();
 	m_Keys.Update( m_KeyboardState );
 	m_MouseButtons.Update( m_MouseState );
-
-	int x, y;
-	m_MouseDeltaTracker.GetMouseDelta( x, y );
-	m_MouseDelta.x = (float)x;
-	m_MouseDelta.y = (float)y;
-
 }
 
 void Game::DeselectAll()

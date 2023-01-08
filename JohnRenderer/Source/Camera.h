@@ -13,7 +13,7 @@ using namespace DirectX::SimpleMath;
 struct CameraMovementSettings
 {
 	float MovementSpeed = 500.f;
-	float MouseLookSensitivity = 110.f;
+	float MouseLookSensitivity = 500.f;
 	float MouseOrbitSensitivity = 8.f;
 	float MovementAccelerationRate = 20000.f;
 	float MovementVelocityDampingAmount = 10.f;
@@ -88,7 +88,6 @@ public:
 
 	Vector3 GetRotation() const;
 	void SetRotation(Vector3 NewRot);
-	void SetRotationDegrees( Vector3 NewRot );
 
 	Quaternion GetOrientation() const;
 	Vector3 GetForwardVector() const;
@@ -111,7 +110,6 @@ public:
 
 	CameraMovementSettings m_MovementSettings;
 
-	Vector3 GetRotationInRadians() const;
 
 	void UpdateSimulation(
 		const CameraUserImpulseData& UserImpulseData,
@@ -127,7 +125,6 @@ public:
 	bool GetUsePhysicsBasedMovement() const;
 	void SetUsePhysicsBasedMovement( bool val );
 
-	Vector3 GetRotationInDegrees() const;
 private:
 
 	float m_FOV;

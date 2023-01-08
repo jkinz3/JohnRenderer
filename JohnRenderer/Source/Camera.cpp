@@ -19,9 +19,9 @@ Camera::Camera()
 	m_FocalPosition = Vector3::Zero;
 	m_Distance = 3.f;
 	
-	m_MovementSettings.MovementSpeed = 77.f;
-	m_MovementSettings.MouseLookSensitivity = .007f;
-	m_MovementSettings.MouseOrbitSensitivity = 1.665f;
+	m_MovementSettings.MovementSpeed = 120.f;
+	m_MovementSettings.MouseLookSensitivity = .15f;
+	m_MovementSettings.MouseOrbitSensitivity = 50.f;
 
 	MovementVelocity = Vector3( 0.f, 0.f, 0.f );
 
@@ -65,25 +65,18 @@ void Camera::UpdateProjection()
 void Camera::MoveAndRotateCamera(DirectX::SimpleMath::Vector3 DeltaLoc, DirectX::SimpleMath::Vector2 MouseDelta)
 {
 	m_Position += DeltaLoc * m_MovementSettings.MovementSpeed * m_SpeedScale;
-	Vector3 radRot = GetRotationInRadians();
-
-	Vector2 radDelta = Vector2( XMConvertToRadians( MouseDelta.x ), XMConvertToRadians( MouseDelta.y ) );
-	Vector2 degDelta = Vector2( XMConvertToDegrees( MouseDelta.x ), XMConvertToDegrees( MouseDelta.y ) );
-
-	radRot.x += radDelta.y * m_MovementSettings.MouseLookSensitivity;
-	radRot.y += radDelta.x * m_MovementSettings.MouseLookSensitivity;
 
 
 	m_Rotation.x += MouseDelta.y * m_MovementSettings.MouseLookSensitivity;
 	m_Rotation.y += MouseDelta.x * m_MovementSettings.MouseLookSensitivity;
 
-	if(m_Rotation.y > XM_PI)
+	if(m_Rotation.y > 180.f)
 	{
-		m_Rotation.y -= XM_2PI;
+		m_Rotation.y -= 360.f;
 	}
-	if(m_Rotation.y < -XM_PI)
+	if(m_Rotation.y < -180)
 	{
-		m_Rotation.y += XM_2PI;
+		m_Rotation.y += 360.f;
 	}
 
 	UpdateFocalPosition();
@@ -150,22 +143,16 @@ Vector3 Camera::GetRotation() const
 	return m_Rotation;
 }
 
-void Camera::SetRotation(DirectX::SimpleMath::Vector3 NewRot)
+void Camera::SetRotation( DirectX::SimpleMath::Vector3 NewRot )
 {
 	m_Rotation = NewRot;
 	UpdateFocalPosition();
 
-}
 
-void Camera::SetRotationDegrees( Vector3 NewRot )
-{
-	m_Rotation = Vector3( XMConvertToRadians( NewRot.x ), XMConvertToRadians( NewRot.y ), XMConvertToRadians( NewRot.z ) );
-	UpdateFocalPosition();
 }
-
 Quaternion Camera::GetOrientation() const
 {
-	return Quaternion::CreateFromYawPitchRoll( m_Rotation.y ,m_Rotation.x , m_Rotation.z );
+	return Quaternion::CreateFromYawPitchRoll( XMConvertToRadians (m_Rotation.y) ,XMConvertToRadians (m_Rotation.x), XMConvertToRadians (m_Rotation.z));
 }
 
 Vector3 Camera::GetForwardVector() const
@@ -267,12 +254,6 @@ void Camera::FocusOnPosition( Vector3 NewPos )
 	m_Distance = 3.f;
 	UpdateCameraPosition();
 }
-
-Vector3 Camera::GetRotationInRadians() const
-{
-	return m_Rotation;
-}
-
 void Camera::UpdateSimulation( const CameraUserImpulseData& UserImpulseData, const float DeltaTime, const float MovementSpeedScale, Vector3& InOutCameraPosition, Vector3& InOutCameraEuler )
 {
 	bool bAnyUserImpulse = false;
@@ -376,8 +357,3 @@ void Camera::SetUsePhysicsBasedMovement( bool val )
 	bUsePhysicsBasedMovement = val;
 }
 
-Vector3 Camera::GetRotationInDegrees() const
-{
-	return Vector3( XMConvertToDegrees(m_Rotation.x),XMConvertToDegrees(m_Rotation.y), XMConvertToDegrees(m_Rotation.z));
-
-}
