@@ -11,7 +11,8 @@
 #include "MouseDeltaTracker.h"
 
 class JohnMesh;
-
+class Material;
+class RenderObject;
 using Microsoft::WRL::ComPtr;
 
 // A basic game implementation that creates a D3D11 device and
@@ -31,6 +32,7 @@ public:
 
     // Initialization and management
     void Initialize(HWND window, int width, int height);
+	void InitializeDefaultAssets();
 	void InitializeUI();
 	void InitializeSky( const char* EnvMapFile );
 	void CleanSky();
@@ -64,7 +66,7 @@ private:
 	void RenderUI();
 	void DrawScene();
 	void DrawSky();
-	void DrawMesh(JohnMesh* MeshToDraw);
+	void DrawMesh(RenderObject* MeshToDraw);
 	void DrawToneMapping();
     void Clear();
 
@@ -75,18 +77,19 @@ private:
 
 	void ReloadShaders();
 
+	void AddPrimitive( John::EPrimitiveType type );
+
 	void TickGizmo();
 
 	void DrawSceneOutliner();
-	void DrawModelInOutliner( const char* prefix, int uid, std::shared_ptr<JohnMesh> mesh);
-	void DrawModelDetails(JohnMesh* Mesh);
+	void DrawModelInOutliner( const char* prefix, int uid, std::shared_ptr<RenderObject> mesh);
+	void DrawModelDetails(RenderObject* Mesh);
 
 
-	void DeleteMesh( std::shared_ptr<JohnMesh> MeshToDelete );
+	void DeleteMesh( std::shared_ptr<RenderObject> MeshToDelete );
 
 
-
-	void SelectModel( JohnMesh* ModelToSelect );
+	void SelectModel( RenderObject* ModelToSelect );
 
 	void PrepareInputState();
 
@@ -94,7 +97,7 @@ private:
 
 	
 
-	JohnMesh* MousePicking();
+	RenderObject* MousePicking();
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
@@ -104,7 +107,7 @@ private:
 
 
 	//my sheeit
-	JohnMesh* m_SelectedModel = nullptr;
+	RenderObject* m_SelectedModel = nullptr;
 
 	ComPtr<ID3D11Buffer> m_TransformCB;
 	ComPtr<ID3D11Buffer> m_ShadingCB;
@@ -115,7 +118,11 @@ private:
 	
 	John::ShaderProgram m_ToneMapProgram;
 
-	std::vector<std::shared_ptr<JohnMesh>> m_Meshes;
+	std::vector<std::shared_ptr<RenderObject>> m_Meshes;
+
+	std::vector<std::shared_ptr<JohnMesh>> m_SourceMeshes;
+	std::vector<std::shared_ptr<Material>> m_Materials;
+	
 
 	std::shared_ptr<JohnMesh> m_WorldGeo;
 
@@ -151,9 +158,8 @@ private:
 	
 	bool m_bShowImGuiDemoWindow = false;
 
-	std::map<int, John::ShaderProgram> m_Shaders;
+	std::map<EShaderProgram, John::ShaderProgram> m_Shaders;
 
-	int m_CurrentShaderIndex = 0;
 
 	John::FrameBuffer m_DefaultFrameBuffer;
 

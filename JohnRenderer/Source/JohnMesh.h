@@ -4,6 +4,7 @@
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
+class Material;
 
 struct Vertex
 {
@@ -29,25 +30,9 @@ public:
 	std::vector<Vertex>* GetVertices();
 	std::vector<Face>* GetFaces();
 
-	Matrix GetTransformationMatrix();
 
-	John::Transform GetTransform() const;
-	void SetTransform( John::Transform val );
 
-	Vector3 GetPosition() const;
-	void SetPosition( Vector3 val );
-	Quaternion GetRotation() const;
-	void SetRotation( Quaternion val );
-	Vector3 GetScale() const;
-	void SetScale( Vector3 val );
-	
-	Vector3 GetRotationEuler() const;
-	void SetRotationEuler( Vector3 NewEuler );
 
-	void ResetTransformations();
-
-	std::string GetName() const;
-	void SetName( std::string val );
 private:
 
 	std::vector<Vertex> m_Vertices;
@@ -61,8 +46,8 @@ private:
 	ComPtr<ID3D11Buffer> m_VertexBuffer;
 	ComPtr<ID3D11Buffer> m_IndexBuffer;
 
-	John::Transform m_Transform;
-	
-	std::string m_Name = std::string("Model");
+
+
+
 };
 

@@ -11,7 +11,7 @@ void JohnMesh::Build(ID3D11Device* device)
 
 	m_Stride = sizeof(Vertex);
 	m_NumIndices = static_cast<UINT>(m_Faces.size() * 3);
-
+	m_Offset = 0;
 	const size_t vertexDataSize = m_Vertices.size() * sizeof(Vertex);
 	const size_t indexDataSize = m_Faces.size() * sizeof(Face);
 	{
@@ -86,83 +86,3 @@ std::vector<Face>* JohnMesh::GetFaces()
 	return &m_Faces;
 }
 
-Matrix JohnMesh::GetTransformationMatrix()
-{
-	Matrix TransMat = Matrix::CreateTranslation( m_Transform.Position );
-	Matrix RotMat = Matrix::CreateFromQuaternion( m_Transform.Rotation );
-	Matrix ScaleMat = Matrix::CreateScale( m_Transform.Scale );
-	Matrix ModelMatrix = ScaleMat * RotMat * TransMat;
-	return ModelMatrix;
-	
-}
-
-John::Transform JohnMesh::GetTransform() const
-{
-	return m_Transform;
-}
-
-void JohnMesh::SetTransform( John::Transform val )
-{
-	m_Transform = val;
-}
-
-Vector3 JohnMesh::GetPosition() const
-{
-	return m_Transform.Position;
-}
-
-void JohnMesh::SetPosition( Vector3 val )
-{
-	m_Transform.Position = val;
-}
-
-Quaternion JohnMesh::GetRotation() const
-{
-	return m_Transform.Rotation;
-}
-
-void JohnMesh::SetRotation( Quaternion val )
-{
-	m_Transform.Rotation = val;
-}
-
-Vector3 JohnMesh::GetScale() const
-{
-	return m_Transform.Scale;
-}
-
-void JohnMesh::SetScale( Vector3 val )
-{
-	m_Transform.Scale = val;
-}
-
-Vector3 JohnMesh::GetRotationEuler() const
-{
-	Vector3 EulerRot = m_Transform.Rotation.ToEuler();
-
-	return John::EulerRadiansToDegrees( EulerRot );
-}
-
-void JohnMesh::SetRotationEuler( Vector3 NewEuler )
-{
-	Vector3 EulerRadRot = John::EulerDegreesToRadians( NewEuler );
-	m_Transform.Rotation = Quaternion::CreateFromYawPitchRoll( EulerRadRot.y, EulerRadRot.x, EulerRadRot.z );
-}
-
-void JohnMesh::ResetTransformations()
-{
-	m_Transform.Position = Vector3::Zero;
-	m_Transform.Rotation = Quaternion::Identity;
-	m_Transform.Scale = Vector3::One;
-
-}
-
-std::string JohnMesh::GetName() const
-{
-	return m_Name;
-}
-
-void JohnMesh::SetName( std::string val )
-{
-	m_Name = val;
-}

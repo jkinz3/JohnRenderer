@@ -6,6 +6,12 @@ using Microsoft::WRL::ComPtr;
 using namespace DirectX::SimpleMath;
 using namespace DirectX;
 
+enum class EShaderProgram
+{
+	PBR,
+	PHONG,
+	Sky
+};
 
 namespace John
 {
@@ -79,6 +85,13 @@ namespace John
 	{
 		ScrollUp,
 		ScrollDown
+	};
+
+	enum class EPrimitiveType
+	{
+		Sphere,
+		Plane,
+		Cube
 	};
 
 	inline Vector3 EulerDegreesToRadians( Vector3 DegEuler )

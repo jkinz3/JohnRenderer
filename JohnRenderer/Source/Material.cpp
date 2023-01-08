@@ -16,7 +16,29 @@ void Material::SetShaderProgram( John::ShaderProgram ShaderProgram )
 
 void Material::Apply( ID3D11DeviceContext* context )
 {
+	ID3D11ShaderResourceView* const srvs[] =
+	{
+		m_EnvironmentTextures.SpecularIBL.SRV.Get(),
+		m_EnvironmentTextures.DiffuseIBL.SRV.Get(),
+		m_EnvironmentTextures.BRDF_Lut.SRV.Get(),
+		m_Textures.BaseColor.SRV.Get(),
+		m_Textures.Roughness.SRV.Get(),
+		m_Textures.Normal.SRV.Get(),
+		m_Textures.Metallic.SRV.Get(),
 
+	};
+
+	ID3D11SamplerState* const samplers[] =
+	{
+		m_SamplerState,
+		m_BRDFSampler
+	};
+
+	context->PSSetShaderResources ( 0, _countof( srvs ), srvs );
+	context->PSSetSamplers ( 0, _countof( samplers ), samplers );
+	context->VSSetShader ( m_ShaderProgram.VertexShader.Get(), nullptr, 0 );
+	context->PSSetShader ( m_ShaderProgram.PixelShader.Get(), nullptr, 0 );
+	context->IASetInputLayout ( m_ShaderProgram.InputLayout.Get() );
 }
 
 void Material::SetBaseColorMap( John::Texture NewColor )
@@ -54,5 +76,27 @@ void Material::CreateDefaultTextures( ID3D11Device* device )
 
 void Material::SetMatrices( XMMATRIX world, XMMATRIX view, XMMATRIX proj )
 {
+	m_World = world;
+	m_View = view;
+	m_Proj = proj;
+}
 
+John::Environment Material::GetEnvironmentTextures() const
+{
+	return m_EnvironmentTextures;
+}
+
+void Material::SetEnvironmentTextures( John::Environment val )
+{
+	m_EnvironmentTextures = val;
+}
+
+ID3D11SamplerState* Material::GetBRDFSampler() const
+{
+	return m_BRDFSampler;
+}
+
+void Material::SetBRDFSampler( ID3D11SamplerState* val )
+{
+	m_BRDFSampler = val;
 }

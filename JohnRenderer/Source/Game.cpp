@@ -6,7 +6,10 @@
 #include "Game.h"
 #include "Resources.h"
 #include "JohnMesh.h"
-
+#include "RenderObject.h"
+#include "Material.h"
+#include "Primitives.h"
+#include "JohnPrimitive.h"
 extern void ExitGame() noexcept;
 
 using namespace DirectX;
@@ -43,7 +46,7 @@ void Game::Initialize(HWND window, int width, int height)
 
     m_deviceResources->SetWindow(window, width, height);
 
-    m_deviceResources->CreateDeviceResources();
+    m_deviceResources->CreateDeviceResources(); 
     CreateDeviceDependentResources();
 
     m_deviceResources->CreateWindowSizeDependentResources();
@@ -62,6 +65,7 @@ void Game::Initialize(HWND window, int width, int height)
 
 	m_LightPos = Vector3( .6f, 1.f, 2.f );
 
+
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
     /*
@@ -69,6 +73,59 @@ void Game::Initialize(HWND window, int width, int height)
     m_timer.SetTargetElapsedSeconds(1.0 / 60);
     */
 }
+
+void Game::InitializeDefaultAssets()
+{
+	auto device = m_deviceResources->GetD3DDevice ();
+
+
+	John::ShaderProgram pbrProgram = John::CreateShaderProgram ( device, L"Shaders/PBRVS.hlsl", L"Shaders/PBRPS.hlsl" );
+	m_Shaders.emplace( EShaderProgram::PBR, pbrProgram );
+
+	std::shared_ptr<Material> defaultMaterial = std::make_shared<Material>( device, m_StandardSampler.Get(), m_Shaders.find ( EShaderProgram::PBR)->second );
+
+	m_Materials.push_back (defaultMaterial );
+
+	std::shared_ptr<JohnMesh> MonkeyMesh = John::LoadMeshFromFile( "Content/sphere.obj" );
+	MonkeyMesh->Build ( device );
+
+	std::shared_ptr<RenderObject> SphereMesh = std::make_shared<RenderObject>();
+
+	SphereMesh->SetMesh( MonkeyMesh );
+	SphereMesh->SetMaterial ( m_Materials[0] );
+
+	m_SourceMeshes.push_back( MonkeyMesh );
+
+	m_Meshes.push_back ( SphereMesh );
+
+	m_WorldGeo = std::make_shared<JohnMesh>();
+
+
+
+	Vertex v1;
+	v1.Position = Vector3( 0, 0, 1 );
+	v1.Normal = Vector3( 0, 0, 1 );
+	v1.TexCoord = Vector2( 0, 0 );
+
+	Vertex v2;
+	v2.Position = Vector3( 1, 0, -1 );
+	v2.Normal = Vector3( 0, 0, 1 );
+	v2.TexCoord = Vector2( .5, 1 );
+
+	Vertex v3;
+	v3.Position = Vector3( -1, 0, -1 );
+	v3.Normal = Vector3( 0, 0, 1 );
+	v3.TexCoord = Vector2( 1, 0 );
+
+	m_WorldGeo->GetVertices ()->push_back ( v1 );
+	m_WorldGeo->GetVertices ()->push_back ( v2 );
+	m_WorldGeo->GetVertices ()->push_back ( v3 );
+
+	m_WorldGeo->GetFaces ()->push_back ( { 1, 2, 3 } );
+	m_WorldGeo->Build ( device );
+}
+
+
 
 void Game::InitializeUI()
 {
@@ -96,6 +153,13 @@ void Game::InitializeSky( const char* EnvMapFile )
 	auto context = m_deviceResources->GetD3DDeviceContext();
 	m_Environment = John::CreateEnvironmentFromFile( device, context, EnvMapFile );
 	m_brdfSampler = John::CreateSamplerState( device, D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_CLAMP );
+	
+	for(auto& material : m_Materials)
+	{
+		material->SetEnvironmentTextures ( m_Environment );
+		material->SetBRDFSampler ( m_brdfSampler.Get() );
+	}
+
 	m_Sky = GeometricPrimitive::CreateGeoSphere( context, 2.f, 3.f, true );
 	m_SkyEffect = std::make_unique<DX::SkyboxEffect>( device );
 
@@ -197,8 +261,6 @@ void Game::TickUI()
 
 	if ( ImGui::BeginMenu( "Switch Shader" ) )
 	{
-		ImGui::RadioButton( "PBR", &m_CurrentShaderIndex, 0 );
-		ImGui::RadioButton( "Blinn Phong", &m_CurrentShaderIndex, 1);
 
 		ImGui::EndMenu();
 	}
@@ -244,7 +306,7 @@ void Game::Update(DX::StepTimer const& timer)
 
 	Movement( elapsedTime );
 	
-	if(m_MouseButtons.leftButton == Mouse::ButtonStateTracker::PRESSED)
+	if(m_MouseButtons.leftButton == Mouse::ButtonStateTracker::PRESSED && !m_bIsRelativeMode)
 	{
 		SelectModel(MousePicking());
 	}
@@ -287,10 +349,9 @@ void Game::Movement( float DeltaTime )
 
 	int x, y;
 	m_MouseDeltaTracker.GetMouseDelta( x, y );
-	m_MouseDelta.x = (float)x;
-	m_MouseDelta.y = (float)y;
-
-	
+	x = m_MouseState.x;
+	y = m_MouseState.y;
+	Vector2 mouseDelta(x,y);
 	if(m_MouseButtons.rightButton == Mouse::ButtonStateTracker::PRESSED)
 	{
 		m_DragAmount = Vector2::Zero;
@@ -298,14 +359,14 @@ void Game::Movement( float DeltaTime )
 
 	if(m_MouseState.positionMode == Mouse::MODE_RELATIVE)
 	{
-		m_DragAmount += m_MouseDelta;
+		m_DragAmount += mouseDelta;
 	}
 
 	if (m_MouseState.positionMode == Mouse::MODE_RELATIVE)
 	{
-		if ( m_KeyboardState.LeftAlt && m_MouseDelta != Vector2::Zero)
+		if ( m_KeyboardState.LeftAlt && mouseDelta != Vector2::Zero)
 		{
-			Vector2 delta = m_MouseDelta * .00314f;
+			Vector2 delta = mouseDelta * .00314f;
 			bool move = false;
 			if ( m_MouseState.middleButton )
 			{
@@ -328,7 +389,7 @@ void Game::Movement( float DeltaTime )
 		else
 		{
 
-			Vector2 delta = m_MouseDelta;
+			Vector2 delta = mouseDelta;
 
 			Vector3 move = Vector3::Zero;
 
@@ -358,7 +419,7 @@ void Game::Movement( float DeltaTime )
 				move -= m_Camera->GetForwardVector() * DeltaTime;
 			}
 			m_Camera->MoveAndRotateCamera( move, delta );
-			if ( m_MouseDelta != Vector2::Zero )
+			if ( mouseDelta != Vector2::Zero )
 			{
 				m_bWasCameraMoved = true;
 			}
@@ -459,7 +520,7 @@ void Game::DrawSky()
 	m_Sky->Draw( m_SkyEffect.get(), m_SkyInputLayout.Get() );
 }
 
-void Game::DrawMesh( JohnMesh* MeshToDraw )
+void Game::DrawMesh( RenderObject* MeshToDraw )
 {
 	if(MeshToDraw == nullptr)
 	{
@@ -479,32 +540,9 @@ void Game::DrawMesh( JohnMesh* MeshToDraw )
 
 	context->UpdateSubresource( m_TransformCB.Get(), 0, nullptr, &transformConstants, 0, 0 );
 
-	ID3D11ShaderResourceView* const srvs[] =
-	{
-		m_Environment.SpecularIBL.SRV.Get(),
-		m_Environment.DiffuseIBL.SRV.Get(),
-		m_Environment.BRDF_Lut.SRV.Get(),
-		m_BrickBaseColor.SRV.Get(),
-		m_BrickRoughness.SRV.Get(),
-		m_BrickNormal.SRV.Get()
-	};
 
-	ID3D11SamplerState* const states[] =
-	{
-		m_StandardSampler.Get(),
-		m_brdfSampler.Get()
-	};
-
-	John::ShaderProgram ProgramToUse = m_Shaders.find(m_CurrentShaderIndex)->second;
-
-	context->PSSetShaderResources(0, _countof(srvs), srvs);
-	context->PSSetSamplers( 0, _countof( states ), states );
 	context->VSSetConstantBuffers( 0, 1, m_TransformCB.GetAddressOf() );
 	context->PSSetConstantBuffers( 0, 1, m_ShadingCB.GetAddressOf() );
-	context->VSSetShader( ProgramToUse.VertexShader.Get(), nullptr, 0 );
-	context->VSSetShader( ProgramToUse.VertexShader.Get(), nullptr, 0 );
-	context->PSSetShader( ProgramToUse.PixelShader.Get(), nullptr, 0 );
-	context->IASetInputLayout( ProgramToUse.InputLayout.Get() );
 
 
 	MeshToDraw->Draw( context );
@@ -536,9 +574,11 @@ void Game::Clear()
 
 
 	ID3D11RenderTargetView* const nullRTV[] = { nullptr };
+	ID3D11DepthStencilView* const nullDSV = nullptr;
 
-	context->OMSetRenderTargets( _countof( nullRTV ), nullRTV, nullptr );
-
+	context->OMSetRenderTargets( _countof( nullRTV ), nullRTV, nullDSV );
+	ID3D11ShaderResourceView* null[] = { nullptr, nullptr };
+	context->PSSetShaderResources( 0, 2, null );
     context->ClearRenderTargetView(m_DefaultFrameBuffer.RTV.Get(), Colors::CornflowerBlue);
     context->ClearDepthStencilView(m_DefaultFrameBuffer.DSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
     context->OMSetRenderTargets(1, m_DefaultFrameBuffer.RTV.GetAddressOf(), m_DefaultFrameBuffer.DSV.Get());
@@ -593,7 +633,7 @@ void Game::OnDisplayChange()
 
 void Game::OnMouseMove()
 {
-	m_MouseDeltaTracker.UpdateState( m_Mouse->GetState());
+	//m_MouseDeltaTracker.UpdateState( m_Mouse->GetState());
 }
 
 void Game::OnWindowSizeChanged(int width, int height)
@@ -625,39 +665,7 @@ void Game::CreateDeviceDependentResources()
     device;
 
 
-	std::shared_ptr<JohnMesh> MonkeyMesh = John::LoadMeshFromFile( "Content/sphere.obj" );
-	MonkeyMesh->Build( device );
 
-	m_Meshes.push_back( MonkeyMesh );
-
-	m_WorldGeo = std::make_shared<JohnMesh>();
-
-
-
-	Vertex v1;
-	v1.Position = Vector3( 0, 0, 1 );
-	v1.Normal = Vector3( 0, 0, 1 );
-	v1.TexCoord = Vector2( 0, 0 );
-
-	Vertex v2;
-	v2.Position = Vector3( 1, 0, -1 );
-	v2.Normal = Vector3( 0, 0, 1 );
-	v2.TexCoord = Vector2( .5, 1 );
-
-	Vertex v3;
-	v3.Position = Vector3( -1, 0, -1 );
-	v3.Normal = Vector3( 0, 0, 1 );
-	v3.TexCoord = Vector2( 1, 0 );
-
-	m_WorldGeo->GetVertices ()->push_back ( v1 );
-	m_WorldGeo->GetVertices ()->push_back ( v2 );
-	m_WorldGeo->GetVertices ()->push_back ( v3 );
-
-	m_WorldGeo->GetFaces ()->push_back ( { 1, 2, 3 } );
-	m_WorldGeo->Build ( device );
-
-	m_Shaders.emplace(0, John::CreateShaderProgram( device, L"Shaders/PBRVS.hlsl", L"Shaders/PBRPS.hlsl" ));
-	m_Shaders.emplace(1,John::CreateShaderProgram( device, L"Shaders/PhongVS.hlsl", L"Shaders/PhongPS.hlsl" ));
 
 	m_ToneMapProgram = John::CreateShaderProgram( device, L"Shaders/Tonemap.hlsl", L"Shaders/Tonemap.hlsl", "VS_Main", "PS_Main" );
 
@@ -669,11 +677,13 @@ void Game::CreateDeviceDependentResources()
 	m_BrickNormal = John::CreateTexture( device, context, Image::fromFile( "Content/Brick_Wall_Normal.jpg" ) , DXGI_FORMAT_R8G8B8A8_UNORM);
 	m_BrickRoughness = John::CreateTexture( device, context, Image::fromFile( "Content/Brick_Wall_Roughness.jpg" ) , DXGI_FORMAT_R8G8B8A8_UNORM);
 
-	InitializeSky( "Content/environment.hdr" );
 
 	m_StandardSampler = John::CreateSamplerState(device,D3D11_FILTER_ANISOTROPIC, D3D11_TEXTURE_ADDRESS_WRAP);
 	
 	m_ComputeSampler = John::CreateSamplerState(device,  D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP );
+
+	InitializeDefaultAssets ();
+	InitializeSky( "Content/environment.hdr" );
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
@@ -701,16 +711,42 @@ bool Game::CanMoveCamera() const
 
 void Game::ReloadShaders()
 {
+	for(auto& It : m_Shaders)
+	{
+		John::ShaderProgram* ProgramToUse = &It.second;
+		ProgramToUse->VertexShader.Reset();
+		ProgramToUse->PixelShader.Reset();
+		ProgramToUse->InputLayout.Reset();
 
-	John::ShaderProgram* ProgramToUse = &m_Shaders.find(m_CurrentShaderIndex)->second;
-	ProgramToUse->VertexShader.Reset();
-	ProgramToUse->PixelShader.Reset();
-	ProgramToUse->InputLayout.Reset();
+		*ProgramToUse = John::CreateShaderProgram( m_deviceResources->GetD3DDevice(), ProgramToUse->VertFileName, ProgramToUse->PixelFileName );
 
-	*ProgramToUse = John::CreateShaderProgram( m_deviceResources->GetD3DDevice(), ProgramToUse->VertFileName, ProgramToUse->PixelFileName );
-
+	}
 
 	
+}
+
+void Game::AddPrimitive( John::EPrimitiveType type )
+{
+	std::shared_ptr<JohnPrimitive> newMesh;
+
+	auto device = m_deviceResources->GetD3DDevice ();
+	switch(type)
+	{
+	case John::EPrimitiveType::Sphere:
+		newMesh = John::CreateSphere ( device, 3, 3 );
+		newMesh->SetPrimitiveType ( type );
+		break;
+	}
+
+
+	m_SourceMeshes.push_back ( newMesh );
+
+	std::shared_ptr<RenderObject> newObject = std::make_shared<RenderObject>();
+	newObject->SetMesh ( newMesh );
+	newObject->SetMaterial ( m_Materials[0] );
+	newObject->SetName ( "Sphere" );
+
+	m_Meshes.push_back ( newObject );
 }
 
 void Game::TickGizmo()
@@ -727,7 +763,7 @@ void Game::TickGizmo()
 	Matrix model = m_SelectedModel->GetTransformationMatrix();
 
 	ImGuizmo::SetID( 0 );
-	bool bManipulated = ImGuizmo::Manipulate( *view.m, *proj.m, m_CurrentGizmoOperation, m_CurrentGizmoMode, *model.m );
+	bool bManipulated = ImGuizmo::Manipulate( *view.m, *proj.m, m_CurrentGizmoOperation, m_CurrentGizmoMode, *model.m ) && !m_bIsRelativeMode;
 
 	if(bManipulated)
 	{
@@ -754,6 +790,12 @@ void Game::DrawSceneOutliner()
 		{
 			if(ImGui::MenuItem("Mesh"))
 			{
+
+			}
+			if(ImGui::MenuItem("Sphere"))
+			{
+				AddPrimitive ( John::EPrimitiveType::Sphere );
+
 
 			}
 			ImGui::EndMenu();
@@ -784,7 +826,7 @@ void Game::DrawSceneOutliner()
 
 }
 
-void Game::DrawModelInOutliner( const char* prefix, int uid, std::shared_ptr<JohnMesh> mesh )
+void Game::DrawModelInOutliner( const char* prefix, int uid, std::shared_ptr<RenderObject> mesh )
 {
 	ImGui::PushID( uid );
 	ImGui::TableNextRow();
@@ -834,7 +876,7 @@ void Game::DrawModelInOutliner( const char* prefix, int uid, std::shared_ptr<Joh
 	}
 }
 
-void Game::DrawModelDetails(JohnMesh* Mesh)
+void Game::DrawModelDetails(RenderObject* Mesh)
 {
 	Vector3 ModelTrans = Mesh->GetPosition();
 	Vector3 ModelRot = Mesh->GetRotationEuler();
@@ -852,16 +894,37 @@ void Game::DrawModelDetails(JohnMesh* Mesh)
 	{
 		Mesh->SetScale( ModelScale);
 	}
+
+	JohnPrimitive* prim = static_cast<JohnPrimitive*>(Mesh->GetMesh ().get());
+
+	if(prim)
+	{
+		auto device = m_deviceResources->GetD3DDevice ();
+		float primSize = float(prim->GetSize ());
+		int tess = prim->GetTessellation ();
+		if(ImGui::DragFloat("Primitive Size", &primSize, .1f))
+		{
+			prim->SetSize ( primSize );
+			prim->Build ( device );
+		}
+		if(ImGui::DragInt ("Tessellation", &tess, 1.f, 3, 7))
+		{
+			prim->SetTessellation ( tess );
+			prim->Build ( device );
+		}
+	}
 }
 
-void Game::DeleteMesh( std::shared_ptr<JohnMesh> MeshToDelete )
+void Game::DeleteMesh( std::shared_ptr<RenderObject> MeshToDelete )
 {
 	m_Meshes.erase( std::remove( m_Meshes.begin(), m_Meshes.end(), MeshToDelete ) );
 }
 
 
 
-void Game::SelectModel( JohnMesh* ModelToSelect )
+
+
+void Game::SelectModel( RenderObject* ModelToSelect )
 {
 	if(ModelToSelect != nullptr)
 	{
@@ -882,7 +945,7 @@ void Game::DeselectAll()
 	m_SelectedModel = nullptr;
 }
 
-JohnMesh* Game::MousePicking()
+RenderObject* Game::MousePicking()
 {
 	if(m_Meshes.size() == 0)
 	{
@@ -918,10 +981,11 @@ JohnMesh* Game::MousePicking()
 	float hitDistance = FLT_MAX;
 
 	bool bResult = false;
-	JohnMesh* ActorToSelect = nullptr;
+	RenderObject* ActorToSelect = nullptr;
 
-	for(auto& mesh : m_Meshes)
+	for(auto& renderObject : m_Meshes)
 	{
+		auto mesh = renderObject->GetMesh ();
 		Ray ray;
 		ray.direction = rayDirWorldSpace;
 		ray.position = rayOrigWorldSpace;
@@ -942,7 +1006,7 @@ JohnMesh* Game::MousePicking()
 			if(bResult)
 			{
 				hitDistance = std::min( hitDistance, dist );
-				ActorToSelect = mesh.get();
+				ActorToSelect = renderObject.get();
 				break;
 				
 			}

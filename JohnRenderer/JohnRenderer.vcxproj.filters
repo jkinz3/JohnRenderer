@@ -45,6 +45,9 @@
     <ClInclude Include="Source\MouseDeltaTracker.h" />
     <ClInclude Include="Source\Image.h" />
     <ClInclude Include="Source\Material.h" />
+    <ClInclude Include="Source\RenderObject.h" />
+    <ClInclude Include="Source\Primitives.h" />
+    <ClInclude Include="Source\JohnPrimitive.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\pch.cpp" />
@@ -75,6 +78,9 @@
     <ClCompile Include="Source\MouseDeltaTracker.cpp" />
     <ClCompile Include="Source\Image.cpp" />
     <ClCompile Include="Source\Material.cpp" />
+    <ClCompile Include="Source\RenderObject.cpp" />
+    <ClCompile Include="Source\Primitives.cpp" />
+    <ClCompile Include="Source\JohnPrimitive.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
