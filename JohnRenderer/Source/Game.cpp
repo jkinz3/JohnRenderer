@@ -10,6 +10,9 @@
 #include "Material.h"
 #include "Primitives.h"
 #include "JohnPrimitive.h"
+#include "Scene.h"
+#include "Entity.h"
+#include "Components.h"
 extern void ExitGame() noexcept;
 
 using namespace DirectX;
@@ -102,7 +105,11 @@ void Game::InitializeDefaultAssets()
 
 	m_WorldGeo = std::make_shared<JohnMesh>();
 
-
+	Entity entity = m_Scene->CreateEntity( "DefaultSphere" );
+	entity.AddComponent<MeshComponent>();
+	entity.AddComponent<TransformComponent>();
+	entity.GetComponent<MeshComponent>().Mesh = MonkeyMesh;
+	entity.GetComponent<MeshComponent>().Material = defaultMaterial;
 
 	Vertex v1;
 	v1.Position = Vector3( 0, 0, 1 );
@@ -278,7 +285,7 @@ void Game::TickUI()
 	}
 	static bool s_bRelativeLastFrame = false;
 
-	if(!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) &&  m_MouseButtons.rightButton == Mouse::ButtonStateTracker::RELEASED && !m_bIsRelativeMode && m_DragAmount == Vector2::Zero)
+	if(!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) &&  m_MouseButtons.rightButton == Mouse::ButtonStateTracker::RELEASED && !m_bIsRelativeMode && m_bJustFinishedMovingCamera == false)
 	{
 
 		ImGui::OpenPopup( "RightClick" );
@@ -468,15 +475,11 @@ void Game::Movement( float DeltaTime )
 			m_bWasCameraMoved = move;
 
 		}
-		else
+		else if (m_MouseState.rightButton)
 		{
 			if ( m_MouseDelta != Vector2::Zero )
 			{
 				m_bWasCameraMoved = true;
-			}
-			else
-			{
-				m_bWasCameraMoved = false;
 			}
 
 			m_Camera->MoveAndRotateCamera( Vector3( 0, 0, 0 ), m_MouseDelta );
@@ -498,6 +501,15 @@ void Game::Movement( float DeltaTime )
 			}
 
 			m_Mouse->ResetScrollWheelValue();
+		}
+		else if (m_MouseButtons.rightButton == Mouse::ButtonStateTracker::RELEASED && m_bWasCameraMoved )
+		{
+			m_bWasCameraMoved = false;
+			m_bJustFinishedMovingCamera = true;
+		}
+		else
+		{
+			m_bJustFinishedMovingCamera = false;
 		}
 	}
 
@@ -560,6 +572,33 @@ void Game::DrawScene()
 	shadingConstants.LightPos = m_LightPos;
 
 	context->UpdateSubresource( m_ShadingCB.Get(), 0, nullptr, &shadingConstants, 0, 0 );
+		Matrix view = m_Camera->GetViewMatrix();
+		Matrix proj = m_Camera->GetProjectionMatrix();
+
+	auto group = m_Scene->m_Registry.group<MeshComponent>( entt::get<TransformComponent> );
+	for(auto entity : group)
+	{
+		auto [transformComponent, meshComponent] = group.get<TransformComponent, MeshComponent>( entity );
+
+		John::PhongTransformCB transformConstants;
+
+		meshComponent.Material->Apply( context );
+
+		Matrix model = transformComponent.GetTransformationMatrix();
+		Matrix MVP = model * view * proj;
+
+		transformConstants.MVP = MVP.Transpose();
+		transformConstants.Model = model.Transpose();
+
+		context->UpdateSubresource( m_TransformCB.Get(), 0, nullptr, &transformConstants, 0, 0 );
+
+
+		context->VSSetConstantBuffers( 0, 1, m_TransformCB.GetAddressOf() );
+		context->PSSetConstantBuffers( 0, 1, m_ShadingCB.GetAddressOf() );
+
+		meshComponent.Mesh->Draw( context );
+	}
+
 	for(auto mesh : m_Meshes)
 	{
 		DrawMesh( mesh.get() );
@@ -583,24 +622,7 @@ void Game::DrawMesh( RenderObject* MeshToDraw )
 	}
 	auto context = m_deviceResources->GetD3DDeviceContext();
 
-	John::PhongTransformCB transformConstants;
 
-	Matrix model = MeshToDraw->GetTransformationMatrix();
-	Matrix view = m_Camera->GetViewMatrix();
-	Matrix proj = m_Camera->GetProjectionMatrix();
-	Matrix MVP = model * view * proj;
-
-	transformConstants.MVP = MVP.Transpose();
-	transformConstants.Model = model.Transpose();
-
-	context->UpdateSubresource( m_TransformCB.Get(), 0, nullptr, &transformConstants, 0, 0 );
-
-
-	context->VSSetConstantBuffers( 0, 1, m_TransformCB.GetAddressOf() );
-	context->PSSetConstantBuffers( 0, 1, m_ShadingCB.GetAddressOf() );
-
-
-	MeshToDraw->Draw( context );
 
 }
 
@@ -719,7 +741,7 @@ void Game::CreateDeviceDependentResources()
     // TODO: Initialize device dependent objects here (independent of window size).
     device;
 
-
+	m_Scene = std::make_shared<Scene>();
 
 
 	m_ToneMapProgram = John::CreateShaderProgram( device, L"Shaders/Tonemap.hlsl", L"Shaders/Tonemap.hlsl", "VS_Main", "PS_Main" );
@@ -1006,6 +1028,7 @@ void Game::PrepareInputState()
 	m_MouseDeltaTracker.GetMouseDelta( x, y );
 	m_MouseDelta.x = (float)x;
 	m_MouseDelta.y = (float)y;
+
 
 }
 

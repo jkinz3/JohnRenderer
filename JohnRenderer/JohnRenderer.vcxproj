@@ -54,7 +54,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Source;$(ProjectDir)ThirdParty;$(ProjectDir)ThirdParty\Assimp\Include;$(ProjectDir)ThirdParty\ImGui;$(ProjectDir)ThirdParty\DirectXTK\Inc;$(ProjectDir)ThirdParty\ImGuizmo;$(ProjectDir)ThirdParty\entt\single_include\entt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Source;$(ProjectDir)ThirdParty;$(ProjectDir)ThirdParty\Assimp\Include;$(ProjectDir)ThirdParty\ImGui;$(ProjectDir)ThirdParty\DirectXTK\Inc;$(ProjectDir)ThirdParty\ImGuizmo;$(ProjectDir)ThirdParty\entt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level4</WarningLevel>
@@ -77,7 +77,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Source;$(ProjectDir)ThirdParty;$(ProjectDir)ThirdParty\Assimp\Include;$(ProjectDir)ThirdParty\ImGui;$(ProjectDir)ThirdParty\DirectXTK\Inc;$(ProjectDir)ThirdParty\ImGuizmo;$(ProjectDir)ThirdParty\entt\single_include\entt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)Source;$(ProjectDir)ThirdParty;$(ProjectDir)ThirdParty\Assimp\Include;$(ProjectDir)ThirdParty\ImGui;$(ProjectDir)ThirdParty\DirectXTK\Inc;$(ProjectDir)ThirdParty\ImGuizmo;$(ProjectDir)ThirdParty\entt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level4</WarningLevel>
@@ -103,6 +103,9 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Source\SourceMesh.h" />
+    <ClInclude Include="Source\Components.h" />
+    <ClInclude Include="Source\Entity.h" />
     <ClInclude Include="Source\Scene.h" />
     <ClInclude Include="Source\JohnPrimitive.h" />
     <ClInclude Include="Source\Primitives.h" />
@@ -141,6 +144,8 @@
     <ClInclude Include="ThirdParty\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\SourceMesh.cpp" />
+    <ClCompile Include="Source\Entity.cpp" />
     <ClCompile Include="Source\Scene.cpp" />
     <ClCompile Include="Source\JohnPrimitive.cpp" />
     <ClCompile Include="Source\Primitives.cpp" />

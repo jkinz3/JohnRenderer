@@ -14,6 +14,7 @@ class JohnMesh;
 class Material;
 class RenderObject;
 class CameraUserImpulseData;
+class Scene;
 
 using Microsoft::WRL::ComPtr;
 
@@ -170,6 +171,12 @@ private:
 	Vector2 m_MouseDelta;
 
 	std::shared_ptr<CameraUserImpulseData> m_CameraUserImpulseData;
+
+	bool m_bJustFinishedMovingCamera = false;
+
+
+	std::shared_ptr<Scene> m_Scene;
+	
 
 	
 

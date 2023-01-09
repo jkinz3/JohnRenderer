@@ -48,6 +48,11 @@
     <ClInclude Include="Source\RenderObject.h" />
     <ClInclude Include="Source\Primitives.h" />
     <ClInclude Include="Source\JohnPrimitive.h" />
+    <ClInclude Include="Source\Scene.h" />
+    <ClInclude Include="ThirdParty\entt\single_include\entt\entt.hpp" />
+    <ClInclude Include="Source\Entity.h" />
+    <ClInclude Include="Source\Components.h" />
+    <ClInclude Include="Source\SourceMesh.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\pch.cpp" />
@@ -81,6 +86,9 @@
     <ClCompile Include="Source\RenderObject.cpp" />
     <ClCompile Include="Source\Primitives.cpp" />
     <ClCompile Include="Source\JohnPrimitive.cpp" />
+    <ClCompile Include="Source\Scene.cpp" />
+    <ClCompile Include="Source\Entity.cpp" />
+    <ClCompile Include="Source\SourceMesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

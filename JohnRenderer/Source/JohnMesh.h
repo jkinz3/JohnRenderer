@@ -5,6 +5,7 @@ using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 class Material;
+class SourceMesh;
 
 struct Vertex
 {
@@ -33,6 +34,8 @@ public:
 
 
 
+	std::shared_ptr<SourceMesh> GetSourceMesh() const { return m_SourceMesh; }
+	void SetSourceMesh( std::shared_ptr<SourceMesh> val ) { m_SourceMesh = val; }
 private:
 
 	std::vector<Vertex> m_Vertices;
@@ -46,6 +49,7 @@ private:
 	ComPtr<ID3D11Buffer> m_VertexBuffer;
 	ComPtr<ID3D11Buffer> m_IndexBuffer;
 
+	std::shared_ptr<SourceMesh> m_SourceMesh;
 
 
 
