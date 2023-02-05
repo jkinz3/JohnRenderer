@@ -11,7 +11,8 @@ public:
 	float GetTessellation() const;
 	void SetTessellation( float val );
 
-
+	static John::EAssetType GetStaticType() { return John::EAssetType::JohnPrimitive; }
+	virtual John::EAssetType GetAssetType () const override { return GetStaticType (); }
 
 	John::EPrimitiveType GetPrimitiveType() const;
 	void SetPrimitiveType( John::EPrimitiveType val );

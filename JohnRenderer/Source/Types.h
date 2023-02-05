@@ -105,4 +105,11 @@ namespace John
 		Vector3 DegEuler = Vector3( XMConvertToDegrees( RadRuler.x ), XMConvertToDegrees( RadRuler.y ), XMConvertToDegrees( RadRuler.z ) );
 		return DegEuler;
 	}
+
+	enum class EAssetType
+	{
+		JohnMesh,
+		JohnPrimitive
+
+	};
 }

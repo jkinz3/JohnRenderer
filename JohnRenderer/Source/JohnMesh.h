@@ -31,8 +31,8 @@ public:
 	std::vector<Vertex>* GetVertices();
 	std::vector<Face>* GetFaces();
 
-
-
+	static John::EAssetType GetStaticType() { return John::EAssetType::JohnMesh; }
+	virtual John::EAssetType GetAssetType() const { return GetStaticType(); }
 
 	std::shared_ptr<SourceMesh> GetSourceMesh() const { return m_SourceMesh; }
 	void SetSourceMesh( std::shared_ptr<SourceMesh> val ) { m_SourceMesh = val; }
@@ -51,6 +51,8 @@ private:
 
 	std::shared_ptr<SourceMesh> m_SourceMesh;
 
+
+	John::EAssetType m_ComponentType;
 
 
 };

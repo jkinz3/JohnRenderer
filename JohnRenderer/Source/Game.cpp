@@ -30,6 +30,8 @@ Game::Game() noexcept(false)
     //   Add DX::DeviceResources::c_AllowTearing to opt-in to variable rate displays.
     //   Add DX::DeviceResources::c_EnableHDR for HDR10 display.
     m_deviceResources->RegisterDeviceNotify(this);
+
+	NullEntity.SetEntityHandle(entt::null);
 }
 
 // Initialize the Direct3D resources required to run.
@@ -70,6 +72,8 @@ void Game::Initialize(HWND window, int width, int height)
 
 	m_LightPos = Vector3( .6f, 1.f, 2.f );
 
+	m_bRightClickOpen = false;
+	m_bWantsRightClick = false;
 
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
@@ -103,7 +107,6 @@ void Game::InitializeDefaultAssets()
 
 	m_Meshes.push_back ( SphereMesh );
 
-	m_WorldGeo = std::make_shared<JohnMesh>();
 
 	Entity entity = m_Scene->CreateEntity( "DefaultSphere" );
 	entity.AddComponent<MeshComponent>();
@@ -126,12 +129,6 @@ void Game::InitializeDefaultAssets()
 	v3.Normal = Vector3( 0, 0, 1 );
 	v3.TexCoord = Vector2( 1, 0 );
 
-	m_WorldGeo->GetVertices ()->push_back ( v1 );
-	m_WorldGeo->GetVertices ()->push_back ( v2 );
-	m_WorldGeo->GetVertices ()->push_back ( v3 );
-
-	m_WorldGeo->GetFaces ()->push_back ( { 1, 2, 3 } );
-	m_WorldGeo->Build ( device );
 }
 
 
@@ -279,30 +276,33 @@ void Game::TickUI()
 
 	ImGui::End();
 
-	if(m_SelectedModel != nullptr)
+	if(m_SelectedModel.GetEntityHandle () != entt::null)
 	{
 		TickGizmo();
 	}
 	static bool s_bRelativeLastFrame = false;
 
-	if(!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) &&  m_MouseButtons.rightButton == Mouse::ButtonStateTracker::RELEASED && !m_bIsRelativeMode && m_bJustFinishedMovingCamera == false)
+	if(!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) && m_bWantsRightClick)
 	{
 
 		ImGui::OpenPopup( "RightClick" );
 
 	}
-	if(m_SelectedModel != nullptr)
+	if(m_SelectedModel.GetEntityHandle () != entt::null)
 	{
 
-	if(ImGui::BeginPopup("RightClick"))
-	{
-		if(ImGui::Button("Reset Transformations"))
-		{
-			m_SelectedModel->ResetTransformations();
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
+// 	if(ImGui::BeginPopup("RightClick"))
+// 	{
+// 		if(ImGui::Button("Reset Transformations"))
+// 		{
+// 		//	m_SelectedModel->ResetTransformations();
+// 			ImGui::CloseCurrentPopup();
+// 			m_bWantsRightClick = false;
+// 		}
+// 		ImGui::EndPopup();
+// 	}
+
+
 	}
 	s_bRelativeLastFrame = m_bIsRelativeMode;
 
@@ -444,7 +444,7 @@ void Game::Movement( float DeltaTime )
 
 	}
 
-
+	m_bWasCameraMoved = false;
 
 	if ( m_Keys.pressed.F )
 	{
@@ -512,11 +512,28 @@ void Game::Movement( float DeltaTime )
 			m_bJustFinishedMovingCamera = false;
 		}
 	}
-
+	if ( m_bIsRelativeMode )
+	{
+		m_RelativeMouseDelta += m_MouseDelta;
+	}
 	m_bIsRelativeMode = m_MouseState.rightButton || m_KeyboardState.LeftAlt && (m_MouseState.leftButton || m_MouseState.middleButton || m_MouseState.rightButton);
 
 	m_Mouse->SetMode( m_bIsRelativeMode ? Mouse::MODE_RELATIVE : Mouse::MODE_ABSOLUTE );
 
+
+
+	if(m_MouseButtons.rightButton == GamePad::ButtonStateTracker::RELEASED)
+	{
+		if(m_RelativeMouseDelta == Vector2::Zero || m_bRightClickOpen)
+		{
+			m_bWantsRightClick = true;
+			
+		}
+		else
+		{
+			m_RelativeMouseDelta = Vector2::Zero;
+		}
+	}
 
 
 
@@ -603,7 +620,6 @@ void Game::DrawScene()
 	{
 		DrawMesh( mesh.get() );
 	}
-		m_WorldGeo->Draw ( context );
 
 }
 
@@ -837,7 +853,9 @@ void Game::TickGizmo()
 	ImGuizmo::SetRect( 0, 0, io.DisplaySize.x, io.DisplaySize.y );
 	Matrix view = m_Camera->GetViewMatrix();
 	Matrix proj = m_Camera->GetProjectionMatrix();
-	Matrix model = m_SelectedModel->GetTransformationMatrix();
+
+	TransformComponent& transComp = m_SelectedModel.GetComponent<TransformComponent>();
+	Matrix model = transComp.GetTransformationMatrix();
 
 	ImGuizmo::SetID( 0 );
 	bool bManipulated = ImGuizmo::Manipulate( *view.m, *proj.m, m_CurrentGizmoOperation, m_CurrentGizmoMode, *model.m ) && !m_bIsRelativeMode;
@@ -847,14 +865,13 @@ void Game::TickGizmo()
 		Vector3 NewTrans;
 		Quaternion NewRot;
 		Vector3 NewScale;
-
 		model.Decompose( NewScale, NewRot, NewTrans );
-		John::Transform NewTransform;
-		NewTransform.Position = NewTrans;
-		NewTransform.Rotation = NewRot;
-		NewTransform.Scale = NewScale;
+		TransformComponent NewTransform;
+		transComp.Translation= NewTrans;
+		//ctor3 RotEuler = NewRot.ToEuler ();
+		transComp.Rotation = NewRot;
+		transComp.Scale = NewScale;
 
-		m_SelectedModel->SetTransform( NewTransform );
 	}
 }
 
@@ -888,10 +905,11 @@ void Game::DrawSceneOutliner()
 	{
 
 		int uid = 0;
-		for ( auto& mesh : m_Meshes )
+		auto ents = m_Scene->GetAllEntitiesWith < MeshComponent>();
+		for ( auto mesh : ents )
 		{
-
-			DrawModelInOutliner( "Object: ", uid , mesh);
+			Entity entity = { mesh, m_Scene.get() };
+			DrawModelInOutliner( "Object: ", uid , entity);
 			uid++;
 
 		}
@@ -903,19 +921,19 @@ void Game::DrawSceneOutliner()
 
 }
 
-void Game::DrawModelInOutliner( const char* prefix, int uid, std::shared_ptr<RenderObject> mesh )
+void Game::DrawModelInOutliner( const char* prefix, int uid, Entity mesh )
 {
 	ImGui::PushID( uid );
 	ImGui::TableNextRow();
 	ImGui::TableSetColumnIndex( 0 );
 	ImGui::AlignTextToFramePadding();
-	bool node_open = ImGui::TreeNode( mesh->GetName().c_str() );
+	bool node_open = ImGui::TreeNode("hai" );
 	/*	ImGui::TableSetColumnIndex( 1 );*/
 
 
 	if ( ImGui::IsItemClicked() )
 	{
-		SelectModel( mesh.get() );
+		SelectModel( mesh );
 	}
 
 	bool bEntityDeleted = false;
@@ -929,7 +947,7 @@ void Game::DrawModelInOutliner( const char* prefix, int uid, std::shared_ptr<Ren
 		{
 			if ( m_SelectedModel )
 			{
-				m_SelectedModel->ResetTransformations();
+			//	m_SelectedModel->ResetTransformations();
 			}
 
 		}
@@ -953,29 +971,23 @@ void Game::DrawModelInOutliner( const char* prefix, int uid, std::shared_ptr<Ren
 	}
 }
 
-void Game::DrawModelDetails(RenderObject* Mesh)
+void Game::DrawModelDetails(Entity Mesh)
 {
-	Vector3 ModelTrans = Mesh->GetPosition();
-	Vector3 ModelRot = Mesh->GetRotationEuler();
-	Vector3 ModelScale = Mesh->GetScale();
 
-	if(ImGui::DragFloat3("Translation", &ModelTrans.x, .1f))
-	{
-		Mesh->SetPosition( ModelTrans );
-	}
-	if ( ImGui::DragFloat3( "Rotation", &ModelRot.x, .1f ) )
-	{
-		Mesh->SetRotationEuler( ModelRot);
-	}
-	if ( ImGui::DragFloat3( "Scale", &ModelScale.x, .1f ) )
-	{
-		Mesh->SetScale( ModelScale);
-	}
+	JohnMesh* mesh = Mesh.GetComponent<MeshComponent>().Mesh.get();
+	John::EAssetType assetType = mesh->GetAssetType ();
 
-	JohnPrimitive* prim = static_cast<JohnPrimitive*>(Mesh->GetMesh ().get());
+	TransformComponent trans = Mesh.GetComponent<TransformComponent>();
 
-	if(prim)
+	ImGui::DragFloat3 ( "Position", &trans.Translation.x, .1f );
+	ImGui::DragFloat3 ( "Rotation", &trans.Rotation.x, .1f );
+	ImGui::DragFloat3 ( "Scale", &trans.Scale.x, .1f );
+
+
+
+	if(assetType == John::EAssetType::JohnPrimitive)
 	{
+		JohnPrimitive* prim = static_cast<JohnPrimitive*>(mesh);
 		auto device = m_deviceResources->GetD3DDevice ();
 		float primSize = float(prim->GetSize ());
 		int tess = prim->GetTessellation ();
@@ -992,9 +1004,9 @@ void Game::DrawModelDetails(RenderObject* Mesh)
 	}
 }
 
-void Game::DeleteMesh( std::shared_ptr<RenderObject> MeshToDelete )
+void Game::DeleteMesh( Entity MeshToDelete )
 {
-	m_Meshes.erase( std::remove( m_Meshes.begin(), m_Meshes.end(), MeshToDelete ) );
+	m_Scene->DestroyEntity ( MeshToDelete );
 }
 
 
@@ -1009,9 +1021,9 @@ void Game::ConvertMovementDeltaToDragRot(Vector3& InOutDragDelta,  Vector3& OutD
 	}
 }
 
-void Game::SelectModel( RenderObject* ModelToSelect )
+void Game::SelectModel( Entity ModelToSelect )
 {
-	if(ModelToSelect != nullptr)
+	if(ModelToSelect.GetEntityHandle () != entt::null)
 	{
 		m_SelectedModel = ModelToSelect;
 	}
@@ -1025,23 +1037,24 @@ void Game::PrepareInputState()
 	m_MouseButtons.Update( m_MouseState );
 
 	int x, y;
-	m_MouseDeltaTracker.GetMouseDelta( x, y );
-	m_MouseDelta.x = (float)x;
-	m_MouseDelta.y = (float)y;
+
+	//m_MouseDeltaTracker.GetMouseDelta( x, y );
+	m_MouseDelta.x = (float)m_MouseState.x;
+	m_MouseDelta.y = (float)m_MouseState.y;
 
 
 }
 
 void Game::DeselectAll()
 {
-	m_SelectedModel = nullptr;
+	m_SelectedModel = NullEntity;
 }
 
-RenderObject* Game::MousePicking()
+Entity Game::MousePicking()
 {
 	if(m_Meshes.size() == 0)
 	{
-		return nullptr;
+		return NullEntity;
 	}
 
 
@@ -1073,16 +1086,19 @@ RenderObject* Game::MousePicking()
 	float hitDistance = FLT_MAX;
 
 	bool bResult = false;
-	RenderObject* ActorToSelect = nullptr;
+	Entity ActorToSelect = NullEntity;
 
-	for(auto& renderObject : m_Meshes)
+	auto ents = m_Scene->GetAllEntitiesWith<MeshComponent>();
+	for(auto ent : ents)
 	{
-		auto mesh = renderObject->GetMesh ();
+		Entity entity = { ent, m_Scene.get() };
+		auto mesh = entity.GetComponent<MeshComponent>().Mesh.get();
 		Ray ray;
 		ray.direction = rayDirWorldSpace;
 		ray.position = rayOrigWorldSpace;
 		auto vertices = *mesh->GetVertices();
-		for(auto face : *mesh->GetFaces())
+		auto faces = *mesh->GetFaces();
+		for(auto face : faces)
 		{
 			uint32_t Index1 = face.v1;
 			uint32_t Index2 = face.v2;
@@ -1098,7 +1114,7 @@ RenderObject* Game::MousePicking()
 			if(bResult)
 			{
 				hitDistance = std::min( hitDistance, dist );
-				ActorToSelect = renderObject.get();
+				ActorToSelect = entity;
 				break;
 				
 			}
@@ -1115,7 +1131,7 @@ RenderObject* Game::MousePicking()
 	}
 	else
 	{
-		return nullptr;
+		return NullEntity;
 	}
 }
 

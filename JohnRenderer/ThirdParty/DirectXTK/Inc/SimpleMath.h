@@ -558,8 +558,6 @@ namespace DirectX
 
             float Determinant() const noexcept;
 
-
-
             // Computes rotation about y-axis (y), then x-axis (x), then z-axis (z)
             Vector3 ToEuler() const noexcept;
 
@@ -734,11 +732,6 @@ namespace DirectX
             void RotateTowards(const Quaternion& target, float maxAngle) noexcept;
             void __cdecl RotateTowards(const Quaternion& target, float maxAngle, Quaternion& result) const noexcept;
 
-
-            /*john code. helpers for replacing ToEuler with UE version*/
-            float ClampAxis(float Angle) const noexcept;
-            float NormalizeAxis(float Angle) const noexcept;
-            /*end John Code*/
             // Computes rotation about y-axis (y), then x-axis (x), then z-axis (z)
             Vector3 ToEuler() const noexcept;
 

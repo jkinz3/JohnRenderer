@@ -9,7 +9,7 @@
 #include "Types.h"
 #include "Camera.h"
 #include "MouseDeltaTracker.h"
-
+#include "Entity.h"
 class JohnMesh;
 class Material;
 class RenderObject;
@@ -85,16 +85,16 @@ private:
 	void TickGizmo();
 
 	void DrawSceneOutliner();
-	void DrawModelInOutliner( const char* prefix, int uid, std::shared_ptr<RenderObject> mesh);
-	void DrawModelDetails(RenderObject* Mesh);
+	void DrawModelInOutliner( const char* prefix, int uid, Entity mesh);
+	void DrawModelDetails(Entity Mesh);
 
 
-	void DeleteMesh( std::shared_ptr<RenderObject> MeshToDelete );
+	void DeleteMesh( Entity MeshToDelete );
 
 	void ConvertMovementDeltaToDragRot( Vector3& InOutDragDelta,  Vector3& OutDrag, Vector3& Rot );
 
 
-	void SelectModel( RenderObject* ModelToSelect );
+	void SelectModel( Entity ModelToSelect );
 
 	void PrepareInputState();
 
@@ -102,7 +102,7 @@ private:
 
 	
 
-	RenderObject* MousePicking();
+	Entity MousePicking();
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
@@ -112,7 +112,7 @@ private:
 
 
 	//my sheeit
-	RenderObject* m_SelectedModel = nullptr;
+	Entity m_SelectedModel;
 
 	ComPtr<ID3D11Buffer> m_TransformCB;
 	ComPtr<ID3D11Buffer> m_ShadingCB;
@@ -129,7 +129,6 @@ private:
 	std::vector<std::shared_ptr<Material>> m_Materials;
 	
 
-	std::shared_ptr<JohnMesh> m_WorldGeo;
 
 	std::unique_ptr<Camera> m_Camera;
 
@@ -178,6 +177,12 @@ private:
 	std::shared_ptr<Scene> m_Scene;
 	
 
-	
+	Entity NullEntity;
+
+	Vector2 m_RelativeMouseDelta;
+
+	bool m_bWantsRightClick;
+
+	bool m_bRightClickOpen;
 
 };

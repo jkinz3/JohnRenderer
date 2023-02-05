@@ -45,9 +45,7 @@ namespace DirectX
         const Vector4 Vector4::UnitZ = { 0.f, 0.f, 1.f, 0.f };
         const Vector4 Vector4::UnitW = { 0.f, 0.f, 0.f, 1.f };
 
-
-
-		const Matrix Matrix::Identity = { 1.f, 0.f, 0.f, 0.f,
+        const Matrix Matrix::Identity = { 1.f, 0.f, 0.f, 0.f,
                                           0.f, 1.f, 0.f, 0.f,
                                           0.f, 0.f, 1.f, 0.f,
                                           0.f, 0.f, 0.f, 1.f };

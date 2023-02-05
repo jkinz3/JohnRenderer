@@ -247,7 +247,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if(game)
 		{
 
-		game->OnMouseMove();
+//		game->OnMouseMove();
 		}
 		break;
 	case WM_MOUSEMOVE:

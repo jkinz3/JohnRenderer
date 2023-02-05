@@ -15,7 +15,11 @@ public:
 
 	void RenderScene( Camera& camera );
 	
-
+	template<typename... Components>
+	auto GetAllEntitiesWith()
+	{
+		return m_Registry.view<Components...>();
+	}
 
 	entt::registry m_Registry;
 private:
