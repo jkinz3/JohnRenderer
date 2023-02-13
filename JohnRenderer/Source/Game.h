@@ -67,6 +67,7 @@ private:
 	
     void Render();
 	void RenderUI();
+	void DrawCameraViewport();
 	void DrawScene();
 	void DrawSky();
 	void DrawMesh(RenderObject* MeshToDraw);
@@ -128,7 +129,8 @@ private:
 	std::vector<std::shared_ptr<JohnMesh>> m_SourceMeshes;
 	std::vector<std::shared_ptr<Material>> m_Materials;
 	
-
+	std::unique_ptr<DX::RenderTexture> m_ViewportRenderTarget;
+	std::unique_ptr<DX::RenderTexture> m_FinalRenderTarget;
 
 	std::unique_ptr<Camera> m_Camera;
 

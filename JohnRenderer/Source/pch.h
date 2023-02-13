@@ -98,6 +98,8 @@
 
 #include "Image.h"
 
+#pragma warning(disable: 4101 4244 4189 4100 4267 4838 4245)
+
 namespace DX
 {
     // Helper class for COM exceptions

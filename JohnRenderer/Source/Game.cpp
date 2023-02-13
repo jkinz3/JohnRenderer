@@ -32,6 +32,10 @@ Game::Game() noexcept(false)
     m_deviceResources->RegisterDeviceNotify(this);
 
 	NullEntity.SetEntityHandle(entt::null);
+
+	m_ViewportRenderTarget = std::make_unique<DX::RenderTexture>( DXGI_FORMAT_R16G16B16A16_FLOAT );
+	m_FinalRenderTarget = std::make_unique<DX::RenderTexture>( DXGI_FORMAT_R16G16B16A16_FLOAT);
+
 }
 
 // Initialize the Direct3D resources required to run.
@@ -139,7 +143,18 @@ void Game::InitializeUI()
 
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+	ImGuiStyle& style = ImGui::GetStyle();
+
+	if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		style.WindowRounding = 0.f;
+		style.Colors[ImGuiCol_WindowBg].w = 1.f;
+	}
+
+
 	ImGui::StyleColorsDark();
 	
 	ImGui_ImplWin32_Init( m_deviceResources->GetWindow() );
@@ -210,7 +225,8 @@ void Game::TickUI()
 	ImGui_ImplWin32_NewFrame();
 	ImGui_ImplDX11_NewFrame();
 	ImGui::NewFrame();
-
+	ImGuiDockNodeFlags NodeFlags = ImGuiDockNodeFlags_PassthruCentralNode;
+	ImGui::DockSpaceOverViewport ( ImGui::GetMainViewport (), NodeFlags );
 	if(ImGui::BeginMainMenuBar())
 	{
 		if(ImGui::BeginMenu("File"))
@@ -276,10 +292,7 @@ void Game::TickUI()
 
 	ImGui::End();
 
-	if(m_SelectedModel.GetEntityHandle () != entt::null)
-	{
-		TickGizmo();
-	}
+
 	static bool s_bRelativeLastFrame = false;
 
 	if(!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) && m_bWantsRightClick)
@@ -304,8 +317,7 @@ void Game::TickUI()
 
 
 	}
-	s_bRelativeLastFrame = m_bIsRelativeMode;
-
+	DrawCameraViewport ();
 
 }
 
@@ -563,11 +575,15 @@ void Game::Render()
 	
 	DrawSky();
 
+	ID3D11ShaderResourceView* nullSRV[] = { nullptr };
+	context->PSSetShaderResources( 0, _countof( nullSRV ), nullSRV );
+	ID3D11RenderTargetView* nullViews[] = { nullptr };
+	context->OMSetRenderTargets( 1, nullViews, nullptr );
 
+	DrawToneMapping();
     m_deviceResources->PIXEndEvent();
 
 
-	DrawToneMapping();
 	RenderUI();
 
     // Show the new frame.
@@ -576,13 +592,70 @@ void Game::Render()
 
 void Game::RenderUI()
 {
+	auto renderTarget = m_deviceResources->GetRenderTargetView ();
+	auto context = m_deviceResources->GetD3DDeviceContext ();
+
+	context->OMSetRenderTargets( 1, &renderTarget, nullptr );
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData( ImGui::GetDrawData() );
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		ImGui::UpdatePlatformWindows ();
+		ImGui::RenderPlatformWindowsDefault ();
+	}
+}
+
+void Game::DrawCameraViewport()
+{
+	ImGui::PushStyleVar (ImGuiStyleVar_WindowPadding, ImVec2(0,0));
+	ImGui::Begin( "Viewport" );
+	if ( m_SelectedModel.GetEntityHandle () != entt::null )
+	{
+		TickGizmo();
+	}
+	size_t width, height;
+	m_ViewportRenderTarget->GetTextureSize ( width, height );
+
+	size_t regionWidth, regionHeight;
+	ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail ();
+	regionWidth = viewportPanelSize.x;
+	regionHeight = viewportPanelSize.y;
+
+	if(width != regionWidth || height != regionHeight)
+	{
+		m_ViewportRenderTarget->SizeResources ( regionWidth, regionHeight );
+		m_FinalRenderTarget->SizeResources ( regionWidth, regionHeight );
+		
+		m_Camera->SetImageSize ( regionWidth, regionHeight );
+	}
+	ImGui::Image( (void*)m_FinalRenderTarget->GetShaderResourceView (), ImVec2(regionWidth, regionHeight) );
+
+	ImGui::PopStyleVar();
+	ImGui::End();
 }
 
 void Game::DrawScene()
 {
 	auto context = m_deviceResources->GetD3DDeviceContext();
+
+	auto renderTarget = m_ViewportRenderTarget->GetRenderTargetView ();
+	auto depthTarget = m_ViewportRenderTarget->GetDepthStencilView ();
+	
+	size_t width, height;
+	m_ViewportRenderTarget->GetTextureSize ( width, height );
+	CD3D11_VIEWPORT viewport(
+		0.f,
+		0.f,
+		width,
+		height
+	);
+
+	context->OMSetRenderTargets( 1, &renderTarget, depthTarget );
+	context->ClearRenderTargetView( renderTarget, Colors::SlateGray );
+	context->ClearDepthStencilView( depthTarget, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0 );
+	context->RSSetViewports( 1, &viewport );
+
 
 	John::PhongShadingCB shadingConstants;
 	shadingConstants.CamPos = m_Camera->GetPosition();
@@ -645,12 +718,13 @@ void Game::DrawMesh( RenderObject* MeshToDraw )
 void Game::DrawToneMapping()
 {
 	auto context = m_deviceResources->GetD3DDeviceContext();
-	auto renderTarget = m_deviceResources->GetRenderTargetView();
+	auto renderTarget = m_FinalRenderTarget->GetRenderTargetView();
+	auto SRV = m_ViewportRenderTarget->GetShaderResourceView ();
 	context->OMSetRenderTargets( 1, &renderTarget, nullptr);
 	context->IASetInputLayout( nullptr );
 	context->VSSetShader( m_ToneMapProgram.VertexShader.Get(), nullptr, 0 );
 	context->PSSetShader( m_ToneMapProgram.PixelShader.Get(), nullptr, 0 );
-	context->PSSetShaderResources( 0, 1, m_DefaultFrameBuffer.SRV.GetAddressOf() );
+	context->PSSetShaderResources( 0, 1,  &SRV);
 	context->PSSetSamplers( 0, 1, m_ComputeSampler.GetAddressOf() );
 	context->Draw( 3, 0 );
 
@@ -664,7 +738,8 @@ void Game::Clear()
 
     // Clear the views.
     auto context = m_deviceResources->GetD3DDeviceContext();
-
+	auto renderTarget = m_deviceResources->GetRenderTargetView ();
+	auto depthTarget = m_deviceResources->GetDepthStencilView ();
 
 	ID3D11RenderTargetView* const nullRTV[] = { nullptr };
 	ID3D11DepthStencilView* const nullDSV = nullptr;
@@ -672,14 +747,9 @@ void Game::Clear()
 	context->OMSetRenderTargets( _countof( nullRTV ), nullRTV, nullDSV );
 	ID3D11ShaderResourceView* null[] = { nullptr, nullptr };
 	context->PSSetShaderResources( 0, 2, null );
-    context->ClearRenderTargetView(m_DefaultFrameBuffer.RTV.Get(), Colors::CornflowerBlue);
-    context->ClearDepthStencilView(m_DefaultFrameBuffer.DSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    context->OMSetRenderTargets(1, m_DefaultFrameBuffer.RTV.GetAddressOf(), m_DefaultFrameBuffer.DSV.Get());
-
-	auto renderTarget = m_deviceResources->GetRenderTargetView();
-	auto depthStencil = m_deviceResources->GetDepthStencilView();
-	context->ClearRenderTargetView( renderTarget, Colors::CornflowerBlue );
-	context->ClearDepthStencilView( depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0 );
+    context->ClearRenderTargetView(renderTarget, Colors::CornflowerBlue);
+    context->ClearDepthStencilView(depthTarget, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    context->OMSetRenderTargets(1, &renderTarget, depthTarget);
 
     // Set the viewport.
     auto const viewport = m_deviceResources->GetScreenViewport();
@@ -777,6 +847,10 @@ void Game::CreateDeviceDependentResources()
 
 	InitializeDefaultAssets ();
 	InitializeSky( "Content/environment.hdr" );
+
+	m_ViewportRenderTarget->SetDevice ( device );
+	m_FinalRenderTarget->SetDevice ( device );
+
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
@@ -786,14 +860,8 @@ void Game::CreateWindowSizeDependentResources()
 
 	auto rect = m_deviceResources->GetOutputSize();
 
-	if(m_Camera)
-	{
-		m_Camera->SetImageSize( rect.right, rect.bottom );
 
-		m_SkyEffect->SetProjection( m_Camera->GetProjectionMatrix() );
-	}
 
-	m_DefaultFrameBuffer = John::CreateFrameBuffer( m_deviceResources->GetD3DDevice(), rect.right, rect.bottom, 1, DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT );
 
 }
 
@@ -850,7 +918,11 @@ void Game::TickGizmo()
 	ImGuizmo::SetOrthographic( false );
 	ImGuizmo::BeginFrame();
 
-	ImGuizmo::SetRect( 0, 0, io.DisplaySize.x, io.DisplaySize.y );
+	float rw = (float)ImGui::GetWindowWidth ();
+	float rh = (float)ImGui::GetWindowHeight ();
+
+
+	ImGuizmo::SetRect(ImGui::GetWindowPos ().x, ImGui::GetWindowPos ().y, rw, rh);
 	Matrix view = m_Camera->GetViewMatrix();
 	Matrix proj = m_Camera->GetProjectionMatrix();
 
