@@ -34,6 +34,13 @@ struct TransformComponent
 
 		return scaleMat * rotMat * transMat;
 	}
+	
+	void Reset()
+	{
+		Translation = { 0.f, 0.f, 0.f };
+		Rotation = Quaternion::Identity;
+		Scale = { 1.f, 1.f, 1.f };
+	}
 };
 
 struct MeshComponent

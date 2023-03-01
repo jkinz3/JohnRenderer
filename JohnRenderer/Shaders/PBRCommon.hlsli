@@ -5,6 +5,7 @@ cbuffer TransformConstants : register(b0)
 {
 	float4x4 MVP;
 	float4x4 Model;
+	float4x4 Normal;
 };
 
 cbuffer ShadingConstants : register(b0)

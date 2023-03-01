@@ -55,5 +55,9 @@ private:
 	XMMATRIX  m_World;
 	XMMATRIX  m_View;
 	XMMATRIX  m_Proj;
+
+public:
+
+	int m_AssetID;
 };
 

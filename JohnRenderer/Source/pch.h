@@ -32,7 +32,9 @@
 #include <Windows.h>
 
 #include <wrl/client.h>
-
+#include <shtypes.h>
+#include <ShObjIdl.h>
+#include <shlobj_core.h>
 #include <d3d11_1.h>
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
@@ -57,6 +59,7 @@
 #include <tuple>
 #include <algorithm>
 #include <map>
+#include <string>
 
 //directxtk
 #include "BufferHelpers.h"
@@ -86,7 +89,7 @@
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_dx11.h"
 #include "ImGui/imgui_impl_win32.h"
-
+#include "imgui_internal.h"
 #include "entt.hpp"
 
 #include "ImGuizmo.h"
@@ -97,7 +100,7 @@
 #endif
 
 #include "Image.h"
-
+#include "Utilities.h"
 #pragma warning(disable: 4101 4244 4189 4100 4267 4838 4245)
 
 namespace DX
