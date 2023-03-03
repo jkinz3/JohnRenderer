@@ -53,6 +53,8 @@
     <ClInclude Include="Source\Entity.h" />
     <ClInclude Include="Source\Components.h" />
     <ClInclude Include="Source\SourceMesh.h" />
+    <ClInclude Include="Source\AssetManager.h" />
+    <ClInclude Include="Source\Utilities.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\pch.cpp" />
@@ -89,6 +91,8 @@
     <ClCompile Include="Source\Scene.cpp" />
     <ClCompile Include="Source\Entity.cpp" />
     <ClCompile Include="Source\SourceMesh.cpp" />
+    <ClCompile Include="Source\AssetManager.cpp" />
+    <ClCompile Include="Source\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

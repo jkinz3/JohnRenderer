@@ -252,6 +252,7 @@ void Camera::FocusOnPosition( Vector3 NewPos )
 {
 	m_FocalPosition = NewPos;
 	m_Distance = 3.f;
+	MovementVelocity = Vector3::Zero;
 	UpdateCameraPosition();
 }
 void Camera::UpdateSimulation( const CameraUserImpulseData& UserImpulseData, const float DeltaTime, const float MovementSpeedScale, Vector3& InOutCameraPosition, Vector3& InOutCameraEuler )

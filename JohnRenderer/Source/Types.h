@@ -41,6 +41,7 @@ namespace John
 	{
 		XMMATRIX MVP;
 		XMMATRIX Model;
+		XMMATRIX Normal;
 	};
 
 	struct PhongShadingCB

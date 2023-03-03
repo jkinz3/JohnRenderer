@@ -13,6 +13,8 @@
 #include "Scene.h"
 #include "Entity.h"
 #include "Components.h"
+#include "AssetManager.h"
+
 extern void ExitGame() noexcept;
 
 using namespace DirectX;
@@ -35,6 +37,8 @@ Game::Game() noexcept(false)
 
 	m_ViewportRenderTarget = std::make_unique<DX::RenderTexture>( DXGI_FORMAT_R16G16B16A16_FLOAT );
 	m_FinalRenderTarget = std::make_unique<DX::RenderTexture>( DXGI_FORMAT_R16G16B16A16_FLOAT);
+
+	m_ViewportWindowName = std::string("Viewport");
 
 }
 
@@ -97,22 +101,14 @@ void Game::InitializeDefaultAssets()
 
 	std::shared_ptr<Material> defaultMaterial = std::make_shared<Material>( device, m_StandardSampler.Get(), m_Shaders.find ( EShaderProgram::PBR)->second );
 
-	m_Materials.push_back (defaultMaterial );
+	AssetManager::Get().RegisterMaterial (defaultMaterial);
 
 	std::shared_ptr<JohnMesh> MonkeyMesh = John::LoadMeshFromFile( "Content/sphere.obj" );
+
+	AssetManager::Get().RegisterMesh(MonkeyMesh);
 	MonkeyMesh->Build ( device );
 
-	std::shared_ptr<RenderObject> SphereMesh = std::make_shared<RenderObject>();
-
-	SphereMesh->SetMesh( MonkeyMesh );
-	SphereMesh->SetMaterial ( m_Materials[0] );
-
-	m_SourceMeshes.push_back( MonkeyMesh );
-
-	m_Meshes.push_back ( SphereMesh );
-
-
-	Entity entity = m_Scene->CreateEntity( "DefaultSphere" );
+	Entity entity = m_Scene->CreateEntity("DefaultSphere");
 	entity.AddComponent<MeshComponent>();
 	entity.AddComponent<TransformComponent>();
 	entity.GetComponent<MeshComponent>().Mesh = MonkeyMesh;
@@ -174,12 +170,13 @@ void Game::InitializeSky( const char* EnvMapFile )
 	auto context = m_deviceResources->GetD3DDeviceContext();
 	m_Environment = John::CreateEnvironmentFromFile( device, context, EnvMapFile );
 	m_brdfSampler = John::CreateSamplerState( device, D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_CLAMP );
-	
-	for(auto& material : m_Materials)
-	{
-		material->SetEnvironmentTextures ( m_Environment );
-		material->SetBRDFSampler ( m_brdfSampler.Get() );
-	}
+
+	AssetManager::Get().IterateOverMaterials ([&](Material* material)
+		{
+			material->SetEnvironmentTextures (m_Environment);
+			material->SetBRDFSampler (m_brdfSampler.Get());
+		}
+	);
 
 	m_Sky = GeometricPrimitive::CreateGeoSphere( context, 2.f, 3.f, true );
 	m_SkyEffect = std::make_unique<DX::SkyboxEffect>( device );
@@ -225,6 +222,7 @@ void Game::TickUI()
 	ImGui_ImplWin32_NewFrame();
 	ImGui_ImplDX11_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 	ImGuiDockNodeFlags NodeFlags = ImGuiDockNodeFlags_PassthruCentralNode;
 	ImGui::DockSpaceOverViewport ( ImGui::GetMainViewport (), NodeFlags );
 	if(ImGui::BeginMainMenuBar())
@@ -295,12 +293,7 @@ void Game::TickUI()
 
 	static bool s_bRelativeLastFrame = false;
 
-	if(!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) && m_bWantsRightClick)
-	{
 
-		ImGui::OpenPopup( "RightClick" );
-
-	}
 	if(m_SelectedModel.GetEntityHandle () != entt::null)
 	{
 
@@ -324,15 +317,30 @@ void Game::TickUI()
 // Updates the world.
 void Game::Update(DX::StepTimer const& timer)
 {
-    float elapsedTime = float(timer.GetElapsedSeconds());
+	float elapsedTime = float(timer.GetElapsedSeconds());
 
 	PrepareInputState();
 
-	Movement( elapsedTime );
-	
-	if(m_MouseButtons.leftButton == Mouse::ButtonStateTracker::PRESSED && !m_bIsRelativeMode)
+	Movement(elapsedTime);
+
+	if ( m_MouseButtons.leftButton == Mouse::ButtonStateTracker::PRESSED && !m_bIsRelativeMode )
 	{
 		SelectModel(MousePicking());
+	}
+
+	bool bAreAnyCameraMovementKeysPressed = m_MouseButtons.rightButton == Mouse::ButtonStateTracker::PRESSED ||
+		(
+			m_KeyboardState.LeftAlt && (m_MouseButtons.leftButton == Mouse::ButtonStateTracker::PRESSED || m_MouseButtons.middleButton == Mouse::ButtonStateTracker::PRESSED
+				|| m_MouseButtons.rightButton == Mouse::ButtonStateTracker::PRESSED)
+		);
+
+	if(bAreAnyCameraMovementKeysPressed && IsCameraViewportHovered ())
+	{
+		m_bCanMoveCamera = true;
+	}
+	else if (!m_bIsRelativeMode)
+	{
+		m_bCanMoveCamera = false;
 	}
 
 	if(!m_bIsRelativeMode)
@@ -395,6 +403,9 @@ void Game::Movement( float DeltaTime )
 
 	bUpKeyState |= m_KeyboardState.E;
 	bDownKeyState |= m_KeyboardState.Q;
+	
+	if(m_MouseState.rightButton)
+	{
 
 	if(bForwardKeyState)
 	{
@@ -419,6 +430,7 @@ void Game::Movement( float DeltaTime )
 	if(bDownKeyState)
 	{
 		m_CameraUserImpulseData->MoveUpDownImpulse -= 1.f;
+	}
 	}
 
 	Vector3 NewViewLocation = m_Camera->GetPosition();
@@ -451,20 +463,33 @@ void Game::Movement( float DeltaTime )
 	}
 
 
-	if ( m_MouseState.positionMode == Mouse::MODE_RELATIVE )
-	{
-
-	}
 
 	m_bWasCameraMoved = false;
 
+	m_Camera->UpdateSimulation(*m_CameraUserImpulseData,
+		std::min(DeltaTime, MovementDeltaUpperBound),
+		CameraSpeed,
+		NewViewLocation,
+		NewViewEuler
+	);
+
 	if ( m_Keys.pressed.F )
 	{
-		m_Camera->FocusOnPosition( Vector3::Zero );
+		if(m_SelectedModel != NullEntity)
+		{
+			auto transformComp = m_SelectedModel.GetComponent<TransformComponent>();
+			m_Camera->FocusOnPosition (transformComp.Translation);
+		}
+		else
+		{
+			m_Camera->FocusOnPosition( Vector3::Zero );
+
+		}
 	}
 
-	if (m_MouseState.positionMode == Mouse::MODE_RELATIVE)
+	if (m_MouseState.positionMode == Mouse::MODE_RELATIVE && m_bCanMoveCamera)
 	{
+
 		if ( m_KeyboardState.LeftAlt && m_MouseDelta != Vector2::Zero)
 		{
 			Vector2 delta = m_MouseDelta * .00314f;
@@ -496,12 +521,7 @@ void Game::Movement( float DeltaTime )
 
 			m_Camera->MoveAndRotateCamera( Vector3( 0, 0, 0 ), m_MouseDelta );
 
-			m_Camera->UpdateSimulation( *m_CameraUserImpulseData,
-				std::min( DeltaTime, MovementDeltaUpperBound ),
-				CameraSpeed,
-				NewViewLocation,
-				NewViewEuler
-			);
+
 
 			if(m_MouseState.scrollWheelValue > 0.f)
 			{
@@ -528,11 +548,11 @@ void Game::Movement( float DeltaTime )
 	{
 		m_RelativeMouseDelta += m_MouseDelta;
 	}
-	m_bIsRelativeMode = m_MouseState.rightButton || m_KeyboardState.LeftAlt && (m_MouseState.leftButton || m_MouseState.middleButton || m_MouseState.rightButton);
+	m_bIsRelativeMode = (m_MouseState.rightButton || m_KeyboardState.LeftAlt && (m_MouseState.leftButton || m_MouseState.middleButton || m_MouseState.rightButton));
 
-	m_Mouse->SetMode( m_bIsRelativeMode ? Mouse::MODE_RELATIVE : Mouse::MODE_ABSOLUTE );
+	m_Mouse->SetMode( m_bIsRelativeMode && m_bCanMoveCamera ? Mouse::MODE_RELATIVE : Mouse::MODE_ABSOLUTE );
 
-
+	SetInputEnabled (!m_bIsRelativeMode);
 
 	if(m_MouseButtons.rightButton == GamePad::ButtonStateTracker::RELEASED)
 	{
@@ -609,11 +629,8 @@ void Game::RenderUI()
 void Game::DrawCameraViewport()
 {
 	ImGui::PushStyleVar (ImGuiStyleVar_WindowPadding, ImVec2(0,0));
-	ImGui::Begin( "Viewport" );
-	if ( m_SelectedModel.GetEntityHandle () != entt::null )
-	{
-		TickGizmo();
-	}
+	ImGui::Begin( m_ViewportWindowName.c_str());
+
 	size_t width, height;
 	m_ViewportRenderTarget->GetTextureSize ( width, height );
 
@@ -630,7 +647,10 @@ void Game::DrawCameraViewport()
 		m_Camera->SetImageSize ( regionWidth, regionHeight );
 	}
 	ImGui::Image( (void*)m_FinalRenderTarget->GetShaderResourceView (), ImVec2(regionWidth, regionHeight) );
-
+	if ( m_SelectedModel.GetEntityHandle () != entt::null )
+	{
+		TickGizmo();
+	}
 	ImGui::PopStyleVar();
 	ImGui::End();
 }
@@ -676,9 +696,11 @@ void Game::DrawScene()
 
 		Matrix model = transformComponent.GetTransformationMatrix();
 		Matrix MVP = model * view * proj;
-
+		Matrix normal = model.Invert ();
+		
 		transformConstants.MVP = MVP.Transpose();
 		transformConstants.Model = model.Transpose();
+		transformConstants.Normal = normal;
 
 		context->UpdateSubresource( m_TransformCB.Get(), 0, nullptr, &transformConstants, 0, 0 );
 
@@ -689,7 +711,7 @@ void Game::DrawScene()
 		meshComponent.Mesh->Draw( context );
 	}
 
-	for(auto mesh : m_Meshes)
+	for(auto mesh : m_RenderObjects)
 	{
 		DrawMesh( mesh.get() );
 	}
@@ -816,6 +838,23 @@ void Game::GetDefaultSize(int& width, int& height) const noexcept
     width = 1280;
     height = 720;
 }
+
+void Game::SetInputEnabled(bool bEnabled)
+{
+	ImGuiIO& io = ImGui::GetIO();
+
+	if(bEnabled)
+	{
+		io.ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+		io.ConfigFlags &= ~ImGuiConfigFlags_NavNoCaptureKeyboard;
+	}
+	else
+	{
+		io.ConfigFlags |= ImGuiConfigFlags_NoMouse;
+		io.ConfigFlags |= ImGuiConfigFlags_NavNoCaptureKeyboard;
+	}
+}
+
 #pragma endregion
 
 #pragma region Direct3D Resources
@@ -886,6 +925,21 @@ void Game::ReloadShaders()
 	
 }
 
+void Game::ImportMeshFromFile(const char* File)
+{
+	auto device = m_deviceResources->GetD3DDevice ();
+	std::shared_ptr<JohnMesh> mesh = John::LoadMeshFromFile(File);
+
+	AssetManager::Get().RegisterMesh(mesh);
+	mesh->Build (device);
+
+	Entity entity = m_Scene->CreateEntity(File);
+	entity.AddComponent<MeshComponent>();
+	entity.AddComponent<TransformComponent>();
+	entity.GetComponent<MeshComponent>().Mesh = mesh;
+	entity.GetComponent<MeshComponent>().Material = AssetManager::Get().GetDefaultMaterial();
+}
+
 void Game::AddPrimitive( John::EPrimitiveType type )
 {
 	std::shared_ptr<JohnPrimitive> newMesh;
@@ -900,14 +954,14 @@ void Game::AddPrimitive( John::EPrimitiveType type )
 	}
 
 
-	m_SourceMeshes.push_back ( newMesh );
+	AssetManager::Get().RegisterMesh (newMesh);
 
 	std::shared_ptr<RenderObject> newObject = std::make_shared<RenderObject>();
 	newObject->SetMesh ( newMesh );
-	newObject->SetMaterial ( m_Materials[0] );
+	newObject->SetMaterial ( AssetManager::Get().GetDefaultMaterial () );
 	newObject->SetName ( "Sphere" );
 
-	m_Meshes.push_back ( newObject );
+	m_RenderObjects.push_back ( newObject );
 }
 
 void Game::TickGizmo()
@@ -916,7 +970,8 @@ void Game::TickGizmo()
 
 	ImGuizmo::Enable( true );
 	ImGuizmo::SetOrthographic( false );
-	ImGuizmo::BeginFrame();
+
+	ImGuizmo::SetDrawlist();
 
 	float rw = (float)ImGui::GetWindowWidth ();
 	float rh = (float)ImGui::GetWindowHeight ();
@@ -956,6 +1011,7 @@ void Game::DrawSceneOutliner()
 		{
 			if(ImGui::MenuItem("Mesh"))
 			{
+				ImportMesh();
 
 			}
 			if(ImGui::MenuItem("Sphere"))
@@ -1019,7 +1075,8 @@ void Game::DrawModelInOutliner( const char* prefix, int uid, Entity mesh )
 		{
 			if ( m_SelectedModel )
 			{
-			//	m_SelectedModel->ResetTransformations();
+				TransformComponent& transformComp = m_SelectedModel.GetComponent<TransformComponent>();
+				transformComp.Reset();
 			}
 
 		}
@@ -1126,9 +1183,21 @@ void Game::DeselectAll()
 	m_SelectedModel = NullEntity;
 }
 
+bool Game::IsCameraViewportHovered() const
+{
+	ImGuiContext& context = *ImGui::GetCurrentContext ();
+	ImGuiWindow* window = context.HoveredWindow;
+	if(window)
+	{
+	return *window->Name == *m_ViewportWindowName.c_str ();
+
+	}
+	return false;
+}
+
 Entity Game::MousePicking()
 {
-	if(m_Meshes.size() == 0)
+	if(m_RenderObjects.size() == 0)
 	{
 		return NullEntity;
 	}
@@ -1209,6 +1278,83 @@ Entity Game::MousePicking()
 	{
 		return NullEntity;
 	}
+}
+
+WCHAR* Game::ImportFile(COMDLG_FILTERSPEC FileExtension[], UINT ExtensionCount)
+{
+	IFileOpenDialog* FileOpen;
+	HRESULT hr = CoCreateInstance (CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, reinterpret_cast<void**>(&FileOpen));
+
+	//setup filters
+	if(FAILED(hr))
+	{
+		return nullptr;
+	}
+	FileOpen->SetFileTypes (ExtensionCount, FileExtension);
+
+	std::string startingDir("Content/");
+
+	PIDLIST_ABSOLUTE pid1;
+	WCHAR wstartingDir[MAX_PATH];
+	HRESULT parse = SHParseDisplayName (wstartingDir, 0, &pid1, SFGAO_FOLDER, 0);
+
+	if(SUCCEEDED(parse))
+	{
+		IShellItem* psi;
+		parse = SHCreateShellItem (NULL, NULL, pid1, &psi);
+		if(SUCCEEDED(parse))
+		{
+			FileOpen->SetFolder(psi);
+		}
+		ILFree(pid1);
+	}
+
+	if(SUCCEEDED(hr))
+	{
+		hr = FileOpen->Show(NULL);
+		if(SUCCEEDED(hr))
+		{
+			IShellItem* Item;
+			hr = FileOpen->GetResult(&Item);
+
+			if(SUCCEEDED(hr))
+			{
+				PWSTR filePath;
+				char buffer[MAX_PATH];
+				hr = Item->GetDisplayName (SIGDN_FILESYSPATH, &filePath);
+				if(wcslen(filePath) > 0)
+				{
+					return filePath;
+				}
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+void Game::ImportMesh()
+{
+	auto device = m_deviceResources->GetD3DDevice ();
+	COMDLG_FILTERSPEC ModelTypes[] =
+	{
+		{
+			L"3D Models", L"*.fbx;*.obj;*.gltf"
+		}
+
+	};
+	
+	WCHAR* ModelName = ImportFile(ModelTypes, _countof(ModelTypes));
+	if(ModelName != nullptr)
+	{
+
+	std::string name = John::ConvertToUTF8 (std::wstring(ModelName));
+
+
+	ImportMeshFromFile (name.c_str ());
+	}
+
+
 }
 
 void Game::OnDeviceLost()

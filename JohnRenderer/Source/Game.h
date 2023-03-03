@@ -10,6 +10,7 @@
 #include "Camera.h"
 #include "MouseDeltaTracker.h"
 #include "Entity.h"
+
 class JohnMesh;
 class Material;
 class RenderObject;
@@ -60,6 +61,8 @@ public:
     // Properties
     void GetDefaultSize( int& width, int& height ) const noexcept;
 
+	void SetInputEnabled(bool bEnabled);
+
 private:
 
     void Update(DX::StepTimer const& timer);
@@ -81,6 +84,8 @@ private:
 
 	void ReloadShaders();
 
+	void ImportMeshFromFile(const char* File);
+
 	void AddPrimitive( John::EPrimitiveType type );
 
 	void TickGizmo();
@@ -101,16 +106,17 @@ private:
 
 	void DeselectAll();
 
-	
+	bool IsCameraViewportHovered() const;
 
 	Entity MousePicking();
+
+
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
     // Rendering loop timer.
     DX::StepTimer                           m_timer;
-
 
 	//my sheeit
 	Entity m_SelectedModel;
@@ -124,10 +130,7 @@ private:
 	
 	John::ShaderProgram m_ToneMapProgram;
 
-	std::vector<std::shared_ptr<RenderObject>> m_Meshes;
-
-	std::vector<std::shared_ptr<JohnMesh>> m_SourceMeshes;
-	std::vector<std::shared_ptr<Material>> m_Materials;
+	std::vector<std::shared_ptr<RenderObject>> m_RenderObjects;
 	
 	std::unique_ptr<DX::RenderTexture> m_ViewportRenderTarget;
 	std::unique_ptr<DX::RenderTexture> m_FinalRenderTarget;
@@ -140,6 +143,10 @@ private:
 	Keyboard::State m_KeyboardState;
 	DirectX::Keyboard::KeyboardStateTracker m_Keys;
 	DirectX::Mouse::ButtonStateTracker m_MouseButtons;
+
+	WCHAR* ImportFile(COMDLG_FILTERSPEC FileExtension[], UINT ExtensionCount);
+
+	void ImportMesh();
 
 	John::MouseDeltaTracker m_MouseDeltaTracker;
 	Vector3 m_LightPos;
@@ -186,5 +193,9 @@ private:
 	bool m_bWantsRightClick;
 
 	bool m_bRightClickOpen;
+
+	std::string m_ViewportWindowName;
+
+	bool m_bCanMoveCamera = false;
 
 };

@@ -306,7 +306,7 @@ namespace John
 
 	John::Texture CreateDefaultBaseColor( ID3D11Device* device )
 	{
-		return CreateDefaultTexture( device, 0x000000ff, DXGI_FORMAT_R8G8B8A8_UNORM );
+		return CreateDefaultTexture( device, 0x00, DXGI_FORMAT_R8_UNORM );
 	}
 
 	Texture CreateDefaultNormal( ID3D11Device * device )

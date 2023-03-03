@@ -12,7 +12,7 @@ PSInput main(VSInput vin)
 	
 	float3 T = normalize(mul(vin.tangent, (float3x3) Model));
 	float3 B = normalize(mul(vin.bitangent, (float3x3) Model));
-	float3 N = normalize(mul(vin.norm, (float3x3) Model));
+	float3 N = normalize(mul(vin.norm, (float3x3) Normal));
 	vout.TangentBasis = float3x3(T, B, N);
 	
 

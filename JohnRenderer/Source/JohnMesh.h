@@ -54,6 +54,8 @@ private:
 
 	John::EAssetType m_ComponentType;
 
+public:
 
+	int m_AssetID;
 };
 

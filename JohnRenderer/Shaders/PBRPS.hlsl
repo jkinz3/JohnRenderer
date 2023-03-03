@@ -69,11 +69,15 @@ float4 main(PSInput pin) : SV_TARGET
 	const float2 texCoord = pin.TexCoord * 1.f;
 	const float Roughness = RoughnessMap.Sample(defaultSampler, texCoord).r;
 	const float Metalness = 0.f; //MetallicMap.Sample(defaultSampler, texCoord).r;
-	const float3 BaseColor = BaseColorMap.Sample(defaultSampler, texCoord);
-	float3 N = normalize(2.0 * NormalMap.Sample(defaultSampler, texCoord).rgb - 1.0);
-	N = normalize(mul(pin.TangentBasis, N));
-	N = normalize(pin.Normal);
+	const float3 BaseColor = BaseColorMap.Sample(defaultSampler, texCoord).rgb;
 
+	float3 worldNormal = normalize(pin.Normal);
+	float2 tangentNormal = NormalMap.Sample(defaultSampler, texCoord).rg;
+	float2 xy = 2.f * tangentNormal - 1.f;
+	float z = sqrt(1 - dot(xy, xy));
+	float3 localNormal = float3(xy.x, xy.y, z);
+	
+	float3 N = normalize(mul(localNormal, pin.TangentBasis));
 	float3 V = normalize(CameraPos - pin.PositionWS);
 	
 	float cosLo = max(0, dot(N, V));
