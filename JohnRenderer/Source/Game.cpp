@@ -1049,12 +1049,16 @@ void Game::DrawModelDetails(Entity Mesh)
 	JohnMesh* mesh = Mesh.GetComponent<MeshComponent>().Mesh.get();
 	John::EAssetType assetType = mesh->GetAssetType ();
 
-	TransformComponent trans = Mesh.GetComponent<TransformComponent>();
+	TransformComponent& trans = Mesh.GetComponent<TransformComponent>();
+
+
+	Vector3 euler = trans.Rotation.ToEuler();
 
 	ImGui::DragFloat3 ( "Position", &trans.Translation.x, .1f );
-	ImGui::DragFloat3 ( "Rotation", &trans.Rotation.x, .1f );
+	ImGui::DragFloat3 ( "Rotation", &euler.x, .1f );
 	ImGui::DragFloat3 ( "Scale", &trans.Scale.x, .1f );
 
+	trans.Rotation = Quaternion::CreateFromYawPitchRoll( euler );
 
 
 	if(assetType == John::EAssetType::JohnPrimitive)
