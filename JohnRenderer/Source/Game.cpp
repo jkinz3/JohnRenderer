@@ -97,12 +97,12 @@ void Game::InitializeDefaultAssets()
 
 	John::ShaderProgram pbrProgram = John::CreateShaderProgram ( device, L"Shaders/PBRVS.hlsl", L"Shaders/PBRPS.hlsl" );
 	m_Shaders.emplace( EShaderProgram::PBR, pbrProgram );
-	std::shared_ptr<Material> defaultMaterial = std::make_shared<Material>( device, m_StandardSampler.Get(), m_Shaders.find ( EShaderProgram::PBR)->second );
+	std::shared_ptr<Material> defaultMaterial = std::make_shared<Material>( device, m_StandardSampler.Get(), EShaderProgram::PBR);
 	AssetManager::Get().RegisterMaterial (defaultMaterial);
 
 	John::ShaderProgram lightShereProgram = John::CreateShaderProgram( device, L"Shaders/SimpleVS.hlsl", L"Shaders/LightSpherePS.hlsl" );
 	m_Shaders.emplace( EShaderProgram::LightSphere, lightShereProgram );
-	std::shared_ptr<Material> lightSphereMaterial = std::make_shared<Material>( device, m_StandardSampler.Get(), m_Shaders.find( EShaderProgram::LightSphere )->second );
+	std::shared_ptr<Material> lightSphereMaterial = std::make_shared<Material>( device, m_StandardSampler.Get(),  EShaderProgram::LightSphere );
 	AssetManager::Get().RegisterMaterial( lightSphereMaterial );
 
 	std::shared_ptr<JohnMesh> MonkeyMesh = John::LoadMeshFromFile( "Content/sphere.obj" );
@@ -677,22 +677,23 @@ void Game::DrawScene()
 	context->ClearDepthStencilView( depthTarget, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0 );
 	context->RSSetViewports( 1, &viewport );
 
-	auto lights = m_Scene->m_Registry.view<PointLightComponent>();
+	auto lights = m_Scene->m_Registry.view<PointLightComponent, TransformComponent>();
 
-	John::PhongShadingCB shadingConstants;
+	John::PhongShadingCB shadingConstants = {};
 	int index = 0;
-	for(auto  light : lights)
+	for(auto  entity: lights )
 	{
+
 		if(index >= (MaxPointLights))
 		{
 			break;
 		}
-		auto lightComponent = lights.get<PointLightComponent>( light );
+		auto [light, transform] = lights.get<PointLightComponent, TransformComponent>( entity );
 
 		Light l;
-		l.LightPos = lightComponent.Position;
-		l.LightColor = lightComponent.LightColor;
-		l.LightIntensity = lightComponent.LightIntensity;
+		l.LightPos = transform.Translation;
+		l.LightColor = light.LightColor;
+		l.LightIntensity = light.LightIntensity;
 
 		shadingConstants.Lights[index] = l;
 		index++;
@@ -730,6 +731,8 @@ void Game::DrawScene()
 
 			context->UpdateSubresource( m_LightSphereTransformCB.Get(), 0, nullptr, &transformConstants, 0, 0 );
 
+
+
 			context->VSSetConstantBuffers( 0, 1, m_LightSphereTransformCB.GetAddressOf() );
 
 		}
@@ -751,6 +754,16 @@ void Game::DrawScene()
 			context->VSSetConstantBuffers( 0, 1, m_TransformCB.GetAddressOf() );
 			context->PSSetConstantBuffers( 0, 1, m_ShadingCB.GetAddressOf() );
 
+		}
+		EShaderProgram shaderType = meshComponent.Material->GetShaderProgram();
+		auto it = m_Shaders.find( shaderType );
+		if ( it != m_Shaders.end() )
+		{
+			John::ShaderProgram shaderProgram = it->second;
+
+			context->VSSetShader( shaderProgram.VertexShader.Get(), nullptr, 0 );
+			context->PSSetShader( shaderProgram.PixelShader.Get(), nullptr, 0 );
+			context->IASetInputLayout( shaderProgram.InputLayout.Get() );
 		}
 			meshComponent.Mesh->Draw( context );
 	}

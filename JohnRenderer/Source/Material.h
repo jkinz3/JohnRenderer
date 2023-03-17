@@ -17,10 +17,11 @@ struct TextureList
 class Material
 {
 public:
-	Material(ID3D11Device* device, ID3D11SamplerState* samplerState, John::ShaderProgram shaderProgram);
+	Material(ID3D11Device* device, ID3D11SamplerState* samplerState, EShaderProgram shaderProgram);
 
-	void SetShaderProgram( John::ShaderProgram ShaderProgram );
-	
+	void SetShaderProgram( EShaderProgram ShaderType );
+	EShaderProgram GetShaderProgram() const { return m_ShaderProgram; }
+
 	void Apply( ID3D11DeviceContext* context );
 
 	void SetBaseColorMap( John::Texture NewColor );
@@ -42,7 +43,8 @@ private:
 	TextureList m_Textures;
 	John::Environment m_EnvironmentTextures;
 
-	John::ShaderProgram m_ShaderProgram;
+
+	EShaderProgram m_ShaderProgram;
 
 	ID3D11SamplerState* m_SamplerState;
 	ID3D11SamplerState* m_BRDFSampler;

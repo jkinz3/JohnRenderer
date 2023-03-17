@@ -2,16 +2,16 @@
 #include "Material.h"
 #include "Resources.h"
 
-Material::Material(ID3D11Device* device, ID3D11SamplerState* samplerState, John::ShaderProgram shaderProgram)
+Material::Material(ID3D11Device* device, ID3D11SamplerState* samplerState, EShaderProgram shaderProgram)
 {
 	CreateDefaultTextures( device );
 	m_ShaderProgram = shaderProgram;
 	m_SamplerState = samplerState;
 }
 
-void Material::SetShaderProgram( John::ShaderProgram ShaderProgram )
+void Material::SetShaderProgram( EShaderProgram ShaderType )
 {
-	m_ShaderProgram = ShaderProgram;
+	m_ShaderProgram = ShaderType;
 }
 
 void Material::Apply( ID3D11DeviceContext* context )
@@ -36,9 +36,6 @@ void Material::Apply( ID3D11DeviceContext* context )
 
 	context->PSSetShaderResources ( 0, _countof( srvs ), srvs );
 	context->PSSetSamplers ( 0, _countof( samplers ), samplers );
-	context->VSSetShader ( m_ShaderProgram.VertexShader.Get(), nullptr, 0 );
-	context->PSSetShader ( m_ShaderProgram.PixelShader.Get(), nullptr, 0 );
-	context->IASetInputLayout ( m_ShaderProgram.InputLayout.Get() );
 }
 
 void Material::SetBaseColorMap( John::Texture NewColor )

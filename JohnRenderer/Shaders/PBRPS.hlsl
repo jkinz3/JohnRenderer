@@ -91,10 +91,11 @@ float4 main(PSInput pin) : SV_TARGET
 		for (uint i = 0; i < MaxPointLights; ++i)
 		{
 			PointLight Light = PointLights[i];
+			float3 LightColor = float3(1, 1, 1);
 			float3 Li = normalize(Light.LightPos - pin.PositionWS);
 			float distance = length(Light.LightPos - pin.PositionWS);
 			float attenuation = 1.0 / (distance * distance);
-			float3 Lradiance = Light.LightColor * attenuation;
+			float3 Lradiance = LightColor * attenuation;
 			
 
 			float3 Lh = normalize(Li + V);
@@ -122,7 +123,7 @@ float4 main(PSInput pin) : SV_TARGET
 	}
 	
 	float3 ambientLighting = 0.f;
-		{
+		
 		float3 irradiance = IrradianceMap.Sample(defaultSampler, N).rgb;
 			
 		float3 F = FresnelSchlick(F0, cosLo);
@@ -139,9 +140,9 @@ float4 main(PSInput pin) : SV_TARGET
 			
 		float3 specularIBL = (F0 * specularBRDF.x + specularBRDF.y) * specularIrradiance;
 		ambientLighting = diffuseIBL + specularIBL;
-}
+
 
 	
-	return float4(directLighting + ambientLighting, 1.0);
+	return float4(ambientLighting + directLighting, 1.0);
 
 }

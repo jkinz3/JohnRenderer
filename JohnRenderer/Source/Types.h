@@ -59,8 +59,8 @@ namespace John
 
 	struct PhongShadingCB
 	{
-		Light Lights[MaxPointLights];
 		XMVECTOR CamPos;
+		Light Lights[MaxPointLights];
 	};
 
 	struct LightSphereTransformCB
