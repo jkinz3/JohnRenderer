@@ -14,8 +14,11 @@ namespace John
 
 	std::shared_ptr<JohnPrimitive> CreatePlane(ID3D11Device* device, float size);
 
+	void CreatePlaneData( float size, std::vector<Vertex>& outVertices, std::vector<Face>& outFaces );
+
 	std::shared_ptr<JohnPrimitive> CreateCube(ID3D11Device* device, float size);
 
+	void CreateCubeData( float size, std::vector<Vertex>& outVertices, std::vector<Face>& outFaces );
 	
 
 

@@ -1,6 +1,16 @@
 #ifndef __PBRCOMMON_HLSLI__
 #define __PBRCOMMON_HLSLI__
 
+
+static const int MaxPointLights = 5;
+struct PointLight
+{
+	float3 LightPos;
+	float pack1;
+	float4 LightColor;
+	float LightIntensity;
+};
+
 cbuffer TransformConstants : register(b0)
 {
 	float4x4 MVP;
@@ -10,8 +20,7 @@ cbuffer TransformConstants : register(b0)
 
 cbuffer ShadingConstants : register(b0)
 {
-	float3 LightPos;
-	float pack1;
+	PointLight PointLights[MaxPointLights];
 	float3 CameraPos;
 }
 	
@@ -32,4 +41,6 @@ struct PSInput
 	float3 PositionWS : TEXCOORD1;
 	float3x3 TangentBasis : TBASIS;
 };
+
+
 #endif

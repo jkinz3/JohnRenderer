@@ -88,6 +88,8 @@ private:
 
 	void AddPrimitive( John::EPrimitiveType type );
 
+	void AddPointLight();
+
 	void TickGizmo();
 
 	void DrawSceneOutliner();
@@ -123,6 +125,9 @@ private:
 
 	ComPtr<ID3D11Buffer> m_TransformCB;
 	ComPtr<ID3D11Buffer> m_ShadingCB;
+	ComPtr<ID3D11Buffer> m_LightSphereTransformCB;
+
+
 
 	ComPtr<ID3D11SamplerState> m_StandardSampler;
 	ComPtr<ID3D11SamplerState> m_brdfSampler;
@@ -134,6 +139,8 @@ private:
 	
 	std::unique_ptr<DX::RenderTexture> m_ViewportRenderTarget;
 	std::unique_ptr<DX::RenderTexture> m_FinalRenderTarget;
+
+
 
 	std::unique_ptr<Camera> m_Camera;
 
@@ -149,7 +156,6 @@ private:
 	void ImportMesh();
 
 	John::MouseDeltaTracker m_MouseDeltaTracker;
-	Vector3 m_LightPos;
 	bool m_bIsRelativeMode = false;
 	bool m_bWasCameraMoved = false;
 

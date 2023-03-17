@@ -88,11 +88,15 @@ float4 main(PSInput pin) : SV_TARGET
 	
 	float3 directLighting = 0.0;
 	{
-		for (uint i = 0; i < 1; ++i)
+		for (uint i = 0; i < MaxPointLights; ++i)
 		{
-			float3 Li = normalize(LightPos - pin.PositionWS);
-			float3 Lradiance = float3(1.0, 1.0, 1.0);
+			PointLight Light = PointLights[i];
+			float3 Li = normalize(Light.LightPos - pin.PositionWS);
+			float distance = length(Light.LightPos - pin.PositionWS);
+			float attenuation = 1.0 / (distance * distance);
+			float3 Lradiance = Light.LightColor * attenuation;
 			
+
 			float3 Lh = normalize(Li + V);
 			
 			float cosLi = max(0.0, dot(N, Li));

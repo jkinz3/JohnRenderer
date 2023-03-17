@@ -49,3 +49,10 @@ struct MeshComponent
 	std::shared_ptr<Material> Material;
 };
 
+struct PointLightComponent
+{
+	Vector3 Position;
+	Vector3 LightColor;
+	float LightIntensity;
+};
+

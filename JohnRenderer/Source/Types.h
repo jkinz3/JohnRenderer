@@ -6,11 +6,22 @@ using Microsoft::WRL::ComPtr;
 using namespace DirectX::SimpleMath;
 using namespace DirectX;
 
+static constexpr int MaxPointLights = 5;
+
 enum class EShaderProgram
 {
 	PBR,
 	PHONG,
-	Sky
+	Sky,
+	LightSphere
+};
+
+struct Light
+{
+	XMVECTOR LightPos;
+	XMVECTOR LightColor;
+	float LightIntensity;
+
 };
 
 namespace John
@@ -20,6 +31,8 @@ namespace John
 		ComPtr<ID3D11VertexShader> VertexShader;
 		ComPtr<ID3D11PixelShader> PixelShader;
 		ComPtr<ID3D11InputLayout> InputLayout;
+
+		
 
 		std::wstring VertFileName;
 		std::wstring PixelFileName;
@@ -46,8 +59,14 @@ namespace John
 
 	struct PhongShadingCB
 	{
-		XMVECTOR LightPos;
+		Light Lights[MaxPointLights];
 		XMVECTOR CamPos;
+	};
+
+	struct LightSphereTransformCB
+	{
+		XMMATRIX MVP;
+		XMMATRIX Model;
 	};
 
 	struct Texture

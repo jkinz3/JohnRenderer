@@ -78,7 +78,6 @@ void Game::Initialize(HWND window, int width, int height)
 
 	m_CameraUserImpulseData = std::make_shared<CameraUserImpulseData>();
 
-	m_LightPos = Vector3( .6f, 1.f, 2.f );
 
 	m_bRightClickOpen = false;
 	m_bWantsRightClick = false;
@@ -98,10 +97,13 @@ void Game::InitializeDefaultAssets()
 
 	John::ShaderProgram pbrProgram = John::CreateShaderProgram ( device, L"Shaders/PBRVS.hlsl", L"Shaders/PBRPS.hlsl" );
 	m_Shaders.emplace( EShaderProgram::PBR, pbrProgram );
-
 	std::shared_ptr<Material> defaultMaterial = std::make_shared<Material>( device, m_StandardSampler.Get(), m_Shaders.find ( EShaderProgram::PBR)->second );
-
 	AssetManager::Get().RegisterMaterial (defaultMaterial);
+
+	John::ShaderProgram lightShereProgram = John::CreateShaderProgram( device, L"Shaders/SimpleVS.hlsl", L"Shaders/LightSpherePS.hlsl" );
+	m_Shaders.emplace( EShaderProgram::LightSphere, lightShereProgram );
+	std::shared_ptr<Material> lightSphereMaterial = std::make_shared<Material>( device, m_StandardSampler.Get(), m_Shaders.find( EShaderProgram::LightSphere )->second );
+	AssetManager::Get().RegisterMaterial( lightSphereMaterial );
 
 	std::shared_ptr<JohnMesh> MonkeyMesh = John::LoadMeshFromFile( "Content/sphere.obj" );
 
@@ -263,7 +265,6 @@ void Game::TickUI()
 	}
 	ImGui::End();
 	ImGui::Begin( "Editor" );
-	ImGui::DragFloat3( "Light Position", &m_LightPos.x, .1f );
 	ImGui::Text( "Camera" );
 	if(ImGui::TreeNode( "Camera Settings" ))
 	{
@@ -676,39 +677,82 @@ void Game::DrawScene()
 	context->ClearDepthStencilView( depthTarget, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0 );
 	context->RSSetViewports( 1, &viewport );
 
+	auto lights = m_Scene->m_Registry.view<PointLightComponent>();
 
 	John::PhongShadingCB shadingConstants;
+	int index = 0;
+	for(auto  light : lights)
+	{
+		if(index >= (MaxPointLights))
+		{
+			break;
+		}
+		auto lightComponent = lights.get<PointLightComponent>( light );
+
+		Light l;
+		l.LightPos = lightComponent.Position;
+		l.LightColor = lightComponent.LightColor;
+		l.LightIntensity = lightComponent.LightIntensity;
+
+		shadingConstants.Lights[index] = l;
+		index++;
+	}
+
+
 	shadingConstants.CamPos = m_Camera->GetPosition();
-	shadingConstants.LightPos = m_LightPos;
 
 	context->UpdateSubresource( m_ShadingCB.Get(), 0, nullptr, &shadingConstants, 0, 0 );
-		Matrix view = m_Camera->GetViewMatrix();
-		Matrix proj = m_Camera->GetProjectionMatrix();
+	Matrix view = m_Camera->GetViewMatrix();
+	Matrix proj = m_Camera->GetProjectionMatrix();
 
-	auto group = m_Scene->m_Registry.group<MeshComponent>( entt::get<TransformComponent> );
-	for(auto entity : group)
+
+
+
+	auto group = m_Scene->GetAllEntitiesWith<TransformComponent, MeshComponent>();
+	for(auto e : group)
 	{
-		auto [transformComponent, meshComponent] = group.get<TransformComponent, MeshComponent>( entity );
+		Entity entity = { e, m_Scene.get() };
+		
+		MeshComponent& meshComponent = entity.GetComponent<MeshComponent>();
+		TransformComponent& transformComponent = entity.GetComponent<TransformComponent>();
 
-		John::PhongTransformCB transformConstants;
-
-		meshComponent.Material->Apply( context );
 
 		Matrix model = transformComponent.GetTransformationMatrix();
 		Matrix MVP = model * view * proj;
-		Matrix normal = model.Invert ();
-		
-		transformConstants.MVP = MVP.Transpose();
-		transformConstants.Model = model.Transpose();
-		transformConstants.Normal = normal;
 
-		context->UpdateSubresource( m_TransformCB.Get(), 0, nullptr, &transformConstants, 0, 0 );
+		if(entity.HasComponent<PointLightComponent>())
+		{
+			John::LightSphereTransformCB transformConstants;
+
+			meshComponent.Material->Apply( context );
+			transformConstants.MVP = MVP.Transpose();
+			transformConstants.Model = model.Transpose();
+
+			context->UpdateSubresource( m_LightSphereTransformCB.Get(), 0, nullptr, &transformConstants, 0, 0 );
+
+			context->VSSetConstantBuffers( 0, 1, m_LightSphereTransformCB.GetAddressOf() );
+
+		}
+		else
+		{
+			John::PhongTransformCB transformConstants;
+
+			meshComponent.Material->Apply( context );
+
+			Matrix normal = model.Invert ();
+
+			transformConstants.MVP = MVP.Transpose();
+			transformConstants.Model = model.Transpose();
+			transformConstants.Normal = normal;
+
+			context->UpdateSubresource( m_TransformCB.Get(), 0, nullptr, &transformConstants, 0, 0 );
 
 
-		context->VSSetConstantBuffers( 0, 1, m_TransformCB.GetAddressOf() );
-		context->PSSetConstantBuffers( 0, 1, m_ShadingCB.GetAddressOf() );
+			context->VSSetConstantBuffers( 0, 1, m_TransformCB.GetAddressOf() );
+			context->PSSetConstantBuffers( 0, 1, m_ShadingCB.GetAddressOf() );
 
-		meshComponent.Mesh->Draw( context );
+		}
+			meshComponent.Mesh->Draw( context );
 	}
 
 	for(auto mesh : m_RenderObjects)
@@ -874,6 +918,8 @@ void Game::CreateDeviceDependentResources()
 	m_TransformCB = John::CreateConstantBuffer<John::PhongTransformCB>( device );
 	m_ShadingCB = John::CreateConstantBuffer<John::PhongShadingCB>( device );
 
+	m_LightSphereTransformCB = John::CreateConstantBuffer<John::LightSphereTransformCB>( device );
+
 	m_BrickBaseColor = John::CreateTexture( device, context, Image::fromFile( "Content/Brick_Wall_BaseColor.jpg" ) , DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	context->GenerateMips( m_BrickBaseColor.SRV.Get() );
 	m_BrickNormal = John::CreateTexture( device, context, Image::fromFile( "Content/Brick_Wall_Normal.jpg" ) , DXGI_FORMAT_R8G8B8A8_UNORM);
@@ -938,30 +984,59 @@ void Game::ImportMeshFromFile(const char* File)
 	entity.AddComponent<TransformComponent>();
 	entity.GetComponent<MeshComponent>().Mesh = mesh;
 	entity.GetComponent<MeshComponent>().Material = AssetManager::Get().GetDefaultMaterial();
+
+	SelectModel( entity );
 }
 
 void Game::AddPrimitive( John::EPrimitiveType type )
 {
 	std::shared_ptr<JohnPrimitive> newMesh;
-
+	std::string objectName;
 	auto device = m_deviceResources->GetD3DDevice ();
 	switch(type)
 	{
 	case John::EPrimitiveType::Sphere:
 		newMesh = John::CreateSphere ( device, 3, 3 );
 		newMesh->SetPrimitiveType ( type );
+		objectName = std::string( "Sphere" );
+		break;
+	case John::EPrimitiveType::Cube:
+		newMesh = John::CreateCube( device, 3 );
+		newMesh->SetPrimitiveType( type );
+		objectName = std::string( "Cube" );
 		break;
 	}
 
 
 	AssetManager::Get().RegisterMesh (newMesh);
+	Entity entity = m_Scene->CreateEntity( objectName.c_str() );
+	entity.AddComponent<MeshComponent>();
+	entity.AddComponent<TransformComponent>();
+	entity.GetComponent<MeshComponent>().Mesh = newMesh;
+	entity.GetComponent<MeshComponent>().Material = AssetManager::Get().GetDefaultMaterial();
 
-	std::shared_ptr<RenderObject> newObject = std::make_shared<RenderObject>();
-	newObject->SetMesh ( newMesh );
-	newObject->SetMaterial ( AssetManager::Get().GetDefaultMaterial () );
-	newObject->SetName ( "Sphere" );
+	SelectModel( entity );
+}
 
-	m_RenderObjects.push_back ( newObject );
+void Game::AddPointLight()
+{
+	auto device = m_deviceResources->GetD3DDevice();
+	std::shared_ptr<JohnPrimitive> lightMesh;
+	lightMesh = John::CreateSphere( device, .6f, 6 );
+	AssetManager::Get().RegisterMesh( lightMesh );
+	Entity entity = m_Scene->CreateEntity( "PointLight" );
+	entity.AddComponent<PointLightComponent>();
+	entity.AddComponent<TransformComponent>();
+	entity.AddComponent<MeshComponent>();
+
+	entity.GetComponent<PointLightComponent>().LightColor = Vector3( 1.f, 1.f, 1.f );
+	entity.GetComponent<PointLightComponent>().LightIntensity = 1.f;
+	entity.GetComponent<MeshComponent>().Mesh = lightMesh;
+	entity.GetComponent<MeshComponent>().Material = AssetManager::Get().GetLightSphereMaterial();
+
+	SelectModel( entity );
+
+
 }
 
 void Game::TickGizmo()
@@ -1017,6 +1092,16 @@ void Game::DrawSceneOutliner()
 			if(ImGui::MenuItem("Sphere"))
 			{
 				AddPrimitive ( John::EPrimitiveType::Sphere );
+
+
+			}
+			if(ImGui::MenuItem("Cube"))
+			{
+				AddPrimitive( John::EPrimitiveType::Cube );
+			}
+			if(ImGui::MenuItem("PointLight"))
+			{
+				AddPointLight();
 
 
 			}
@@ -1109,14 +1194,17 @@ void Game::DrawModelDetails(Entity Mesh)
 	TransformComponent& trans = Mesh.GetComponent<TransformComponent>();
 
 
-	Vector3 euler = trans.Rotation.ToEuler();
+	Vector3 euler = John::ConvertToEulerUEStyle( trans.Rotation );
 
 	ImGui::DragFloat3 ( "Position", &trans.Translation.x, .1f );
-	ImGui::DragFloat3 ( "Rotation", &euler.x, .1f );
+	if(ImGui::DragFloat3 ( "Rotation", &euler.x, .1f ))
+	{
+		int x = 5;
+	}
 	ImGui::DragFloat3 ( "Scale", &trans.Scale.x, .1f );
 
-	trans.Rotation = Quaternion::CreateFromYawPitchRoll( euler );
-
+	euler = John::EulerDegreesToRadians( euler );
+	trans.Rotation = Quaternion::CreateFromYawPitchRoll( euler.y, euler.x, euler.z);
 
 	if(assetType == John::EAssetType::JohnPrimitive)
 	{

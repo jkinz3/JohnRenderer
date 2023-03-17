@@ -99,8 +99,112 @@ namespace John
 	{
 		return std::shared_ptr<JohnPrimitive>();
 	}
+
+	void CreatePlaneData( float size, std::vector<Vertex>& outVertices, std::vector<Face>& outFaces )
+	{
+
+	}
+
 	std::shared_ptr<JohnPrimitive> CreateCube( ID3D11Device * device, float size )
 	{
-		return std::shared_ptr<JohnPrimitive>();
+		std::shared_ptr<JohnPrimitive> newMesh = std::make_shared<JohnPrimitive>();
+
+		if ( size <= 0.f )
+		{
+			size = .1f;
+		}
+
+		CreateCubeData( size, *newMesh->GetVertices (), *newMesh->GetFaces () );
+
+		newMesh->Build ( device );
+
+		return newMesh;
 	}
+
+	void CreateCubeData( float size, std::vector<Vertex>& outVertices, std::vector<Face>& outFaces )
+	{
+		outVertices.clear();
+		outFaces.clear();
+
+		constexpr int FaceCount = 6;
+
+		static const XMVECTORF32 faceNormals[FaceCount] =
+		{
+			{ { {  0,  0,  1, 0 } } },
+			{ { {  0,  0, -1, 0 } } },
+			{ { {  1,  0,  0, 0 } } },
+			{ { { -1,  0,  0, 0 } } },
+			{ { {  0,  1,  0, 0 } } },
+			{ { {  0, -1,  0, 0 } } },
+		};
+
+		static const XMVECTORF32 textureCoordinates[4] =
+		{
+			{ { { 0, 0, 0, 0 } } },
+			{ { { 0, 1, 0, 0 } } },
+			{ { { 1, 1, 0, 0 } } },
+			{ { { 1, 0, 0, 0 } } },
+		};
+		XMFLOAT3 fsize( size, size, size );
+		XMVECTOR tsize = XMLoadFloat3( &fsize);
+		tsize = XMVectorDivide( tsize, g_XMTwo );
+
+		for(int i = 0; i < FaceCount; i++)
+		{
+			const XMVECTOR normal = faceNormals[i];
+
+			const XMVECTOR basis = (i >= 4) ? g_XMIdentityR2 : g_XMIdentityR1;
+
+			const XMVECTOR side1 = XMVector3Cross( normal, basis );
+			const XMVECTOR side2 = XMVector3Cross( normal, side1);
+
+			const size_t vbase = outVertices.size();
+
+			Face f1 =
+			{
+				vbase + 0,
+				vbase + 1,
+				vbase + 2
+			};
+
+			Face f2 =
+			{
+				vbase + 0,
+				vbase + 2,
+				vbase + 3
+			};
+
+			outFaces.push_back( f1 );
+			outFaces.push_back( f2 );
+
+			Vertex v1;
+			v1.Position = XMVectorMultiply( XMVectorSubtract( XMVectorSubtract( normal, side1 ), side2), tsize );
+			v1.Normal = normal;
+			v1.TexCoord = textureCoordinates[0];
+
+
+			Vertex v2;
+			v2.Position = XMVectorMultiply( XMVectorAdd( XMVectorSubtract( normal, side1 ), side2 ), tsize );
+			v2.Normal = normal;
+			v2.TexCoord = textureCoordinates[1];
+
+			Vertex v3;
+			v3.Position = XMVectorMultiply( XMVectorAdd( normal, XMVectorAdd( side1, side2 ) ), tsize );
+			v3.Normal = normal;
+			v3.TexCoord = textureCoordinates[2];
+
+			Vertex v4;
+			v4.Position = XMVectorMultiply( XMVectorSubtract( XMVectorAdd( normal, side1), side2), tsize );
+			v4.Normal = normal;
+			v4.TexCoord = textureCoordinates[3];
+
+			outVertices.push_back( v1 );
+			outVertices.push_back( v2 );
+			outVertices.push_back( v3 );
+			outVertices.push_back( v4 );
+		}
+
+
+	}
+
 }

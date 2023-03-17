@@ -49,6 +49,8 @@ void AssetManager::IterateOverMaterials(std::function<void(Material* material)> 
 	}
 }
 
+
+
 int AssetManager::GenerateAssetID()
 {
 	int ID = m_LastGivenID;

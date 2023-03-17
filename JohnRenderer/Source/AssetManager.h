@@ -18,6 +18,8 @@ public:
 
 	void IterateOverMaterials(std::function<void(Material* material)> Func = nullptr);
 
+	std::shared_ptr<Material> GetLightSphereMaterial() const { return m_Materials[1]; }
+
 private:
 
 	int GenerateAssetID();
@@ -30,5 +32,8 @@ private:
 	int m_LastGivenID;
 
 	static AssetManager* m_Instance;
+
+	std::shared_ptr<Material> m_LightSphereMaterial;
+
 };
 

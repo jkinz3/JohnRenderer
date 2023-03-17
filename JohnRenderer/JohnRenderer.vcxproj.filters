@@ -55,6 +55,7 @@
     <ClInclude Include="Source\SourceMesh.h" />
     <ClInclude Include="Source\AssetManager.h" />
     <ClInclude Include="Source\Utilities.h" />
+    <ClInclude Include="ThirdParty\entt\entt.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\pch.cpp" />
@@ -115,5 +116,7 @@
     <FxCompile Include="Shaders\SkyboxVS.hlsl" />
     <FxCompile Include="Shaders\PBRPS.hlsl" />
     <FxCompile Include="Shaders\PBRVS.hlsl" />
+    <FxCompile Include="Shaders\SimpleVS.hlsl" />
+    <FxCompile Include="Shaders\LightSpherePS.hlsl" />
   </ItemGroup>
 </Project>
