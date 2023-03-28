@@ -85,7 +85,7 @@
 #include "ReadData.h"
 #include "RenderTexture.h"
 #include "SkyboxEffect.h"
-
+#include "DirectXMesh.h"
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_dx11.h"
 #include "ImGui/imgui_impl_win32.h"

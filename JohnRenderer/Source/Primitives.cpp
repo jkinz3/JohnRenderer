@@ -4,6 +4,53 @@
 
 namespace John
 {
+	void ComputeTangents( std::shared_ptr<JohnPrimitive> inMesh )
+	{
+		auto verts = inMesh->GetVertices();
+		auto faces = inMesh->GetFaces();
+		size_t nFaces = faces->size();
+		size_t nVerts = verts>size();
+
+		std::vector<uint32_t> indices;
+
+		for(size_t j = 0; j < nFaces; ++j)
+		{
+			indices.push_back( faces[j].v1 );
+			indices.push_back( faces[j].v2 );
+			indices.push_back( faces[j].v3 );
+		}
+
+
+		auto pos = std::make_unique<Vector3[]>( nVerts );
+		for(size_t j = 0; j < nVerts; ++j)
+		{
+			pos[j] = *
+				verts[j]->Position;
+		}
+
+		auto normals = std::make_unique<Vector3[]>( nVerts );
+		for(size_t j = 0; j < nVerts; ++j)
+		{
+			normals[j] = verts[j].Normal;
+		}
+
+		auto texCoords = std::make_unique<Vector2[]>( nVerts );
+		for(size_t j = 0; j < nVerts; ++j)
+		{
+			texCoords[j] = verts[j].TexCoord;
+		}
+
+		auto tangents = std::make_unique<Vector3[]>( nVerts );
+		auto bitangents = std::make_unique<Vector3[]>( nVerts );
+
+		DX::ThrowIfFailed(
+			ComputeTangentFrame(indices.data(), nFaces, pos.get(), normals.get(), texCoords.get(), nVerts,
+				tangents.get(), bitangents.get())
+		);
+
+
+	}
+
 	std::shared_ptr<JohnPrimitive> CreateSphere( ID3D11Device * device, float diameter, size_t tessellation )
 	{
 		std::shared_ptr<JohnPrimitive> newMesh = std::make_shared<JohnPrimitive>();
@@ -14,6 +61,8 @@ namespace John
 		}
 
 		CreateSphereData ( diameter, tessellation, *newMesh->GetVertices (), *newMesh->GetFaces () );
+
+		ComputeTangents( *newMesh.get() );
 
 		newMesh->Build ( device );
 
@@ -115,7 +164,7 @@ namespace John
 		}
 
 		CreateCubeData( size, *newMesh->GetVertices (), *newMesh->GetFaces () );
-
+		ComputeTangents( *newMesh.get() );
 		newMesh->Build ( device );
 
 		return newMesh;
