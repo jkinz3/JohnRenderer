@@ -479,7 +479,7 @@ void Game::Movement( float DeltaTime )
 		if(m_SelectedModel != NullEntity)
 		{
 			auto transformComp = m_SelectedModel.GetComponent<TransformComponent>();
-			m_Camera->FocusOnPosition (transformComp.Translation);
+			m_Camera->FocusOnPosition (transformComp.GetTranslation());
 		}
 		else
 		{
@@ -691,7 +691,7 @@ void Game::DrawScene()
 		auto [light, transform] = lights.get<PointLightComponent, TransformComponent>( entity );
 
 		Light l;
-		l.LightPos = transform.Translation;
+		l.LightPos = transform.GetTranslation();
 		l.LightColor = light.LightColor;
 		l.LightIntensity = light.LightIntensity;
 
@@ -1082,10 +1082,10 @@ void Game::TickGizmo()
 		Vector3 NewScale;
 		model.Decompose( NewScale, NewRot, NewTrans );
 		TransformComponent NewTransform;
-		transComp.Translation= NewTrans;
+		transComp.GetTranslation()= NewTrans;
 		//ctor3 RotEuler = NewRot.ToEuler ();
-		transComp.Rotation = NewRot;
-		transComp.Scale = NewScale;
+		transComp.SetRotation( NewRot);
+		transComp.SetScale( NewScale);
 
 	}
 }
@@ -1206,18 +1206,24 @@ void Game::DrawModelDetails(Entity Mesh)
 
 	TransformComponent& trans = Mesh.GetComponent<TransformComponent>();
 
+	Vector3 pos = trans.GetTranslation();
+	Vector3 euler = John::EulerRadiansToDegrees(trans.GetRotationEuler());
+	Vector3 scale = trans.GetScale();
 
-	Vector3 euler = John::ConvertToEulerUEStyle( trans.Rotation );
-
-	ImGui::DragFloat3 ( "Position", &trans.Translation.x, .1f );
+	if(ImGui::DragFloat3 ( "Position", &pos.x, .1f ))
+	{
+		trans.SetTranslation( pos );
+	}
 	if(ImGui::DragFloat3 ( "Rotation", &euler.x, .1f ))
 	{
-		int x = 5;
+		trans.SetRotation( John::EulerDegreesToRadians( euler ) );
 	}
-	ImGui::DragFloat3 ( "Scale", &trans.Scale.x, .1f );
+	if(ImGui::DragFloat3 ( "Scale", &scale.x, .1f ))
+	{
+		trans.SetScale( scale );
+	}
 
-	euler = John::EulerDegreesToRadians( euler );
-	trans.Rotation = Quaternion::CreateFromYawPitchRoll( euler.y, euler.x, euler.z);
+
 
 	if(assetType == John::EAssetType::JohnPrimitive)
 	{
