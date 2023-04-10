@@ -19,11 +19,11 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_assimp::zlibstatic "${_IMPORT_PREFIX}/lib/zl
 set_property(TARGET assimp::assimp APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(assimp::assimp PROPERTIES
   IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C;CXX;RC"
-  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/assimp-vc143-mt.lib"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/assimp.lib"
   )
 
 list(APPEND _IMPORT_CHECK_TARGETS assimp::assimp )
-list(APPEND _IMPORT_CHECK_FILES_FOR_assimp::assimp "${_IMPORT_PREFIX}/lib/assimp-vc143-mt.lib" )
+list(APPEND _IMPORT_CHECK_FILES_FOR_assimp::assimp "${_IMPORT_PREFIX}/lib/assimp.lib" )
 
 # Commands beyond this point should not need to know the version.
 set(CMAKE_IMPORT_FILE_VERSION)
