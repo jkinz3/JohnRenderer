@@ -53,7 +53,7 @@
     },
     {
       "name": ".aiproj.json",
-      "description": "Settings for project analysis by the application inspector",
+      "description": "Settings for project analysis by the Application Inspector",
       "fileMatch": [".aiproj.json"],
       "url": "https://json.schemastore.org/aiproj-1.1.json",
       "versions": {
@@ -81,7 +81,7 @@
       "name": "Airplane task",
       "description": "Schema for building Airplane tasks",
       "fileMatch": ["*.task.json", "*.task.yaml", "*.task.yml"],
-      "url": "https://raw.githubusercontent.com/airplanedev/lib/main/pkg/deploy/taskdir/definitions/schema_0_3.json"
+      "url": "https://api.airplane.dev/v0/schemas/task.json"
     },
     {
       "name": "angular.json",
@@ -163,6 +163,12 @@
         "**/playbooks/*.yml",
         "**/playbooks/*.yaml"
       ]
+    },
+    {
+      "name": "Ansible Rulebook",
+      "description": "Ansible rulebook files",
+      "url": "https://raw.githubusercontent.com/ansible/ansible-rulebook/main/ansible_rulebook/schema/ruleset_schema.json",
+      "fileMatch": ["**/rulebooks/*.yml", "**/rulebooks/*.yaml"]
     },
     {
       "name": "Ansible Inventory",
@@ -383,6 +389,12 @@
       "url": "https://raw.githubusercontent.com/microsoft/azure-pipelines-vscode/master/service-schema.json"
     },
     {
+      "name": "FasterCI Configuration",
+      "description": "FasterCI repository configuration file",
+      "fileMatch": ["**/.fasterci/config.yaml"],
+      "url": "https://fasterci.com/config.schema.json"
+    },
+    {
       "name": "Foxx Manifest",
       "description": "ArangoDB Foxx service manifest file",
       "fileMatch": ["manifest.json"],
@@ -414,7 +426,23 @@
       "name": "Freifunk.de Community API",
       "description": "Schema for Freifunk.de Community API. See more details https://github.com/freifunk/directory.api.freifunk.net",
       "fileMatch": ["*.freifunk-api.json"],
-      "url": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.1.json"
+      "url": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.5.2.json",
+      "versions": {
+        "0.1": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.1.json",
+        "0.2.0": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.2.0.json",
+        "0.4.9": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.4.9.json",
+        "0.4.10": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.4.10.json",
+        "0.4.11": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.4.11.json",
+        "0.4.12": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.4.12.json",
+        "0.4.13": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.4.13.json",
+        "0.4.14": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.4.14.json",
+        "0.4.15": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.4.15.json",
+        "0.4.16": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.4.16.json",
+        "0.5.0": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.5.0.json",
+        "0.5.1": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.5.1.json",
+        "0.5.2": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/0.5.2.json",
+        "development": "https://raw.githubusercontent.com/freifunk/api.freifunk.net/master/specs/development.json"
+      }
     },
     {
       "name": "Frogbot Config",
@@ -729,6 +757,15 @@
       }
     },
     {
+      "name": "Cog config file",
+      "description": "Schema for cog.yaml files",
+      "fileMatch": ["cog.yaml", "cog.yml"],
+      "url": "https://raw.githubusercontent.com/replicate/cog/main/pkg/config/data/config_schema_v1.0.json",
+      "versions": {
+        "1.0": "https://raw.githubusercontent.com/replicate/cog/main/pkg/config/data/config_schema_v1.0.json"
+      }
+    },
+    {
       "name": "Commandbox Box.json",
       "description": "Box.json Schema used with Commandbox cli, cfml web servers and modules.",
       "url": "https://raw.githubusercontent.com/Ortus-Solutions/vscode-commandbox/master/resources/schemas/box.schema.json"
@@ -749,6 +786,12 @@
       "description": "Schema for Dein.vim, a Vim/Neovim plugin manager",
       "fileMatch": ["dein.toml"],
       "url": "https://json.schemastore.org/dein.json"
+    },
+    {
+      "name": "Deta Spacefile Schema",
+      "description": "Configuration file for Space Apps",
+      "fileMatch": ["Spacefile"],
+      "url": "https://deta.space/assets/spacefile.schema.json"
     },
     {
       "name": "Drupal Breakpoints Schema",
@@ -841,6 +884,12 @@
       "url": "https://json.schemastore.org/chart-lock.json"
     },
     {
+      "name": "Helm Unittest Test Suite",
+      "description": "A Helm Unittest Test Suite file",
+      "fileMatch": ["**/charts/*/tests/*.yaml"],
+      "url": "https://raw.githubusercontent.com/helm-unittest/helm-unittest/v0.3.1/schema/helm-testsuite.json"
+    },
+    {
       "name": "CircleCI config.yml",
       "description": "Schema for CircleCI config files",
       "fileMatch": ["**/.circleci/config.yml"],
@@ -898,6 +947,12 @@
       "description": "Codux configuration file",
       "fileMatch": ["codux.config.json"],
       "url": "https://wixplosives.github.io/codux-config-schema/codux.config.schema.json"
+    },
+    {
+      "name": "devcontainer.json",
+      "description": "Schema for dev container configuration files.",
+      "fileMatch": ["devcontainer.json", ".devcontainer.json"],
+      "url": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json"
     },
     {
       "name": "JSON schema for Codecov configuration files",
@@ -1095,6 +1150,30 @@
       "url": "https://json.schemastore.org/crowdin.json"
     },
     {
+      "name": "Crowdsec collection Schema",
+      "description": "A YAML schema for Crowdsec collection configuration files",
+      "fileMatch": ["**/collections/*/*.yaml"],
+      "url": "https://raw.githubusercontent.com/crowdsecurity/crowdsec-yaml-schemas/main/collection_schema.yaml"
+    },
+    {
+      "name": "Crowdsec parser Schema",
+      "description": "A YAML schema for Crowdsec parser configuration files",
+      "fileMatch": [
+        "**/parsers/s00-raw/*/*.yaml",
+        "**/parsers/s01-parse/*/*.yaml",
+        "**/parsers/s02-enrich/*/*.yaml",
+        "**/postoverflows/s00-enrich/*/*.yaml",
+        "**/postoverflows/s01-whitelist/*/*.yaml"
+      ],
+      "url": "https://raw.githubusercontent.com/crowdsecurity/crowdsec-yaml-schemas/main/parser_schema.yaml"
+    },
+    {
+      "name": "Crowdsec scenario Schema",
+      "description": "A YAML schema for Crowdsec scenario configuration files",
+      "fileMatch": ["**/scenarios/*/*.yaml"],
+      "url": "https://raw.githubusercontent.com/crowdsecurity/crowdsec-yaml-schemas/main/scenario_schema.yaml"
+    },
+    {
       "name": "cypress.json",
       "description": "Cypress.io test runner configuration file",
       "fileMatch": ["cypress.json"],
@@ -1184,7 +1263,7 @@
     {
       "name": "dependabot-v2.json",
       "description": "A JSON schema for the GitHub Action's dependabot.yml files",
-      "fileMatch": ["**/.github/dependabot.yml"],
+      "fileMatch": ["**/.github/dependabot.yml", "**/.github/dependabot.yaml"],
       "url": "https://json.schemastore.org/dependabot-2.0.json"
     },
     {
@@ -1491,15 +1570,33 @@
       "url": "https://json.schemastore.org/first-timers.json"
     },
     {
-      "name": "Foundry VTT - Manifest",
-      "description": "JSON schema for Foundry VTT system.json and module.json files.",
-      "fileMatch": ["system.json", "module.json"],
-      "url": "https://json.schemastore.org/foundryvtt-manifest.json"
+      "name": "Foundry VTT - Base package Manifest",
+      "description": "Base schema for Module/system/World manifest schemas to inherit from.",
+      "fileMatch": [],
+      "url": "https://json.schemastore.org/foundryvtt-base-package-manifest.json"
     },
     {
-      "name": "Foundry VTT - Template",
+      "name": "Foundry VTT - Module Manifest",
+      "description": "JSON schema for Foundry VTT module.json files.",
+      "fileMatch": ["**/modules/*/module.json"],
+      "url": "https://json.schemastore.org/foundryvtt-module-manifest.json"
+    },
+    {
+      "name": "Foundry VTT - System Manifest",
+      "description": "JSON schema for Foundry VTT system.json files.",
+      "fileMatch": ["**/systems/*/system.json"],
+      "url": "https://json.schemastore.org/foundryvtt-system-manifest.json"
+    },
+    {
+      "name": "Foundry VTT - World Manifest",
+      "description": "JSON schema for Foundry VTT world.json files.",
+      "fileMatch": ["**/worlds/*/world.json"],
+      "url": "https://json.schemastore.org/foundryvtt-world-manifest.json"
+    },
+    {
+      "name": "Foundry VTT - System Data Template",
       "description": "JSON schema for Foundry VTT template.json files.",
-      "fileMatch": ["template.json"],
+      "fileMatch": ["**/systems/*/template.json"],
       "url": "https://json.schemastore.org/foundryvtt-template.json"
     },
     {
@@ -1575,6 +1672,15 @@
       "description": "YAML schema for GitHub Actions",
       "fileMatch": ["action.yml", "action.yaml"],
       "url": "https://json.schemastore.org/github-action.json"
+    },
+    {
+      "name": "GitHub Discussion",
+      "description": "YAML schema for GitHub Discussions",
+      "fileMatch": [
+        "**/.github/DISCUSSION_TEMPLATE/*.yml",
+        "**/.github/DISCUSSION_TEMPLATE/*.yaml"
+      ],
+      "url": "https://json.schemastore.org/github-discussion.json"
     },
     {
       "name": "GitHub Funding",
@@ -1803,6 +1909,18 @@
       "url": "https://raw.githubusercontent.com/ory/hydra/master/.schema/version.schema.json"
     },
     {
+      "name": "IBM Zapp document",
+      "description": "IBM Z APPlication configuration file for IBM zDevOps development tools such as Z Open Editor.",
+      "fileMatch": ["zapp.yaml", "zapp.json"],
+      "url": "https://raw.githubusercontent.com/IBM/zopeneditor-about/main/zapp/zapp-schema-1.0.0.json"
+    },
+    {
+      "name": "IBM zCodeFormatSettings",
+      "description": "IBM Enterprise languages code formatter settings file for IBM zDevOps development tools such as Z Open Editor.",
+      "fileMatch": ["zcodeformat.yaml", "zcodeformat.json"],
+      "url": "https://raw.githubusercontent.com/IBM/zopeneditor-about/main/zcodeformat/zcodeformat-schema-0.0.1.json"
+    },
+    {
       "name": "ide.host.json",
       "description": "JSON schema for IDE template host file",
       "fileMatch": ["ide.host.json"],
@@ -1827,10 +1945,25 @@
       "url": "https://json.schemastore.org/imgbotconfig.json"
     },
     {
+      "name": "IMG Catapult PSP",
+      "description": "Imagination Techologies Catapult platform support pack contents",
+      "fileMatch": ["contents.yaml"],
+      "url": "https://json.schemastore.org/img-catapult-psp-1.0.0.json",
+      "versions": {
+        "1.0.0": "https://json.schemastore.org/img-catapult-psp-1.0.0.json"
+      }
+    },
+    {
       "name": "importmap.json",
       "description": "JSON schema for Import Maps files",
       "fileMatch": ["importmap.json", "import_map.json", "import-map.json"],
       "url": "https://json.schemastore.org/importmap.json"
+    },
+    {
+      "name": "ioBroker Configuration",
+      "description": "The configuration file of an ioBroker installation",
+      "fileMatch": ["iobroker.json", "iobroker-dist.json"],
+      "url": "https://raw.githubusercontent.com/ioBroker/ioBroker.js-controller/master/schemas/iobroker.json"
     },
     {
       "name": "ioBroker JSON UI",
@@ -1885,6 +2018,12 @@
       "description": "JFrog File Spec schema definition",
       "fileMatch": ["**/filespecs/*.json", "*filespec*.json", "*.filespec"],
       "url": "https://raw.githubusercontent.com/jfrog/jfrog-cli/v2/schema/filespec-schema.json"
+    },
+    {
+      "name": "JMeter DSL cli config schema",
+      "description": "jmdsl JMeter DSL command line configuration file schema definition",
+      "fileMatch": ["*.jmdsl.yml", "*.jmdsl.yaml", "*.jmdsl.json"],
+      "url": "https://github.com/abstracta/jmeter-java-dsl/releases/latest/download/jmdsl-config-schema.json"
     },
     {
       "name": "Jovo Language Models",
@@ -1973,6 +2112,11 @@
       "url": "https://raw.githubusercontent.com/rancher/k3d/main/pkg/config/config.versions.schema.json"
     },
     {
+      "name": "Kas",
+      "description": "Configuration for the Kas setup tool",
+      "url": "https://raw.githubusercontent.com/siemens/kas/master/kas/schema-kas.json"
+    },
+    {
       "name": "KrakenD",
       "description": "KrakenD API Gateway configuration file",
       "fileMatch": [
@@ -1998,6 +2142,15 @@
       "description": "Schema for Ory Keto configuration file",
       "fileMatch": ["keto.json", "keto.yml", "keto.yaml", "keto.toml"],
       "url": "https://raw.githubusercontent.com/ory/keto/master/.schema/version.schema.json"
+    },
+    {
+      "name": "kontinuous-values.yaml",
+      "description": "Schema for Kontinuous values.yaml configuration files",
+      "fileMatch": [
+        "**/.kontinuous/values.yaml",
+        "**/.kontinuous/env/*/values.yaml"
+      ],
+      "url": "https://raw.githubusercontent.com/socialgouv/kontinuous/v1/docs/values.schema.json"
     },
     {
       "name": "kustomization.yaml",
@@ -2067,6 +2220,18 @@
       "description": "Lively Wallpaper configuration file. More info at https://github.com/rocksdanister/lively/wiki/Web-Guide-IV-:-Interaction#lively-properties",
       "fileMatch": ["LivelyProperties.json"],
       "url": "https://raw.githubusercontent.com/rocksdanister/lively/core-separation/schemas/livelyPropertiesSchema.json"
+    },
+    {
+      "name": "LOOBin",
+      "description": "JSON schema for LOOBins macOS binaries. More info at https://github.com/infosecB/LOOBins",
+      "fileMatch": ["**/LOOBins/*.yml"],
+      "url": "https://json.schemastore.org/loobin-1.0.json"
+    },
+    {
+      "name": "lotus.yaml",
+      "description": "The configuration file used for Lotus definitions",
+      "fileMatch": ["lotus.yaml"],
+      "url": "https://grnhse-vpc-assets.s3.amazonaws.com/jsonschemas/lotus.yaml.json"
     },
     {
       "name": "local.settings.json",
@@ -2155,6 +2320,12 @@
       "url": "https://json.schemastore.org/minecraft-configured-carver.json"
     },
     {
+      "name": "Minecraft Data Pack Damage Type",
+      "description": "Configuration file defining a damage type for a data pack for Minecraft.",
+      "fileMatch": ["**/data/*/damage_type/*.json"],
+      "url": "https://json.schemastore.org/minecraft-damage-type.json"
+    },
+    {
       "name": "Minecraft Data Pack Dimension Type",
       "description": "Configuration file defining a dimension type for a data pack for Minecraft.",
       "fileMatch": ["**/data/*/dimension_type/*.json"],
@@ -2209,10 +2380,28 @@
       "url": "https://json.schemastore.org/minecraft-template-pool.json"
     },
     {
+      "name": "Minecraft Resource Pack Lang",
+      "description": "Configuration file defining a language for a resource pack for Minecraft.",
+      "fileMatch": ["**/assets/*/lang/*.json"],
+      "url": "https://json.schemastore.org/minecraft-lang.json"
+    },
+    {
+      "name": "Minecraft Resource Pack Particle",
+      "description": "Configuration file defining a particle for a resource pack for Minecraft.",
+      "fileMatch": ["**/assets/*/particles/*.json"],
+      "url": "https://json.schemastore.org/minecraft-particle.json"
+    },
+    {
       "name": "Minecraft Resourcepack Sounds",
       "description": "Configuration file defining what sounds play when sound event is triggered for a resourcepack for Minecraft.",
       "fileMatch": ["**/assets/*/sounds.json"],
       "url": "https://raw.githubusercontent.com/AxoCode/json-schema/master/minecraft/sounds.json"
+    },
+    {
+      "name": "Minecraft Resource Pack Texture Mcmeta",
+      "description": "Configuration file defining an mcmeta file for a texture for a resource pack for Minecraft.",
+      "fileMatch": ["**/assets/*/textures/**/*.png.mcmeta"],
+      "url": "https://json.schemastore.org/minecraft-texture-mcmeta.json"
     },
     {
       "name": "MkDocs Configuration 1.0",
@@ -2413,6 +2602,12 @@
       "url": "https://json.schemastore.org/openfin.json"
     },
     {
+      "name": "OpenRewrite Resource",
+      "description": "JSON schema for OpenRewrite resource descriptors",
+      "fileMatch": ["**/META-INF/rewrite/*.yml"],
+      "url": "https://raw.githubusercontent.com/openrewrite/rewrite/main/rewrite-core/openrewrite.json"
+    },
+    {
       "name": "Outblocks project configuration",
       "description": "JSON schema for Outblocks project configuration files",
       "fileMatch": ["project.outblocks.yaml", "project.outblocks.yml"],
@@ -2566,6 +2761,12 @@
         ".postcssrc.yml"
       ],
       "url": "https://json.schemastore.org/postcssrc.json"
+    },
+    {
+      "name": ".powerpages-web-template-manifest",
+      "description": "Custom manifest declaration for Web templates",
+      "fileMatch": [".powerpages-web-template-manifest"],
+      "url": "https://json.schemastore.org/powerpages-web-template-manifest.json"
     },
     {
       "name": ".pre-commit-config.yml",
@@ -2746,6 +2947,11 @@
       "url": "https://raw.githubusercontent.com/Cog-Creators/Red-DiscordBot/V3/develop/schema/red_cog_repo.schema.json"
     },
     {
+      "name": "Red-DiscordBot Trivia",
+      "description": "Red-DiscordBot Trivia List file",
+      "url": "https://raw.githubusercontent.com/Cog-Creators/Red-DiscordBot/V3/develop/schema/trivia.schema.json"
+    },
+    {
       "name": ".rehyperc",
       "description": "A rehype configuration file",
       "fileMatch": [
@@ -2780,9 +2986,15 @@
       "url": "https://json.schemastore.org/resjson.json"
     },
     {
+      "name": "rtx",
+      "description": "JSON schema for rtx config, a polyglot dev tool manager",
+      "fileMatch": [".rtx.toml", ".rtx.*.toml", "**/rtx/config.toml"],
+      "url": "https://rtx.pub/schema/rtx.json"
+    },
+    {
       "name": "Ruff",
       "description": "JSON schema for Ruff, a fast Python linter",
-      "fileMatch": ["ruff.toml"],
+      "fileMatch": ["ruff.toml", ".ruff.toml"],
       "url": "https://json.schemastore.org/ruff.json"
     },
     {
@@ -2829,7 +3041,8 @@
       "fileMatch": [".rr*.yml", ".rr*.yaml"],
       "versions": {
         "1.0": "https://cdn.jsdelivr.net/gh/roadrunner-server/roadrunner@latest/schemas/config/1.0.schema.json",
-        "2.0": "https://cdn.jsdelivr.net/gh/roadrunner-server/roadrunner@latest/schemas/config/2.0.schema.json"
+        "2.0": "https://cdn.jsdelivr.net/gh/roadrunner-server/roadrunner@latest/schemas/config/2.0.schema.json",
+        "3.0": "https://cdn.jsdelivr.net/gh/roadrunner-server/roadrunner@latest/schemas/config/3.0.schema.json"
       }
     },
     {
@@ -2942,6 +3155,12 @@
       "url": "https://raw.githubusercontent.com/lukesampson/scoop/master/schema.json"
     },
     {
+      "name": "Semantic Data Fabric (SDF) file",
+      "description": "The schema definition for all available SDF blocks",
+      "fileMatch": [".sdf.yml"],
+      "url": "https://cdn.sdf.com/schemas/sdf-schema-1.0.json"
+    },
+    {
       "name": "semantic-release",
       "description": "Configuration for semantic-release",
       "fileMatch": [
@@ -2962,6 +3181,12 @@
         ".semgrep.yml"
       ],
       "url": "https://json.schemastore.org/semgrep.json"
+    },
+    {
+      "name": "Serenity Code Generator (Sergen)",
+      "description": "Serenity code generator (sergen) configuration file",
+      "fileMatch": ["sergen.json", "sergen.*.json", "*.sergen.json"],
+      "url": "https://json.schemastore.org/sergen.json"
     },
     {
       "name": "settings.job",
@@ -3004,6 +3229,11 @@
       "url": "https://json.schemastore.org/size-limit.json"
     },
     {
+      "name": "Slack app manifest",
+      "description": "A manifest file containing the settings for a Slack app",
+      "url": "https://json.schemastore.org/slack-app-manifest.json"
+    },
+    {
       "name": "skyuxconfig.json",
       "description": "SKY UX CLI configuration file",
       "fileMatch": ["skyuxconfig.json", "skyuxconfig.*.json"],
@@ -3032,6 +3262,12 @@
       "description": "Source Map files version 3",
       "fileMatch": ["*.map"],
       "url": "https://json.schemastore.org/sourcemap-v3.json"
+    },
+    {
+      "name": "Sourcery",
+      "description": "Sourcery YAML Schema",
+      "fileMatch": [".sourcery.yaml"],
+      "url": "https://json.schemastore.org/sourcery_yaml_schema.json"
     },
     {
       "name": "SpecIF",
@@ -3136,6 +3372,12 @@
       "url": "https://json.schemastore.org/swagger-2.0.json"
     },
     {
+      "name": "task.json",
+      "description": "VSCode Task file",
+      "fileMatch": ["task.json", "tasks.json"],
+      "url": "https://json.schemastore.org/task.json"
+    },
+    {
       "name": "Talisman configuration",
       "description": "Configuration for .talismanrc",
       "fileMatch": [".talismanrc"],
@@ -3160,6 +3402,12 @@
       "url": "https://json.schemastore.org/templatesources.json"
     },
     {
+      "name": "Tier.run pricing.json",
+      "description": "Tier.run pricing model configuration",
+      "fileMatch": ["pricing.json"],
+      "url": "https://raw.githubusercontent.com/tierrun/tier/main/pricing/schema.json"
+    },
+    {
       "name": "Tikibase",
       "description": "Tikibase configuration file",
       "fileMatch": ["tikibase.json"],
@@ -3180,6 +3428,12 @@
       "description": "Tizen project workspace configuration file",
       "fileMatch": ["tizen_workspace.yaml"],
       "url": "https://json.schemastore.org/tizen_workspace.json"
+    },
+    {
+      "name": "tldr",
+      "description": "tldr configuration file",
+      "fileMatch": [".tldr.json"],
+      "url": "https://json.schemastore.org/tldr.json"
     },
     {
       "name": "tmLanguage",
@@ -3215,6 +3469,12 @@
       "name": "Traefik v2 File Provider",
       "description": "Traefik v2 Dynamic Configuration File Provider",
       "url": "https://json.schemastore.org/traefik-v2-file-provider.json"
+    },
+    {
+      "name": "transcend.yml",
+      "description": "Define personal data schema in code using Transcend",
+      "fileMatch": ["transcend.yml", "transcend.yaml"],
+      "url": "https://raw.githubusercontent.com/transcend-io/cli/main/transcend-yml-schema-v4.json"
     },
     {
       "name": "trunk.yaml schema",
@@ -3437,6 +3697,18 @@
       "description": "JSON Schema for Azure DevOps Extensions",
       "fileMatch": ["vss-extension.json"],
       "url": "https://json.schemastore.org/vss-extension.json"
+    },
+    {
+      "name": "vtesttree.yaml",
+      "description": "Test execution tree description for a Vector test unit created with VS Code",
+      "fileMatch": ["*.vtesttree.yaml", "*.vtesttree.yml", "*.vtesttree.json"],
+      "url": "https://json.schemastore.org/vtesttree-schema.json"
+    },
+    {
+      "name": "vtestunit.yaml",
+      "description": "Test unit description for Vector CANoe4SW Server Edition or Vector Test Unit Runner",
+      "fileMatch": ["*.vtestunit.yaml", "*.vtestunit.yml", "*.vtestunit.json"],
+      "url": "https://json.schemastore.org/vtestunit-schema.json"
     },
     {
       "name": "v8r",
@@ -3858,13 +4130,14 @@
       "name": "Gradle Enterprise",
       "description": "Gradle Enterprise configuration schema",
       "fileMatch": ["*gradle-enterprise.yml", "*gradle-enterprise.yaml"],
-      "url": "https://docs.gradle.com/enterprise/admin/schema/gradle-enterprise-config-schema-5.json",
+      "url": "https://docs.gradle.com/enterprise/admin/schema/gradle-enterprise-config-schema-6.json",
       "versions": {
         "1.0": "https://docs.gradle.com/enterprise/admin/schema/gradle-enterprise-config-schema-1.json",
         "2.0": "https://docs.gradle.com/enterprise/admin/schema/gradle-enterprise-config-schema-2.json",
         "3.0": "https://docs.gradle.com/enterprise/admin/schema/gradle-enterprise-config-schema-3.json",
         "4.0": "https://docs.gradle.com/enterprise/admin/schema/gradle-enterprise-config-schema-4.json",
-        "5.0": "https://docs.gradle.com/enterprise/admin/schema/gradle-enterprise-config-schema-5.json"
+        "5.0": "https://docs.gradle.com/enterprise/admin/schema/gradle-enterprise-config-schema-5.json",
+        "6.0": "https://docs.gradle.com/enterprise/admin/schema/gradle-enterprise-config-schema-6.json"
       }
     },
     {
@@ -4013,62 +4286,62 @@
       "fileMatch": ["skaffold.yaml", "skaffold.yml"],
       "url": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v2/content/en/schemas/v3.json",
       "versions": {
-        "v1alpha1": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1alpha1.json",
-        "v1alpha2": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1alpha2.json",
-        "v1alpha3": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1alpha3.json",
-        "v1alpha4": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1alpha4.json",
-        "v1alpha5": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1alpha5.json",
-        "v1beta1": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta1.json",
-        "v1beta2": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta2.json",
-        "v1beta3": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta3.json",
-        "v1beta4": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta4.json",
-        "v1beta5": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta5.json",
-        "v1beta6": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta6.json",
-        "v1beta7": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta7.json",
-        "v1beta8": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta8.json",
-        "v1beta9": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta9.json",
-        "v1beta10": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta10.json",
-        "v1beta11": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta11.json",
-        "v1beta12": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta12.json",
-        "v1beta13": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta13.json",
-        "v1beta14": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta14.json",
-        "v1beta15": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta15.json",
-        "v1beta16": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta16.json",
-        "v1beta17": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1beta17.json",
-        "v1": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v1.json",
-        "v2alpha1": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2alpha1.json",
-        "v2alpha2": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2alpha2.json",
-        "v2alpha3": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2alpha3.json",
-        "v2alpha4": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2alpha4.json",
-        "v2beta1": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta1.json",
-        "v2beta2": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta2.json",
-        "v2beta3": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta3.json",
-        "v2beta4": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta4.json",
-        "v2beta5": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta5.json",
-        "v2beta6": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta6.json",
-        "v2beta7": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta7.json",
-        "v2beta8": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta8.json",
-        "v2beta9": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta9.json",
-        "v2beta10": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta10.json",
-        "v2beta11": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta11.json",
-        "v2beta12": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta12.json",
-        "v2beta13": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta13.json",
-        "v2beta14": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta14.json",
-        "v2beta15": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta15.json",
-        "v2beta16": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta16.json",
-        "v2beta17": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta17.json",
-        "v2beta18": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta18.json",
-        "v2beta19": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta19.json",
-        "v2beta20": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta20.json",
-        "v2beta21": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta21.json",
-        "v2beta22": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta22.json",
-        "v2beta23": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta23.json",
-        "v2beta24": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta24.json",
-        "v2beta25": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta25.json",
-        "v2beta26": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta26.json",
-        "v2beta27": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta27.json",
-        "v2beta28": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta28.json",
-        "v2beta29": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/master/docs/content/en/schemas/v2beta29.json",
+        "v1alpha1": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1alpha1.json",
+        "v1alpha2": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1alpha2.json",
+        "v1alpha3": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1alpha3.json",
+        "v1alpha4": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1alpha4.json",
+        "v1alpha5": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1alpha5.json",
+        "v1beta1": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta1.json",
+        "v1beta2": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta2.json",
+        "v1beta3": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta3.json",
+        "v1beta4": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta4.json",
+        "v1beta5": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta5.json",
+        "v1beta6": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta6.json",
+        "v1beta7": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta7.json",
+        "v1beta8": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta8.json",
+        "v1beta9": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta9.json",
+        "v1beta10": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta10.json",
+        "v1beta11": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta11.json",
+        "v1beta12": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta12.json",
+        "v1beta13": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta13.json",
+        "v1beta14": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta14.json",
+        "v1beta15": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta15.json",
+        "v1beta16": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta16.json",
+        "v1beta17": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1beta17.json",
+        "v1": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v1.json",
+        "v2alpha1": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2alpha1.json",
+        "v2alpha2": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2alpha2.json",
+        "v2alpha3": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2alpha3.json",
+        "v2alpha4": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2alpha4.json",
+        "v2beta1": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta1.json",
+        "v2beta2": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta2.json",
+        "v2beta3": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta3.json",
+        "v2beta4": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta4.json",
+        "v2beta5": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta5.json",
+        "v2beta6": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta6.json",
+        "v2beta7": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta7.json",
+        "v2beta8": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta8.json",
+        "v2beta9": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta9.json",
+        "v2beta10": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta10.json",
+        "v2beta11": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta11.json",
+        "v2beta12": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta12.json",
+        "v2beta13": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta13.json",
+        "v2beta14": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta14.json",
+        "v2beta15": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta15.json",
+        "v2beta16": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta16.json",
+        "v2beta17": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta17.json",
+        "v2beta18": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta18.json",
+        "v2beta19": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta19.json",
+        "v2beta20": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta20.json",
+        "v2beta21": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta21.json",
+        "v2beta22": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta22.json",
+        "v2beta23": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta23.json",
+        "v2beta24": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta24.json",
+        "v2beta25": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta25.json",
+        "v2beta26": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta26.json",
+        "v2beta27": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta27.json",
+        "v2beta28": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta28.json",
+        "v2beta29": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v1/content/en/schemas/v2beta29.json",
         "v3": "https://raw.githubusercontent.com/GoogleContainerTools/skaffold/main/docs-v2/content/en/schemas/v3.json"
       }
     },
@@ -4089,6 +4362,12 @@
       "description": "Schema for markdown-lint-check",
       "fileMatch": [".markdown-lint-check.json"],
       "url": "https://json.schemastore.org/markdown-lint-check.json"
+    },
+    {
+      "name": "Mason Registry",
+      "description": "JSON schema for Mason, a package manager for Neovim.",
+      "fileMatch": ["**/packages/*/package.yaml"],
+      "url": "https://json.schemastore.org/mason-registry.json"
     },
     {
       "name": "SauceCTL Configuration",
@@ -4209,7 +4488,7 @@
     {
       "name": "Hugo",
       "description": "Hugo static site generator config file schema",
-      "fileMatch": [],
+      "fileMatch": ["hugo.toml", "hugo.json", "hugo.yaml"],
       "url": "https://json.schemastore.org/hugo.json"
     },
     {
@@ -4531,9 +4810,10 @@
       "name": "Pantsbuild",
       "description": "Pantsbuild configuration file",
       "fileMatch": ["pants*.toml"],
-      "url": "https://json.schemastore.org/pantsbuild-2.14.0.json",
+      "url": "https://json.schemastore.org/pantsbuild-2.15.0.json",
       "versions": {
-        "2.14.0": "https://json.schemastore.org/pantsbuild-2.14.0.json"
+        "2.14.0": "https://json.schemastore.org/pantsbuild-2.14.0.json",
+        "2.15.0": "https://json.schemastore.org/pantsbuild-2.15.0.json"
       }
     },
     {
@@ -4541,6 +4821,30 @@
       "fileMatch": [".all-contributorsrc"],
       "name": "All Contributors configuration file",
       "url": "https://json.schemastore.org/all-contributors.json"
+    },
+    {
+      "name": ".es6importsorterrc.json",
+      "description": "The configuration file used for ES6 Import Sorter - a vscode extention .",
+      "fileMatch": [".es6importsorterrc.json"],
+      "url": "https://json.schemastore.org/es6importsorterrc.json"
+    },
+    {
+      "name": "bashly.yml",
+      "description": "Bashly CLI",
+      "fileMatch": ["bashly.yml", "bashly.yaml"],
+      "url": "https://raw.githubusercontent.com/DannyBen/bashly/master/schemas/bashly.json"
+    },
+    {
+      "name": "bashly-settings.yml",
+      "description": "Bashly settings",
+      "fileMatch": ["bashly-settings.yml", "bashly-settings.yaml"],
+      "url": "https://raw.githubusercontent.com/DannyBen/bashly/master/schemas/settings.json"
+    },
+    {
+      "name": "bashly-strings.yml",
+      "description": "Bashly strings",
+      "fileMatch": ["bashly-strings.yml", "bashly-strings.yaml"],
+      "url": "https://raw.githubusercontent.com/DannyBen/bashly/master/schemas/strings.json"
     }
   ],
   "version": 1

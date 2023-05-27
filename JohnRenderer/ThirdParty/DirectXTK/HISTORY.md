@@ -6,6 +6,28 @@ Release available for download on [GitHub](https://github.com/microsoft/DirectXT
 
 ## Release History
 
+### April 28, 2023
+* MapGuard in DirectXHelpers should not support the move ctor or move operator
+* CMake project updates and fixes for clang/LLVM v16 warnings
+* xwbtool: Windows on ARM64 version
+
+### March 30, 2023
+* *DirectX Tool Kit for Audio* updates
+  * Reworked audio device enumeration for XAudio 2.9 to use MMDeviceEnumerator rather than Windows Runtime APIs
+  * ``GetOutputFormat`` now reports sample rate and bit-depth from the audio device properties
+  * New method ``GetOutputSampleRate`` added to return the input sample rate of the mastering voice
+  * ``Resume`` now handles device failure by switching to silent mode
+* CMake project updates
+* Retired VS 2017 legacy Xbox One XDK projects
+* xwbtool: Updated to support Windows or UNIX-style path separators
+
+### February 6, 2023
+* Mouse relative mode now accumulates multiple delta updates per frame. Added new optional but recommended method ``EndOfInputFrame``.
+* Fixed out-of-bounds read bug in the .WAV file reader.
+* Additional checks added to DDSTextureLoader for planar video formats.
+* *DirectX Tool Kit for Audio* updated for XAudio2Redist 1.2.11
+* CMake project updates
+
 ### December 15, 2022
 * GamePad, Keyboard, and Mouse headers have ``USING_XINPUT``, ``USING_GAMEINPUT``, ``USING_WINDOWS_GAMING_INPUT`` defines
 * Updates for *GameInputCreate* failure handling on PC

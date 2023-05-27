@@ -81,3 +81,8 @@ struct PointLightComponent
 	float LightIntensity;
 };
 
+
+struct NameComponent
+{
+	std::string Name;
+};

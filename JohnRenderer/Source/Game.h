@@ -204,4 +204,17 @@ private:
 
 	bool m_bCanMoveCamera = false;
 
+	
+	Vector3 LineStart, LineEnd;
+
+	Vector2 m_ViewportSize;
+
+	ImVec2 m_ViewportBounds[2];
+
+	Vector2 GetMouseViewportSpace();
+
+	bool m_bViewportPanelHovered;
+	
+	bool m_bIsGizmoHovered = false;
+
 };

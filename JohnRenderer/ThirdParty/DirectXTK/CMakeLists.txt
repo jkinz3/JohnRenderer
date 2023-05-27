@@ -3,7 +3,11 @@
 
 cmake_minimum_required (VERSION 3.20)
 
-set(DIRECTXTK_VERSION 1.8.2)
+set(DIRECTXTK_VERSION 1.8.3)
+
+if(DEFINED XBOX_CONSOLE_TARGET)
+  set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
+endif()
 
 project (DirectXTK
   VERSION ${DIRECTXTK_VERSION}
@@ -16,6 +20,10 @@ option(BUILD_TOOLS "Build XWBTool" ON)
 option(BUILD_XAUDIO_WIN10 "Build for XAudio 2.9" OFF)
 option(BUILD_XAUDIO_WIN8 "Build for XAudio 2.8" ON)
 option(BUILD_XAUDIO_WIN7 "Build for XAudio2Redist" OFF)
+
+option(BUILD_GAMEINPUT "Build for GameInput" OFF)
+option(BUILD_WGI "Build for Windows.Gaming.Input" OFF)
+option(BUILD_XINPUT "Build for XInput" OFF)
 
 # https://devblogs.microsoft.com/cppblog/spectre-mitigations-in-msvc/
 option(ENABLE_SPECTRE_MITIGATION "Build using /Qspectre for MSVC" OFF)
@@ -47,6 +55,20 @@ elseif(CMAKE_GENERATOR_PLATFORM MATCHES "^[Aa][Rr][Mm]64$")
 endif()
 
 include(GNUInstallDirs)
+
+if(XBOX_CONSOLE_TARGET STREQUAL "durango")
+  set(BUILD_GAMEINPUT OFF)
+  set(BUILD_WGI OFF)
+  set(BUILD_XINPUT OFF)
+  set(BUILD_XBOXONE_SHADERS ON)
+  set(BUILD_XAUDIO_WIN10 OFF)
+  set(BUILD_XAUDIO_WIN8 ON)
+  set(BUILD_TOOLS OFF)
+elseif(WINDOWS_STORE)
+  set(BUILD_GAMEINPUT OFF)
+  set(BUILD_WGI ON)
+  set(BUILD_TOOLS OFF)
+endif()
 
 #--- Library
 set(LIBRARY_HEADERS
@@ -193,13 +215,21 @@ endif()
 set(LIBRARY_SOURCES ${LIBRARY_SOURCES}
     ${COMPILED_SHADERS}/SpriteEffect_SpriteVertexShader.inc)
 
+if(BUILD_XBOXONE_SHADERS)
+    message(STATUS "Using Shader Model 5.0 for Xbox One for shaders")
+    set(ShaderOpts xbox)
+else()
+    message(STATUS "Using Shader Model 4.0/9.1 for shaders.")
+    set(ShaderOpts "")
+endif()
+
 if(NOT USE_PREBUILT_SHADERS)
     add_custom_command(
         OUTPUT "${COMPILED_SHADERS}/SpriteEffect_SpriteVertexShader.inc"
         MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/Src/Shaders/CompileShaders.cmd"
         DEPENDS ${SHADER_SOURCES}
         COMMENT "Generating HLSL shaders..."
-        COMMAND ${CMAKE_COMMAND} -E env CompileShadersOutput="${COMPILED_SHADERS}" CompileShaders.cmd > "${COMPILED_SHADERS}/compileshaders.log"
+        COMMAND ${CMAKE_COMMAND} -E env CompileShadersOutput="${COMPILED_SHADERS}" CompileShaders.cmd ARGS ${ShaderOpts} > "${COMPILED_SHADERS}/compileshaders.log"
         WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/Src/Shaders"
         USES_TERMINAL)
 endif()
@@ -226,18 +256,56 @@ if(WINDOWS_STORE OR BUILD_XAUDIO_WIN10 OR BUILD_XAUDIO_WIN8 OR BUILD_XAUDIO_WIN7
     target_include_directories(${PROJECT_NAME} PRIVATE Audio)
 endif()
 
-if(MINGW OR VCPKG_TOOLCHAIN)
-    message(STATUS "Using VCPKG for DirectXMath.")
+if(MINGW)
     find_package(directxmath CONFIG REQUIRED)
+else()
+    find_package(directxmath CONFIG QUIET)
+endif()
+
+if(directxmath_FOUND)
+    message(STATUS "Using DirectXMath package")
     target_link_libraries(${PROJECT_NAME} PUBLIC Microsoft::DirectXMath)
 endif()
 
 if(BUILD_XAUDIO_WIN7 AND (NOT BUILD_XAUDIO_WIN10) AND (NOT BUILD_XAUDIO_WIN8) AND (NOT WINDOWS_STORE))
     message(STATUS "Using XAudio2Redist for DirectX Tool Kit for Audio on Windows 7.")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE USING_XAUDIO2_REDIST)
-
     find_package(xaudio2redist CONFIG REQUIRED)
     target_link_libraries(${PROJECT_NAME} PUBLIC Microsoft::XAudio2Redist)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC USING_XAUDIO2_REDIST)
+endif()
+
+include(CheckIncludeFileCXX)
+
+if(BUILD_GAMEINPUT)
+    message(STATUS "Using GameInput for GamePad/Keyboard/Mouse.")
+    set(CMAKE_REQUIRED_QUIET ON)
+    CHECK_INCLUDE_FILE_CXX(GameInput.h GAMEINPUT_HEADER)
+    if(NOT GAMEINPUT_HEADER)
+        message(FATAL_ERROR "Microsoft GDK required to build GameInput. See https://aka.ms/gdk")
+    endif()
+    target_compile_definitions(${PROJECT_NAME} PUBLIC USING_GAMEINPUT)
+elseif(BUILD_WGI)
+    message(STATUS "Using Windows.Gaming.Input for GamePad.")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC USING_WINDOWS_GAMING_INPUT)
+elseif(BUILD_XINPUT)
+    message(STATUS "Using XInput for GamePad.")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC USING_XINPUT)
+endif()
+
+if(DEFINED XBOX_CONSOLE_TARGET)
+    message(STATUS "Building for Xbox Console Target: ${XBOX_CONSOLE_TARGET}")
+    set(CMAKE_REQUIRED_QUIET ON)
+    CHECK_INCLUDE_FILE_CXX(xdk.h XDKLegacy_HEADER)
+    if(NOT XDKLegacy_HEADER)
+        message(FATAL_ERROR "Legacy Xbox One XDK required to build for Durango.")
+    endif()
+    if(XBOX_CONSOLE_TARGET STREQUAL "durango")
+        target_compile_definitions(${PROJECT_NAME} PUBLIC WINAPI_FAMILY=WINAPI_FAMILY_TV_TITLE _XBOX_ONE _TITLE MONOLITHIC=1)
+    else()
+        message(FATAL_ERROR "Unknown XBOX_CONSOLE_TARGET")
+    endif()
+elseif(WINDOWS_STORE)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC WINAPI_FAMILY=WINAPI_FAMILY_APP)
 endif()
 
 #--- Package
@@ -274,7 +342,7 @@ install(FILES
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PACKAGE_NAME})
 
 #--- Command-line tools
-if(BUILD_TOOLS AND (NOT WINDOWS_STORE))
+if(BUILD_TOOLS AND WIN32)
   set(TOOL_EXES xwbtool)
 
   add_executable(xwbtool
@@ -287,7 +355,7 @@ if(BUILD_TOOLS AND (NOT WINDOWS_STORE))
   source_group(xwbtool REGULAR_EXPRESSION XWBTool/*.*)
 endif()
 
-if(MINGW OR VCPKG_TOOLCHAIN)
+if(directxmath_FOUND)
   foreach(t IN LISTS TOOL_EXES ITEMS ${PROJECT_NAME})
     target_link_libraries(${t} PUBLIC Microsoft::DirectXMath)
   endforeach()
@@ -300,7 +368,7 @@ if(MSVC)
       target_link_options(${t} PRIVATE /DYNAMICBASE /NXCOMPAT)
     endforeach()
 
-    if((${CMAKE_SIZEOF_VOID_P} EQUAL 4) AND (NOT ${DIRECTX_ARCH} MATCHES "^arm"))
+    if((CMAKE_SIZEOF_VOID_P EQUAL 4) AND (NOT ${DIRECTX_ARCH} MATCHES "^arm"))
       foreach(t IN LISTS TOOL_EXES ITEMS ${PROJECT_NAME})
         target_link_options(${t} PRIVATE /SAFESEH)
       endforeach()
@@ -313,6 +381,13 @@ if(MSVC)
       message(STATUS "Building Spectre-mitigated libraries.")
       foreach(t IN LISTS TOOL_EXES ITEMS ${PROJECT_NAME})
         target_compile_options(${t} PRIVATE "/Qspectre")
+      endforeach()
+    endif()
+
+    if((MSVC_VERSION GREATER_EQUAL 1924)
+       AND ((NOT (CMAKE_CXX_COMPILER_ID MATCHES "Clang")) OR (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)))
+      foreach(t IN LISTS TOOL_EXES ITEMS ${PROJECT_NAME})
+        target_compile_options(${t} PRIVATE /ZH:SHA_256)
       endforeach()
     endif()
 
@@ -330,8 +405,10 @@ else()
     endforeach()
 endif()
 
-if(NOT ${DIRECTX_ARCH} MATCHES "^arm")
-    if(${CMAKE_SIZEOF_VOID_P} EQUAL "4")
+if(XBOX_CONSOLE_TARGET MATCHES "durango")
+    target_compile_options(${PROJECT_NAME} PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/favor:AMD64 /arch:AVX,-march=btver2>)
+elseif(NOT ${DIRECTX_ARCH} MATCHES "^arm")
+    if(CMAKE_SIZEOF_VOID_P EQUAL 4)
         set(ARCH_SSE2 $<$<CXX_COMPILER_ID:MSVC>:/arch:SSE2> $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse2>)
     else()
         set(ARCH_SSE2 $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse2>)
@@ -344,6 +421,9 @@ endif()
 
 if( CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
     set(WarningsLib "-Wpedantic" "-Wextra")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
+        list(APPEND WarningsLib "-Wno-unsafe-buffer-usage")
+    endif()
     target_compile_options(${PROJECT_NAME} PRIVATE ${WarningsLib})
 
     set(WarningsEXE ${WarningsLib} "-Wno-c++98-compat" "-Wno-c++98-compat-pedantic"
@@ -368,10 +448,11 @@ elseif( CMAKE_CXX_COMPILER_ID MATCHES "MSVC" )
       endforeach()
     endif()
 
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.24)
-        foreach(t IN LISTS TOOL_EXES ITEMS ${PROJECT_NAME})
-          target_compile_options(${t} PRIVATE /ZH:SHA_256)
-        endforeach()
+    if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+      message(STATUS "Building using Whole Program Optimization")
+      foreach(t IN LISTS TOOL_EXES ITEMS ${PROJECT_NAME})
+        target_compile_options(${t} PRIVATE /Gy /Gw)
+      endforeach()
     endif()
 
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.26)
@@ -392,6 +473,12 @@ elseif( CMAKE_CXX_COMPILER_ID MATCHES "MSVC" )
         endforeach()
     endif()
 
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.35)
+        foreach(t IN LISTS TOOL_EXES ITEMS ${PROJECT_NAME})
+          target_compile_options(${t} PRIVATE /Zc:templateScope /Zc:checkGwOdr)
+        endforeach()
+    endif()
+
     set(WarningsEXE "/wd4365" "/wd4514" "/wd4625" "/wd4626" "/wd4627" "/wd4710" "/wd4820" "/wd5026" "/wd5027" "/wd5039" "/wd5045")
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.34)
         list(APPEND WarningsEXE "/wd5262" "/wd5264")
@@ -403,17 +490,22 @@ elseif( CMAKE_CXX_COMPILER_ID MATCHES "MSVC" )
 endif()
 
 if(WIN32)
-    if(WINDOWS_STORE)
-      target_compile_definitions(${PROJECT_NAME} PRIVATE WINAPI_FAMILY=WINAPI_FAMILY_APP)
-    endif()
-
-    if(WINDOWS_STORE OR BUILD_XAUDIO_WIN10 OR (${DIRECTX_ARCH} MATCHES "^arm64"))
+    if (XBOX_CONSOLE_TARGET STREQUAL "durango")
+        set(WINVER 0x0602)
+    elseif(WINDOWS_STORE OR BUILD_XAUDIO_WIN10)
         message(STATUS "Using DirectX Tool Kit for Audio on XAudio 2.9 (Windows 10/Windows 11).")
         set(WINVER 0x0A00)
-    elseif(BUILD_XAUDIO_WIN8 OR (${DIRECTX_ARCH} MATCHES "^arm"))
+    elseif((${DIRECTX_ARCH} MATCHES "^arm64") OR BUILD_GAMEINPUT OR BUILD_WGI)
+        message(STATUS "Building for Windows 10/Windows 11.")
+        set(WINVER 0x0A00)
+    elseif(BUILD_XAUDIO_WIN8)
         message(STATUS "Using DirectX Tool Kit for Audio on XAudio 2.8 (Windows 8).")
         set(WINVER 0x0602)
+    elseif(${DIRECTX_ARCH} MATCHES "^arm")
+        message(STATUS "Building for Windows 8.")
+        set(WINVER 0x0602)
     else()
+        message(STATUS "Building for Windows 7.")
         set(WINVER 0x0601)
         target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN7_PLATFORM_UPDATE)
     endif()
@@ -429,13 +521,14 @@ if(WIN32)
     endif()
 endif()
 
-if(BUILD_TOOLS AND (NOT WINDOWS_STORE))
+if(BUILD_TOOLS AND WIN32)
   set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT xwbtool)
 endif()
 
 #--- Test suite
 include(CTest)
-if(BUILD_TESTING AND WIN32 AND (NOT WINDOWS_STORE) AND (EXISTS "${CMAKE_CURRENT_LIST_DIR}/Tests/CMakeLists.txt"))
+if(BUILD_TESTING AND WIN32 AND (NOT WINDOWS_STORE)
+   AND (EXISTS "${CMAKE_CURRENT_LIST_DIR}/Tests/CMakeLists.txt"))
   enable_testing()
   add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/Tests)
 endif()

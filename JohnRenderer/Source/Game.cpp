@@ -62,6 +62,11 @@ void Game::Initialize(HWND window, int width, int height)
     m_deviceResources->CreateDeviceResources(); 
     CreateDeviceDependentResources();
 
+	m_Camera = std::make_unique<Camera>();
+	m_Camera->SetImageSize(width, height);
+	m_Camera->SetPosition(Vector3(0.f, 0.f, 3.f));
+	m_Camera->SetRotation(Vector3(0.f, 180.f, 0.f));
+
     m_deviceResources->CreateWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
 
@@ -71,10 +76,7 @@ void Game::Initialize(HWND window, int width, int height)
 	m_Mouse = std::make_unique<DirectX::Mouse>();
 	m_Mouse->SetWindow( window );
 
-	m_Camera = std::make_unique<Camera>();
-	m_Camera->SetImageSize( width, height );
-	m_Camera->SetPosition( Vector3( 0.f, 0.f, 3.f ) );
-	m_Camera->SetRotation( Vector3( 0.f, 180.f, 0.f) );
+
 
 	m_CameraUserImpulseData = std::make_shared<CameraUserImpulseData>();
 
@@ -113,8 +115,10 @@ void Game::InitializeDefaultAssets()
 	Entity entity = m_Scene->CreateEntity("DefaultSphere");
 	entity.AddComponent<MeshComponent>();
 	entity.AddComponent<TransformComponent>();
+	entity.AddComponent<NameComponent>();
 	entity.GetComponent<MeshComponent>().Mesh = MonkeyMesh;
 	entity.GetComponent<MeshComponent>().Material = defaultMaterial;
+	entity.GetComponent<NameComponent>().Name = std::string("DefaultSphere");
 
 	Vertex v1;
 	v1.Position = Vector3( 0, 0, 1 );
@@ -324,9 +328,15 @@ void Game::Update(DX::StepTimer const& timer)
 
 	Movement(elapsedTime);
 
-	if ( m_MouseButtons.leftButton == Mouse::ButtonStateTracker::PRESSED && !m_bIsRelativeMode )
+	if ( m_MouseButtons.leftButton == Mouse::ButtonStateTracker::PRESSED && !m_bIsRelativeMode && m_bViewportPanelHovered && !m_bIsGizmoHovered)
 	{
 		SelectModel(MousePicking());
+	}
+
+	if(m_Keys.pressed.Delete)
+	{
+		DeleteMesh (m_SelectedModel);
+		DeselectAll ();
 	}
 
 	bool bAreAnyCameraMovementKeysPressed = m_MouseButtons.rightButton == Mouse::ButtonStateTracker::PRESSED ||
@@ -591,6 +601,7 @@ void Game::Render()
 
     // TODO: Add your rendering code here.
     context;
+	
 
 	DrawScene();
 	
@@ -602,7 +613,6 @@ void Game::Render()
 	context->OMSetRenderTargets( 1, nullViews, nullptr );
 
 	DrawToneMapping();
-    m_deviceResources->PIXEndEvent();
 
 
 	RenderUI();
@@ -634,12 +644,22 @@ void Game::DrawCameraViewport()
 
 	size_t width, height;
 	m_ViewportRenderTarget->GetTextureSize ( width, height );
-
+	m_bViewportPanelHovered = ImGui::IsWindowHovered ();
 	size_t regionWidth, regionHeight;
 	ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail ();
 	regionWidth = viewportPanelSize.x;
 	regionHeight = viewportPanelSize.y;
+	m_ViewportSize = Vector2(viewportPanelSize.x, viewportPanelSize.y);
+	auto windowSize = ImGui::GetWindowSize ();
+	ImVec2 minBound = ImGui::GetWindowPos (); 
+	auto viewportOffset = ImGui::GetCursorPos ();
+	minBound.x -= viewportOffset.x;
+	minBound.y -= viewportOffset.y;
+	ImVec2 maxBound = { minBound.x + windowSize.x, minBound.y + windowSize.y };
+	m_ViewportBounds[0] = { minBound.x, minBound.y };
+	m_ViewportBounds[1] = { maxBound.x, maxBound.y };
 
+	
 	if(width != regionWidth || height != regionHeight)
 	{
 		m_ViewportRenderTarget->SizeResources ( regionWidth, regionHeight );
@@ -658,6 +678,7 @@ void Game::DrawCameraViewport()
 
 void Game::DrawScene()
 {
+	m_deviceResources->PIXBeginEvent (L"Draw Scene");
 	auto context = m_deviceResources->GetD3DDeviceContext();
 
 	auto renderTarget = m_ViewportRenderTarget->GetRenderTargetView ();
@@ -772,6 +793,8 @@ void Game::DrawScene()
 	{
 		DrawMesh( mesh.get() );
 	}
+
+	m_deviceResources->PIXEndEvent ();
 
 }
 
@@ -949,6 +972,7 @@ void Game::CreateDeviceDependentResources()
 	m_ViewportRenderTarget->SetDevice ( device );
 	m_FinalRenderTarget->SetDevice ( device );
 
+
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
@@ -959,7 +983,7 @@ void Game::CreateWindowSizeDependentResources()
 	auto rect = m_deviceResources->GetOutputSize();
 
 
-
+	
 
 }
 
@@ -1025,8 +1049,10 @@ void Game::AddPrimitive( John::EPrimitiveType type )
 	Entity entity = m_Scene->CreateEntity( objectName.c_str() );
 	entity.AddComponent<MeshComponent>();
 	entity.AddComponent<TransformComponent>();
+	entity.AddComponent<NameComponent> ();
 	entity.GetComponent<MeshComponent>().Mesh = newMesh;
 	entity.GetComponent<MeshComponent>().Material = AssetManager::Get().GetDefaultMaterial();
+	entity.GetComponent<NameComponent>().Name = objectName;
 
 	SelectModel( entity );
 }
@@ -1038,6 +1064,7 @@ void Game::AddPointLight()
 	lightMesh = John::CreateSphere( device, .6f, 6 );
 	AssetManager::Get().RegisterMesh( lightMesh );
 	Entity entity = m_Scene->CreateEntity( "PointLight" );
+	entity.AddComponent<NameComponent>();
 	entity.AddComponent<PointLightComponent>();
 	entity.AddComponent<TransformComponent>();
 	entity.AddComponent<MeshComponent>();
@@ -1046,6 +1073,7 @@ void Game::AddPointLight()
 	entity.GetComponent<PointLightComponent>().LightIntensity = 1.f;
 	entity.GetComponent<MeshComponent>().Mesh = lightMesh;
 	entity.GetComponent<MeshComponent>().Material = AssetManager::Get().GetLightSphereMaterial();
+	entity.GetComponent<NameComponent>().Name = std::string("PointLight");
 
 	SelectModel( entity );
 
@@ -1064,7 +1092,6 @@ void Game::TickGizmo()
 	float rw = (float)ImGui::GetWindowWidth ();
 	float rh = (float)ImGui::GetWindowHeight ();
 
-
 	ImGuizmo::SetRect(ImGui::GetWindowPos ().x, ImGui::GetWindowPos ().y, rw, rh);
 	Matrix view = m_Camera->GetViewMatrix();
 	Matrix proj = m_Camera->GetProjectionMatrix();
@@ -1074,6 +1101,7 @@ void Game::TickGizmo()
 
 	ImGuizmo::SetID( 0 );
 	bool bManipulated = ImGuizmo::Manipulate( *view.m, *proj.m, m_CurrentGizmoOperation, m_CurrentGizmoMode, *model.m ) && !m_bIsRelativeMode;
+	m_bIsGizmoHovered = ImGuizmo::IsOver();
 
 	if(bManipulated)
 	{
@@ -1082,7 +1110,7 @@ void Game::TickGizmo()
 		Vector3 NewScale;
 		model.Decompose( NewScale, NewRot, NewTrans );
 		TransformComponent NewTransform;
-		transComp.GetTranslation()= NewTrans;
+		transComp.SetTranslation(NewTrans);
 		//ctor3 RotEuler = NewRot.ToEuler ();
 		transComp.SetRotation( NewRot);
 		transComp.SetScale( NewScale);
@@ -1153,7 +1181,9 @@ void Game::DrawModelInOutliner( const char* prefix, int uid, Entity mesh )
 	ImGui::TableNextRow();
 	ImGui::TableSetColumnIndex( 0 );
 	ImGui::AlignTextToFramePadding();
-	bool node_open = ImGui::TreeNode("hai" );
+
+	auto nameComp = mesh.GetComponent<NameComponent>();
+	bool node_open = ImGui::TreeNode(nameComp.Name.c_str());
 	/*	ImGui::TableSetColumnIndex( 1 );*/
 
 
@@ -1190,11 +1220,10 @@ void Game::DrawModelInOutliner( const char* prefix, int uid, Entity mesh )
 
 	if ( bEntityDeleted )
 	{
-		if ( m_SelectedModel )
-		{
+
 			DeleteMesh( mesh );
 			DeselectAll();
-		}
+
 	}
 }
 
@@ -1304,36 +1333,41 @@ bool Game::IsCameraViewportHovered() const
 
 Entity Game::MousePicking()
 {
-	if(m_RenderObjects.size() == 0)
-	{
-		return NullEntity;
-	}
 
+	auto context = m_deviceResources->GetD3DDeviceContext ();
 
+	ImVec2 mousePos = ImGui::GetMousePos ();
 	uint32_t x, y;
-	x = m_MouseState.x;
-	y = m_MouseState.y;
+	x = mousePos.x;
+	y = mousePos.y;
 	
-
-	auto size = m_deviceResources->GetOutputSize();
-	float width = size.right;
-	float height = size.bottom;
+	float width = m_ViewportSize.x;
+	float height = m_ViewportSize.y;
 
 	Matrix proj = m_Camera->GetProjectionMatrix();
 	Matrix view = m_Camera->GetViewMatrix();
 	Matrix inverseView = view.Invert();
 
-	
-	float pointX = ((2.f * (float)x) / width) - 1.f;
-	float pointY = (((2.f * (float)y) / height) - 1.f) * -1.f;
-	
-	Vector3 rayOrigViewSpace( 0.f, 0.f, 0.f );
-	Vector3 rayDirViewSpace( pointX, pointY, 1.f );
+	Vector2 mousePosViewSpace = GetMouseViewportSpace ();
+	float pointX = mousePosViewSpace.x;
+	float pointY = mousePosViewSpace.y;
 
-	Vector3 rayOrigWorldSpace = Vector3::Transform( rayOrigViewSpace, inverseView );
-	Vector3 rayDirWorldSpace = Vector3::TransformNormal( rayDirViewSpace, inverseView );
+	pointX = pointX / proj._11;
+	pointY = pointY / proj._22;
+
+
+	Vector3 rayOrigViewSpace(0.f, 0.f, 0.f);
+	Vector3 rayDirViewSpace(pointX, pointY, 1.f);
+
+	Vector3 rayOrigWorldSpace = Vector3::Transform(rayOrigViewSpace, inverseView);
+	Vector3 rayDirWorldSpace = Vector3::TransformNormal(rayDirViewSpace, inverseView);
+
+	LineStart = rayOrigWorldSpace;
+	LineEnd = (rayDirWorldSpace * 1000.f) + rayOrigWorldSpace;
 
 	rayDirWorldSpace.Normalize();
+
+
 
 	float hitDistance = FLT_MAX;
 
@@ -1341,15 +1375,25 @@ Entity Game::MousePicking()
 	Entity ActorToSelect = NullEntity;
 
 	auto ents = m_Scene->GetAllEntitiesWith<MeshComponent>();
-	for(auto ent : ents)
+	for ( auto ent : ents )
 	{
 		Entity entity = { ent, m_Scene.get() };
 		auto mesh = entity.GetComponent<MeshComponent>().Mesh.get();
+		auto trans = entity.GetComponent<TransformComponent> ();
+		Matrix world = trans.GetTransformationMatrix();
+		Matrix invWorld = world.Invert();
+
+
+		Vector3 rayOrigLocalSpace = Vector3::Transform(rayOrigWorldSpace, invWorld);
+		Vector3 rayDirLocalSpace = Vector3::TransformNormal (rayDirWorldSpace, invWorld);
+		rayDirLocalSpace.Normalize ();
 		Ray ray;
-		ray.direction = rayDirWorldSpace;
-		ray.position = rayOrigWorldSpace;
+		ray.direction = rayDirLocalSpace;
+		ray.position = rayOrigLocalSpace;
 		auto vertices = *mesh->GetVertices();
 		auto faces = *mesh->GetFaces();
+
+
 		for(auto face : faces)
 		{
 			uint32_t Index1 = face.v1;
@@ -1375,6 +1419,10 @@ Entity Game::MousePicking()
 
 
 		}
+		if(bResult)
+		{
+			break;
+		}
 
 	}
 	if(bResult)
@@ -1383,6 +1431,7 @@ Entity Game::MousePicking()
 	}
 	else
 	{
+		DeselectAll ();
 		return NullEntity;
 	}
 }
@@ -1462,6 +1511,18 @@ void Game::ImportMesh()
 	}
 
 
+}
+
+Vector2 Game::GetMouseViewportSpace()
+{
+	auto [mx, my] = ImGui::GetMousePos();
+	const auto& viewportBounds = m_ViewportBounds;
+	mx -= viewportBounds[0].x;
+	my -= viewportBounds[0].y;
+	auto viewportWidth = viewportBounds[1].x - viewportBounds[0].x;
+	auto viewportHeight = viewportBounds[1].y - viewportBounds[0].y;
+
+	return { (mx / viewportWidth) * 2.0f - 1.0f, ((my / viewportHeight) * 2.0f - 1.0f) * -1.0f };
 }
 
 void Game::OnDeviceLost()

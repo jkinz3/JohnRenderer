@@ -65,10 +65,13 @@ public:
 	entt::entity GetEntityHandle() const { return m_EntityHandle; }
 	void SetEntityHandle( entt::entity val ) { m_EntityHandle = val; }
 
+
+	std::string m_Name;
 private:
 	entt::entity m_EntityHandle{ entt::null };
 
 	Scene* m_Scene = nullptr;
+
 
 };
 
