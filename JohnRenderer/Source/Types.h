@@ -111,7 +111,8 @@ namespace John
 	{
 		Sphere,
 		Plane,
-		Cube
+		Cube,
+		Torus
 	};
 
 	inline Vector3 EulerDegreesToRadians( Vector3 DegEuler )

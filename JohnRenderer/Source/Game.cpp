@@ -27,11 +27,12 @@ RENDERDOC_API_1_5_0* rdoc_api = NULL;
 
 Game::Game() noexcept(false)
 {
-    m_deviceResources = std::make_unique<DX::DeviceResources>();
+    
+	
     // TODO: Provide parameters for swapchain format, depth/stencil format, and backbuffer count.
     //   Add DX::DeviceResources::c_AllowTearing to opt-in to variable rate displays.
     //   Add DX::DeviceResources::c_EnableHDR for HDR10 display.
-    m_deviceResources->RegisterDeviceNotify(this);
+    DX::DeviceResources::Get().RegisterDeviceNotify(this);
 
 	NullEntity.SetEntityHandle(entt::null);
 
@@ -40,6 +41,10 @@ Game::Game() noexcept(false)
 
 	m_ViewportWindowName = std::string("Viewport");
 
+}
+
+Game::~Game()
+{
 }
 
 // Initialize the Direct3D resources required to run.
@@ -57,9 +62,9 @@ void Game::Initialize(HWND window, int width, int height)
 #endif // DEBUG
 
 
-    m_deviceResources->SetWindow(window, width, height);
+    DX::DeviceResources::Get().SetWindow(window, width, height);
 
-    m_deviceResources->CreateDeviceResources(); 
+    DX::DeviceResources::Get().CreateDeviceResources(); 
     CreateDeviceDependentResources();
 
 	m_Camera = std::make_unique<Camera>();
@@ -67,7 +72,7 @@ void Game::Initialize(HWND window, int width, int height)
 	m_Camera->SetPosition(Vector3(0.f, 0.f, 3.f));
 	m_Camera->SetRotation(Vector3(0.f, 180.f, 0.f));
 
-    m_deviceResources->CreateWindowSizeDependentResources();
+    DX::DeviceResources::Get().CreateWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
 
 	InitializeUI();
@@ -94,17 +99,17 @@ void Game::Initialize(HWND window, int width, int height)
 
 void Game::InitializeDefaultAssets()
 {
-	auto device = m_deviceResources->GetD3DDevice ();
+	auto device = DX::DeviceResources::Get().GetD3DDevice ();
 
 
-	John::ShaderProgram pbrProgram = John::CreateShaderProgram ( device, L"Shaders/PBRVS.hlsl", L"Shaders/PBRPS.hlsl" );
+	John::ShaderProgram pbrProgram = John::CreateShaderProgram (  L"Shaders/PBRVS.hlsl", L"Shaders/PBRPS.hlsl" );
 	m_Shaders.emplace( EShaderProgram::PBR, pbrProgram );
-	std::shared_ptr<Material> defaultMaterial = std::make_shared<Material>( device, m_StandardSampler.Get(), EShaderProgram::PBR);
+	std::shared_ptr<Material> defaultMaterial = std::make_shared<Material>(  m_StandardSampler.Get(), EShaderProgram::PBR);
 	AssetManager::Get().RegisterMaterial (defaultMaterial);
 
-	John::ShaderProgram lightShereProgram = John::CreateShaderProgram( device, L"Shaders/SimpleVS.hlsl", L"Shaders/LightSpherePS.hlsl" );
+	John::ShaderProgram lightShereProgram = John::CreateShaderProgram(  L"Shaders/SimpleVS.hlsl", L"Shaders/LightSpherePS.hlsl" );
 	m_Shaders.emplace( EShaderProgram::LightSphere, lightShereProgram );
-	std::shared_ptr<Material> lightSphereMaterial = std::make_shared<Material>( device, m_StandardSampler.Get(),  EShaderProgram::LightSphere );
+	std::shared_ptr<Material> lightSphereMaterial = std::make_shared<Material>(  m_StandardSampler.Get(),  EShaderProgram::LightSphere );
 	AssetManager::Get().RegisterMaterial( lightSphereMaterial );
 
 	std::shared_ptr<JohnMesh> MonkeyMesh = John::LoadMeshFromFile( "Content/sphere.obj" );
@@ -159,8 +164,8 @@ void Game::InitializeUI()
 
 	ImGui::StyleColorsDark();
 	
-	ImGui_ImplWin32_Init( m_deviceResources->GetWindow() );
-	ImGui_ImplDX11_Init( m_deviceResources->GetD3DDevice(), m_deviceResources->GetD3DDeviceContext() );
+	ImGui_ImplWin32_Init( DX::DeviceResources::Get().GetWindow() );
+	ImGui_ImplDX11_Init( DX::DeviceResources::Get().GetD3DDevice(), DX::DeviceResources::Get().GetD3DDeviceContext() );
 }
 
 void Game::InitializeSky( const char* EnvMapFile )
@@ -172,10 +177,10 @@ void Game::InitializeSky( const char* EnvMapFile )
 // 	}
 #endif // DEBUG
 
-	auto device = m_deviceResources->GetD3DDevice();
-	auto context = m_deviceResources->GetD3DDeviceContext();
-	m_Environment = John::CreateEnvironmentFromFile( device, context, EnvMapFile );
-	m_brdfSampler = John::CreateSamplerState( device, D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_CLAMP );
+	auto device = DX::DeviceResources::Get().GetD3DDevice();
+	auto context = DX::DeviceResources::Get().GetD3DDeviceContext();
+	m_Environment = John::CreateEnvironmentFromFile( EnvMapFile );
+	m_brdfSampler = John::CreateSamplerState(  D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_CLAMP );
 
 	AssetManager::Get().IterateOverMaterials ([&](Material* material)
 		{
@@ -596,8 +601,8 @@ void Game::Render()
 
     Clear();
 
-    m_deviceResources->PIXBeginEvent(L"Render");
-    auto context = m_deviceResources->GetD3DDeviceContext();
+    DX::DeviceResources::Get().PIXBeginEvent(L"Render");
+    auto context = DX::DeviceResources::Get().GetD3DDeviceContext();
 
     // TODO: Add your rendering code here.
     context;
@@ -618,13 +623,13 @@ void Game::Render()
 	RenderUI();
 
     // Show the new frame.
-    m_deviceResources->Present();
+    DX::DeviceResources::Get().Present();
 }
 
 void Game::RenderUI()
 {
-	auto renderTarget = m_deviceResources->GetRenderTargetView ();
-	auto context = m_deviceResources->GetD3DDeviceContext ();
+	auto renderTarget = DX::DeviceResources::Get().GetRenderTargetView ();
+	auto context = DX::DeviceResources::Get().GetD3DDeviceContext ();
 
 	context->OMSetRenderTargets( 1, &renderTarget, nullptr );
 	ImGui::Render();
@@ -678,8 +683,8 @@ void Game::DrawCameraViewport()
 
 void Game::DrawScene()
 {
-	m_deviceResources->PIXBeginEvent (L"Draw Scene");
-	auto context = m_deviceResources->GetD3DDeviceContext();
+	DX::DeviceResources::Get().PIXBeginEvent (L"Draw Scene");
+	auto context = DX::DeviceResources::Get().GetD3DDeviceContext();
 
 	auto renderTarget = m_ViewportRenderTarget->GetRenderTargetView ();
 	auto depthTarget = m_ViewportRenderTarget->GetDepthStencilView ();
@@ -794,7 +799,7 @@ void Game::DrawScene()
 		DrawMesh( mesh.get() );
 	}
 
-	m_deviceResources->PIXEndEvent ();
+	DX::DeviceResources::Get().PIXEndEvent ();
 
 }
 
@@ -811,7 +816,7 @@ void Game::DrawMesh( RenderObject* MeshToDraw )
 	{
 		return;
 	}
-	auto context = m_deviceResources->GetD3DDeviceContext();
+	auto context = DX::DeviceResources::Get().GetD3DDeviceContext();
 
 
 
@@ -819,7 +824,7 @@ void Game::DrawMesh( RenderObject* MeshToDraw )
 
 void Game::DrawToneMapping()
 {
-	auto context = m_deviceResources->GetD3DDeviceContext();
+	auto context = DX::DeviceResources::Get().GetD3DDeviceContext();
 	auto renderTarget = m_FinalRenderTarget->GetRenderTargetView();
 	auto SRV = m_ViewportRenderTarget->GetShaderResourceView ();
 	context->OMSetRenderTargets( 1, &renderTarget, nullptr);
@@ -836,12 +841,12 @@ void Game::DrawToneMapping()
 // Helper method to clear the back buffers.
 void Game::Clear()
 {
-    m_deviceResources->PIXBeginEvent(L"Clear");
+    DX::DeviceResources::Get().PIXBeginEvent(L"Clear");
 
     // Clear the views.
-    auto context = m_deviceResources->GetD3DDeviceContext();
-	auto renderTarget = m_deviceResources->GetRenderTargetView ();
-	auto depthTarget = m_deviceResources->GetDepthStencilView ();
+    auto context = DX::DeviceResources::Get().GetD3DDeviceContext();
+	auto renderTarget = DX::DeviceResources::Get().GetRenderTargetView ();
+	auto depthTarget = DX::DeviceResources::Get().GetDepthStencilView ();
 
 	ID3D11RenderTargetView* const nullRTV[] = { nullptr };
 	ID3D11DepthStencilView* const nullDSV = nullptr;
@@ -854,10 +859,10 @@ void Game::Clear()
     context->OMSetRenderTargets(1, &renderTarget, depthTarget);
 
     // Set the viewport.
-    auto const viewport = m_deviceResources->GetScreenViewport();
+    auto const viewport = DX::DeviceResources::Get().GetScreenViewport();
     context->RSSetViewports(1, &viewport);
 
-    m_deviceResources->PIXEndEvent();
+    DX::DeviceResources::Get().PIXEndEvent();
 }
 #pragma endregion
 
@@ -887,13 +892,13 @@ void Game::OnResuming()
 
 void Game::OnWindowMoved()
 {
-    auto const r = m_deviceResources->GetOutputSize();
-    m_deviceResources->WindowSizeChanged(r.right, r.bottom);
+    auto const r = DX::DeviceResources::Get().GetOutputSize();
+    DX::DeviceResources::Get().WindowSizeChanged(r.right, r.bottom);
 }
 
 void Game::OnDisplayChange()
 {
-    m_deviceResources->UpdateColorSpace();
+    DX::DeviceResources::Get().UpdateColorSpace();
 }
 
 void Game::OnMouseMove()
@@ -903,7 +908,7 @@ void Game::OnMouseMove()
 
 void Game::OnWindowSizeChanged(int width, int height)
 {
-    if (!m_deviceResources->WindowSizeChanged(width, height))
+    if (!DX::DeviceResources::Get().WindowSizeChanged(width, height))
         return;
 
     CreateWindowSizeDependentResources();
@@ -941,36 +946,36 @@ void Game::SetInputEnabled(bool bEnabled)
 // These are the resources that depend on the device.
 void Game::CreateDeviceDependentResources()
 {
-    auto device = m_deviceResources->GetD3DDevice();
-	auto context = m_deviceResources->GetD3DDeviceContext();
+    auto device = DX::DeviceResources::Get().GetD3DDevice();
+	auto context = DX::DeviceResources::Get().GetD3DDeviceContext();
     // TODO: Initialize device dependent objects here (independent of window size).
     device;
 
 	m_Scene = std::make_shared<Scene>();
 
 
-	m_ToneMapProgram = John::CreateShaderProgram( device, L"Shaders/Tonemap.hlsl", L"Shaders/Tonemap.hlsl", "VS_Main", "PS_Main" );
+	m_ToneMapProgram = John::CreateShaderProgram(  L"Shaders/Tonemap.hlsl", L"Shaders/Tonemap.hlsl", "VS_Main", "PS_Main" );
 
-	m_TransformCB = John::CreateConstantBuffer<John::PhongTransformCB>( device );
-	m_ShadingCB = John::CreateConstantBuffer<John::PhongShadingCB>( device );
+	m_TransformCB = John::CreateConstantBuffer<John::PhongTransformCB>(  );
+	m_ShadingCB = John::CreateConstantBuffer<John::PhongShadingCB>(  );
 
-	m_LightSphereTransformCB = John::CreateConstantBuffer<John::LightSphereTransformCB>( device );
+	m_LightSphereTransformCB = John::CreateConstantBuffer<John::LightSphereTransformCB>(  );
 
-	m_BrickBaseColor = John::CreateTexture( device, context, Image::fromFile( "Content/Brick_Wall_BaseColor.jpg" ) , DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+	m_BrickBaseColor = John::CreateTexture( Image::fromFile( "Content/Brick_Wall_BaseColor.jpg" ) , DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 	context->GenerateMips( m_BrickBaseColor.SRV.Get() );
-	m_BrickNormal = John::CreateTexture( device, context, Image::fromFile( "Content/Brick_Wall_Normal.jpg" ) , DXGI_FORMAT_R8G8B8A8_UNORM);
-	m_BrickRoughness = John::CreateTexture( device, context, Image::fromFile( "Content/Brick_Wall_Roughness.jpg" ) , DXGI_FORMAT_R8G8B8A8_UNORM);
+	m_BrickNormal = John::CreateTexture(   Image::fromFile( "Content/Brick_Wall_Normal.jpg" ) , DXGI_FORMAT_R8G8B8A8_UNORM);
+	m_BrickRoughness = John::CreateTexture(   Image::fromFile( "Content/Brick_Wall_Roughness.jpg" ) , DXGI_FORMAT_R8G8B8A8_UNORM);
 
 
-	m_StandardSampler = John::CreateSamplerState(device,D3D11_FILTER_ANISOTROPIC, D3D11_TEXTURE_ADDRESS_WRAP);
+	m_StandardSampler = John::CreateSamplerState(D3D11_FILTER_ANISOTROPIC, D3D11_TEXTURE_ADDRESS_WRAP);
 	
-	m_ComputeSampler = John::CreateSamplerState(device,  D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP );
+	m_ComputeSampler = John::CreateSamplerState( D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP );
 
 	InitializeDefaultAssets ();
 	InitializeSky( "Content/environment.hdr" );
 
-	m_ViewportRenderTarget->SetDevice ( device );
-	m_FinalRenderTarget->SetDevice ( device );
+	m_ViewportRenderTarget->SetDevice (  device);
+	m_FinalRenderTarget->SetDevice (  device);
 
 
 }
@@ -980,7 +985,7 @@ void Game::CreateWindowSizeDependentResources()
 {
     // TODO: Initialize windows-size dependent objects here.
 
-	auto rect = m_deviceResources->GetOutputSize();
+	auto rect = DX::DeviceResources::Get().GetOutputSize();
 
 
 	
@@ -1001,7 +1006,7 @@ void Game::ReloadShaders()
 		ProgramToUse->PixelShader.Reset();
 		ProgramToUse->InputLayout.Reset();
 
-		*ProgramToUse = John::CreateShaderProgram( m_deviceResources->GetD3DDevice(), ProgramToUse->VertFileName, ProgramToUse->PixelFileName );
+		*ProgramToUse = John::CreateShaderProgram(  ProgramToUse->VertFileName, ProgramToUse->PixelFileName );
 
 	}
 
@@ -1010,7 +1015,7 @@ void Game::ReloadShaders()
 
 void Game::ImportMeshFromFile(const char* File)
 {
-	auto device = m_deviceResources->GetD3DDevice ();
+	auto device = DX::DeviceResources::Get().GetD3DDevice ();
 	std::shared_ptr<JohnMesh> mesh = John::LoadMeshFromFile(File);
 
 	AssetManager::Get().RegisterMesh(mesh);
@@ -1029,19 +1034,25 @@ void Game::AddPrimitive( John::EPrimitiveType type )
 {
 	std::shared_ptr<JohnPrimitive> newMesh;
 	std::string objectName;
-	auto device = m_deviceResources->GetD3DDevice ();
+	auto device = DX::DeviceResources::Get().GetD3DDevice ();
 	switch(type)
 	{
 	case John::EPrimitiveType::Sphere:
-		newMesh = John::CreateSphere ( device, 3, 3 );
+		newMesh = John::CreateSphere ( 3, 3 );
 		newMesh->SetPrimitiveType ( type );
 		objectName = std::string( "Sphere" );
 		break;
 	case John::EPrimitiveType::Cube:
-		newMesh = John::CreateCube( device, 3 );
+		newMesh = John::CreateCube(  3 );
 		newMesh->SetPrimitiveType( type );
 		objectName = std::string( "Cube" );
 		break;
+	case John::EPrimitiveType::Torus:
+		newMesh = John::CreateTorus( 1.f, .33f, 32 );
+		newMesh->SetPrimitiveType(type);
+		objectName = std::string("Torus");
+		break;
+
 	}
 
 
@@ -1059,9 +1070,9 @@ void Game::AddPrimitive( John::EPrimitiveType type )
 
 void Game::AddPointLight()
 {
-	auto device = m_deviceResources->GetD3DDevice();
+	auto device = DX::DeviceResources::Get().GetD3DDevice();
 	std::shared_ptr<JohnPrimitive> lightMesh;
-	lightMesh = John::CreateSphere( device, .6f, 6 );
+	lightMesh = John::CreateSphere( .2f, 6 );
 	AssetManager::Get().RegisterMesh( lightMesh );
 	Entity entity = m_Scene->CreateEntity( "PointLight" );
 	entity.AddComponent<NameComponent>();
@@ -1135,6 +1146,10 @@ void Game::DrawSceneOutliner()
 				AddPrimitive ( John::EPrimitiveType::Sphere );
 
 
+			}
+			if(ImGui::MenuItem("Torus"))
+			{
+				AddPrimitive( John::EPrimitiveType::Torus );
 			}
 			if(ImGui::MenuItem("Cube"))
 			{
@@ -1235,6 +1250,9 @@ void Game::DrawModelDetails(Entity Mesh)
 
 	TransformComponent& trans = Mesh.GetComponent<TransformComponent>();
 
+	
+
+
 	Vector3 pos = trans.GetTranslation();
 	Vector3 euler = John::EulerRadiansToDegrees(trans.GetRotationEuler());
 	Vector3 scale = trans.GetScale();
@@ -1257,10 +1275,10 @@ void Game::DrawModelDetails(Entity Mesh)
 	if(assetType == John::EAssetType::JohnPrimitive)
 	{
 		JohnPrimitive* prim = static_cast<JohnPrimitive*>(mesh);
-		auto device = m_deviceResources->GetD3DDevice ();
+		auto device = DX::DeviceResources::Get().GetD3DDevice ();
 		float primSize = float(prim->GetSize ());
 		int tess = prim->GetTessellation ();
-		if(ImGui::DragFloat("Primitive Size", &primSize, .1f))
+		if(ImGui::DragFloat("Primitive Size", &primSize, .001f))
 		{
 			prim->SetSize ( primSize );
 			prim->Build ( device );
@@ -1271,6 +1289,13 @@ void Game::DrawModelDetails(Entity Mesh)
 			prim->Build ( device );
 		}
 	}
+	auto light = Mesh.GetComponent<PointLightComponent>();
+
+	float lightInt = light.LightIntensity;
+	Vector3 lightColor = light.LightColor;
+
+
+
 }
 
 void Game::DeleteMesh( Entity MeshToDelete )
@@ -1334,7 +1359,7 @@ bool Game::IsCameraViewportHovered() const
 Entity Game::MousePicking()
 {
 
-	auto context = m_deviceResources->GetD3DDeviceContext ();
+	auto context = DX::DeviceResources::Get().GetD3DDeviceContext ();
 
 	ImVec2 mousePos = ImGui::GetMousePos ();
 	uint32_t x, y;
@@ -1491,7 +1516,7 @@ WCHAR* Game::ImportFile(COMDLG_FILTERSPEC FileExtension[], UINT ExtensionCount)
 
 void Game::ImportMesh()
 {
-	auto device = m_deviceResources->GetD3DDevice ();
+	auto device = DX::DeviceResources::Get().GetD3DDevice ();
 	COMDLG_FILTERSPEC ModelTypes[] =
 	{
 		{

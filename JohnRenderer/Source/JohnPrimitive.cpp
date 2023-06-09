@@ -6,12 +6,12 @@ JohnPrimitive::JohnPrimitive()
 	m_PrimitiveType = John::EPrimitiveType::Sphere;
 }
 
-size_t JohnPrimitive::GetSize() const
+float JohnPrimitive::GetSize() const
 {
 	return m_Size;
 }
 
-void JohnPrimitive::SetSize( size_t val )
+void JohnPrimitive::SetSize( float val )
 {
 	m_Size = val;
 	RebuildPrimitive ();
@@ -47,4 +47,5 @@ void JohnPrimitive::RebuildPrimitive()
 		John::CreateSphereData ( m_Size, m_Tessellation, *GetVertices (), *GetFaces ());
 		break;
 	}
+	John::ComputeTangents(this);
 }

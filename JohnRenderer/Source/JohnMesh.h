@@ -36,6 +36,11 @@ public:
 
 	std::shared_ptr<SourceMesh> GetSourceMesh() const { return m_SourceMesh; }
 	void SetSourceMesh( std::shared_ptr<SourceMesh> val ) { m_SourceMesh = val; }
+
+	void SetVertices(std::vector<Vertex> inVerts);
+	void SetFaces(std::vector<Face>inFaces);
+
+
 private:
 
 	std::vector<Vertex> m_Vertices;

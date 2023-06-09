@@ -17,7 +17,7 @@ struct TextureList
 class Material
 {
 public:
-	Material(ID3D11Device* device, ID3D11SamplerState* samplerState, EShaderProgram shaderProgram);
+	Material(ID3D11SamplerState* samplerState, EShaderProgram shaderProgram);
 
 	void SetShaderProgram( EShaderProgram ShaderType );
 	EShaderProgram GetShaderProgram() const { return m_ShaderProgram; }
@@ -30,7 +30,7 @@ public:
 	void SetMetallicMap( John::Texture NewColor );
 	void SetSamplerState( ID3D11SamplerState* samplerState );
 
-	void CreateDefaultTextures( ID3D11Device* device );
+	void CreateDefaultTextures( );
 
 	void SetMatrices( XMMATRIX world, XMMATRIX view, XMMATRIX proj );
 

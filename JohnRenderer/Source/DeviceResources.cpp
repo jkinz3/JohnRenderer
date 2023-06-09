@@ -18,6 +18,7 @@ using Microsoft::WRL::ComPtr;
 
 #pragma warning(disable : 4061)
 
+DeviceResources* GDeviceResources;
 namespace
 {
 #if defined(_DEBUG)
@@ -708,4 +709,26 @@ void DeviceResources::UpdateColorSpace()
             ThrowIfFailed(swapChain3->SetColorSpace1(colorSpace));
         }
     }
+}
+
+DeviceResources& DeviceResources::Get()
+{
+	if(GDeviceResources)
+	{
+	return *GDeviceResources;
+
+	}
+	else
+	{
+		GDeviceResources = new DeviceResources();
+		return *GDeviceResources;
+	}
+}
+
+DeviceResources::~DeviceResources()
+{
+	if(GDeviceResources)
+	{
+		delete GDeviceResources;
+	}
 }

@@ -16,6 +16,7 @@ namespace DX
         ~IDeviceNotify() = default;
     };
 
+
     // Controls all the DirectX device resources.
     class DeviceResources
     {
@@ -29,7 +30,7 @@ namespace DX
                         UINT backBufferCount = 2,
                         D3D_FEATURE_LEVEL minFeatureLevel = D3D_FEATURE_LEVEL_10_0,
                         unsigned int flags = c_FlipPresent) noexcept;
-        ~DeviceResources() = default;
+		~DeviceResources();
 
         DeviceResources(DeviceResources&&) = default;
         DeviceResources& operator= (DeviceResources&&) = default;
@@ -83,6 +84,8 @@ namespace DX
             m_d3dAnnotation->SetMarker(name);
         }
 
+		static DeviceResources& Get();
+
     private:
         void CreateFactory();
         void GetHardwareAdapter(IDXGIAdapter1** ppAdapter);
@@ -121,4 +124,6 @@ namespace DX
         // The IDeviceNotify can be held directly as it owns the DeviceResources.
         IDeviceNotify*                                  m_deviceNotify;
     };
+
+
 }

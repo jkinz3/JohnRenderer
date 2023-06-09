@@ -2,9 +2,9 @@
 #include "Material.h"
 #include "Resources.h"
 
-Material::Material(ID3D11Device* device, ID3D11SamplerState* samplerState, EShaderProgram shaderProgram)
+Material::Material( ID3D11SamplerState* samplerState, EShaderProgram shaderProgram)
 {
-	CreateDefaultTextures( device );
+	CreateDefaultTextures( );
 	m_ShaderProgram = shaderProgram;
 	m_SamplerState = samplerState;
 }
@@ -63,12 +63,12 @@ void Material::SetSamplerState( ID3D11SamplerState* samplerState )
 	m_SamplerState = samplerState;
 }
 
-void Material::CreateDefaultTextures( ID3D11Device* device )
+void Material::CreateDefaultTextures(  )
 {
-	m_Textures.BaseColor = John::CreateDefaultBaseColor( device );
-	m_Textures.Normal= John::CreateDefaultNormal( device );
-	m_Textures.Roughness= John::CreateDefaultRoughness( device );
-	m_Textures.Metallic = John::CreateDefaultMetallic( device );
+	m_Textures.BaseColor = John::CreateDefaultBaseColor(  );
+	m_Textures.Normal= John::CreateDefaultNormal(  );
+	m_Textures.Roughness= John::CreateDefaultRoughness( );
+	m_Textures.Metallic = John::CreateDefaultMetallic( );
 }
 
 void Material::SetMatrices( XMMATRIX world, XMMATRIX view, XMMATRIX proj )

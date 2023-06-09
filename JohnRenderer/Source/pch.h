@@ -61,6 +61,7 @@
 #include <map>
 #include <string>
 
+#include <DeviceResources.h>
 //directxtk
 #include "BufferHelpers.h"
 #include "CommonStates.h"

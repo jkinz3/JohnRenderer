@@ -86,3 +86,14 @@ std::vector<Face>* JohnMesh::GetFaces()
 	return &m_Faces;
 }
 
+void JohnMesh::SetVertices(std::vector<Vertex> inVerts)
+{
+	m_Vertices = inVerts;
+
+}
+
+void JohnMesh::SetFaces(std::vector<Face> inFaces)
+{
+	m_Faces = inFaces;
+}
+

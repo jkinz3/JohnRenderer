@@ -7,12 +7,99 @@ namespace John
 	void ComputeTangents( std::shared_ptr<JohnPrimitive> inMesh )
 	{
 		
+		std::vector<Vertex> verts = *inMesh->GetVertices ();
+		std::vector<Vector3> positions;
+		std::vector<Vector3> normals;
+		std::vector<Vector2> texCoords;
 
+		std::vector<Vector3> tangents;
+		std::vector<Vector3> bitangents;
+
+		tangents.resize(verts.size());
+		bitangents.resize(verts.size());
+
+		for(const auto& vert : verts)
+		{
+			positions.push_back(vert.Position);
+			normals.push_back(vert.Normal);
+			texCoords.push_back(vert.TexCoord);
+		}
+
+		std::vector<Face> faces = *inMesh->GetFaces();
+		std::vector<uint32_t> indices;
+		for(const auto& face : faces)
+		{
+			indices.push_back(face.v1);
+			indices.push_back(face.v2);
+			indices.push_back(face.v3);
+		}
+
+		ComputeTangentFrame(indices.data(), faces.size(), positions.data(), normals.data(), texCoords.data(), positions.size(), tangents.data(), bitangents.data());
+
+		std::vector<Vertex> newVerts;
+
+		for(int i = 0; i < verts.size(); i++)
+		{
+			Vertex newVert = verts[i];
+			newVert.Tangent = tangents[i];
+			newVert.Bitangent = bitangents[i];
+
+			newVerts.push_back(newVert);
+		}
+
+		inMesh->SetVertices(newVerts);
 
 	}
 
-	std::shared_ptr<JohnPrimitive> CreateSphere( ID3D11Device * device, float diameter, size_t tessellation )
+	void ComputeTangents(JohnPrimitive* inMesh)
 	{
+		std::vector<Vertex> verts = *inMesh->GetVertices ();
+		std::vector<Vector3> positions;
+		std::vector<Vector3> normals;
+		std::vector<Vector2> texCoords;
+
+		std::vector<Vector3> tangents;
+		std::vector<Vector3> bitangents;
+
+		tangents.resize(verts.size());
+		bitangents.resize(verts.size());
+
+		for ( const auto& vert : verts )
+		{
+			positions.push_back(vert.Position);
+			normals.push_back(vert.Normal);
+			texCoords.push_back(vert.TexCoord);
+		}
+
+		std::vector<Face> faces = *inMesh->GetFaces();
+		std::vector<uint32_t> indices;
+		for ( const auto& face : faces )
+		{
+			indices.push_back(face.v1);
+			indices.push_back(face.v2);
+			indices.push_back(face.v3);
+		}
+
+		ComputeTangentFrame(indices.data(), faces.size(), positions.data(), normals.data(), texCoords.data(), positions.size(), tangents.data(), bitangents.data());
+
+		std::vector<Vertex> newVerts;
+
+		for ( int i = 0; i < verts.size(); i++ )
+		{
+			Vertex newVert = verts[i];
+			newVert.Tangent = tangents[i];
+			newVert.Bitangent = bitangents[i];
+
+			newVerts.push_back(newVert);
+		}
+
+		inMesh->SetVertices(newVerts);
+	}
+
+	std::shared_ptr<JohnPrimitive> CreateSphere(float diameter, size_t tessellation)
+	{
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
+
 		std::shared_ptr<JohnPrimitive> newMesh = std::make_shared<JohnPrimitive>();
 
 		if(tessellation < 3)
@@ -22,7 +109,7 @@ namespace John
 
 		CreateSphereData ( diameter, tessellation, *newMesh->GetVertices (), *newMesh->GetFaces () );
 
-		//ComputeTangents( *newMesh.get() );
+		ComputeTangents( newMesh );
 
 		newMesh->Build ( device );
 
@@ -104,7 +191,7 @@ namespace John
 
 
 
-	std::shared_ptr<JohnPrimitive> CreatePlane( ID3D11Device * device, float size )
+	std::shared_ptr<JohnPrimitive> CreatePlane(  float size )
 	{
 		return std::shared_ptr<JohnPrimitive>();
 	}
@@ -114,8 +201,9 @@ namespace John
 
 	}
 
-	std::shared_ptr<JohnPrimitive> CreateCube( ID3D11Device * device, float size )
+	std::shared_ptr<JohnPrimitive> CreateCube(  float size )
 	{
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
 		std::shared_ptr<JohnPrimitive> newMesh = std::make_shared<JohnPrimitive>();
 
 		if ( size <= 0.f )
@@ -124,7 +212,7 @@ namespace John
 		}
 
 		CreateCubeData( size, *newMesh->GetVertices (), *newMesh->GetFaces () );
-		//ComputeTangents( *newMesh.get() );
+		ComputeTangents(newMesh);
 		newMesh->Build ( device );
 
 		return newMesh;
@@ -214,6 +302,83 @@ namespace John
 		}
 
 
+	}
+
+	std::shared_ptr<JohnPrimitive> CreateTorus( float diameter, float thickness, int tessellation )
+	{
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
+		std::shared_ptr<JohnPrimitive> newMesh = std::make_shared<JohnPrimitive>();
+		CreateTorusData( diameter, thickness, tessellation, *newMesh->GetVertices(), *newMesh->GetFaces() );
+		ComputeTangents(newMesh);
+		newMesh->Build( device );
+
+		return newMesh;
+
+	}
+
+	void CreateTorusData( float diameter, float thickness, int tessellation , std::vector<Vertex>& outVertices, std::vector<Face>& outFaces )
+	{
+		outVertices.clear();
+		outFaces.clear();
+		if(tessellation < 3)
+		{
+			tessellation = 3;
+		}
+		if(diameter<= 0)
+		{
+			diameter = .1f;
+		}
+		
+		const size_t stride = tessellation + 1;
+
+		for(size_t i = 0; i <=tessellation; i++)
+		{
+			const float u = float( i ) / float( tessellation );
+
+			const float outerAngle = float( i ) * XM_2PI / float( tessellation ) - XM_PIDIV2;
+
+			const XMMATRIX transform = XMMatrixTranslation( diameter / 2, 0, 0 ) * XMMatrixRotationY( outerAngle );
+
+			for(size_t j = 0; j <= tessellation; j++)
+			{
+				const float v = 1 - float( j ) / float( tessellation );
+				const float innerAngle = float( j ) * XM_2PI / float( tessellation ) + XM_PI;
+				float dx, dy;
+
+				XMScalarSinCos( &dy, &dx, innerAngle );
+
+				XMVECTOR normal = XMVectorSet( dx, dy, 0, 0 );
+				XMVECTOR position = XMVectorScale( normal, thickness / 2 );
+				const XMVECTOR textureCoordinate = XMVectorSet( u, v, 0, 0 );
+				position = XMVector3Transform( position, transform );
+				normal = XMVector3TransformNormal( normal, transform );
+
+				Vertex vert = {};
+				vert.Position = position;
+				vert.Normal = normal;
+				vert.TexCoord = textureCoordinate;
+				outVertices.push_back( vert );
+
+				const size_t nextI = (i + 1) % stride;
+				const size_t nextJ = (j + 1) % stride;
+
+				Face f1 =
+				{
+					i * stride + j,
+					nextI * stride + j,
+					i * stride + nextJ
+				};
+				outFaces.push_back( f1 );
+
+				Face f2 =
+				{
+					i * stride + nextJ,
+					nextI * stride + j,
+					nextI * stride + nextJ
+				};
+				outFaces.push_back( f2 );
+			}
+		}
 	}
 
 }

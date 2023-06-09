@@ -6,8 +6,8 @@ class JohnPrimitive :
 public:
 	JohnPrimitive();
 
-	size_t GetSize() const;
-	void SetSize( size_t val );
+	float GetSize() const;
+	void SetSize( float val );
 	float GetTessellation() const;
 	void SetTessellation( float val );
 

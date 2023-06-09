@@ -26,7 +26,7 @@ class Game final : public DX::IDeviceNotify
 public:
 
     Game() noexcept(false);
-    ~Game() = default;
+	~Game();
 	
     Game(Game&&) = default;
     Game& operator= (Game&&) = default;
@@ -115,7 +115,6 @@ private:
 
 
     // Device resources.
-    std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
     // Rendering loop timer.
     DX::StepTimer                           m_timer;

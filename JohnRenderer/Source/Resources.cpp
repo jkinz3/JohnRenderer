@@ -84,8 +84,9 @@ namespace John
 		return newMesh;
 	}
 
-	ShaderProgram CreateShaderProgram( ID3D11Device* device, const std::wstring& vsFile, const std::wstring& psFile, const std::string& VSEntryPoint , const std::string& PSEntryPoint )
+	ShaderProgram CreateShaderProgram(  const std::wstring& vsFile, const std::wstring& psFile, const std::string& VSEntryPoint , const std::string& PSEntryPoint )
 	{
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
 		UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
 #ifdef _DEBUG
 		flags |= D3DCOMPILE_DEBUG;
@@ -159,8 +160,9 @@ namespace John
 		return program;
 	}
 
-	Microsoft::WRL::ComPtr<ID3D11ComputeShader> CreateComputeShader( ID3D11Device* device, const std::wstring& csFile )
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> CreateComputeShader(  const std::wstring& csFile )
 	{
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
 		ComPtr<ID3D11ComputeShader> shader;
 
 		UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
@@ -192,8 +194,9 @@ namespace John
 		return shader;
 	}
 
-	Microsoft::WRL::ComPtr<ID3D11SamplerState> CreateSamplerState( ID3D11Device* device, D3D11_FILTER filter, D3D11_TEXTURE_ADDRESS_MODE addressMode )
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> CreateSamplerState(  D3D11_FILTER filter, D3D11_TEXTURE_ADDRESS_MODE addressMode )
 	{
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
 		D3D11_SAMPLER_DESC desc = {};
 		desc.Filter = filter;
 		desc.AddressU = addressMode;
@@ -212,8 +215,9 @@ namespace John
 
 	}
 
-	John::Texture CreateTexture( ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, UINT levels /*= 0 */ )
+	John::Texture CreateTexture(  UINT width, UINT height, DXGI_FORMAT format, UINT levels /*= 0 */ )
 	{
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
 		Texture texture;
 		texture.width = width;
 		texture.height = height;
@@ -251,9 +255,11 @@ namespace John
 	}
 
 
-	John::Texture CreateTexture( ID3D11Device* device, ID3D11DeviceContext* context, const std::shared_ptr<class Image>& image, DXGI_FORMAT format, UINT levels )
+	John::Texture CreateTexture( const std::shared_ptr<class Image>& image, DXGI_FORMAT format, UINT levels )
 	{
-		Texture texture = CreateTexture(device,  image->width(), image->height(), format, levels );
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
+		auto context = DX::DeviceResources::Get().GetD3DDeviceContext();
+		Texture texture = CreateTexture( image->width(), image->height(), format, levels );
 		context->UpdateSubresource( texture.Texture2D.Get(), 0, nullptr, image->pixels<void>(), image->pitch(), 0 );
 		if(levels == 0)
 		{
@@ -262,8 +268,9 @@ namespace John
 		return texture;
 	}
 
-	John::Texture CreateTextureCube( ID3D11Device* device,UINT width, UINT height, DXGI_FORMAT format, UINT levels /*= 0 */ )
+	John::Texture CreateTextureCube( UINT width, UINT height, DXGI_FORMAT format, UINT levels /*= 0 */ )
 	{
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
 		Texture texture;
 		texture.width = width;
 		texture.height = height;
@@ -304,30 +311,34 @@ namespace John
 		return texture;
 	}
 
-	John::Texture CreateDefaultBaseColor( ID3D11Device* device )
+	John::Texture CreateDefaultBaseColor(  )
 	{
-		return CreateDefaultTexture( device, 0x00, DXGI_FORMAT_R8_UNORM );
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
+		return CreateDefaultTexture( 0x00, DXGI_FORMAT_R8_UNORM );
 	}
 
-	Texture CreateDefaultNormal( ID3D11Device * device )
+	Texture CreateDefaultNormal(  )
 	{
-		return CreateDefaultTexture( device, 0x7f7f, DXGI_FORMAT_R8G8_UNORM );
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
+		return CreateDefaultTexture(0x7f7f, DXGI_FORMAT_R8G8_UNORM );
 	}
 
-	Texture CreateDefaultRoughness( ID3D11Device * device )
+	Texture CreateDefaultRoughness(  )
 	{
-		return CreateDefaultTexture( device, 0x7f, DXGI_FORMAT_R8_UNORM );
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
+		return CreateDefaultTexture( 0x7f, DXGI_FORMAT_R8_UNORM );
 	}
 
-	Texture CreateDefaultMetallic( ID3D11Device * device )
+	Texture CreateDefaultMetallic(  )
 	{
-		return CreateDefaultTexture( device, 0x00, DXGI_FORMAT_R8_UNORM );
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
+		return CreateDefaultTexture(  0x00, DXGI_FORMAT_R8_UNORM );
 	}
 
 
-	John::Texture CreateDefaultTexture( ID3D11Device* device, uint16_t color , DXGI_FORMAT format)
+	John::Texture CreateDefaultTexture(  uint16_t color , DXGI_FORMAT format)
 	{
-
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
 
 		D3D11_SUBRESOURCE_DATA initData = { &color, sizeof( uint16_t ), 0 };
 
@@ -358,8 +369,9 @@ namespace John
 		return DefaultTexture;
 	}
 
-	void CreateTextureUAV( ID3D11Device* device, Texture& texture, UINT mipSplice )
+	void CreateTextureUAV(  Texture& texture, UINT mipSplice )
 	{
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
 		assert( texture.Texture2D);
 
 		D3D11_TEXTURE2D_DESC texDesc = {};
@@ -388,8 +400,9 @@ namespace John
 
 	}
 
-	John::FrameBuffer CreateFrameBuffer( ID3D11Device* device, UINT width, UINT height, UINT samples, DXGI_FORMAT colorFormat, DXGI_FORMAT depthStencilFormat ) 
+	John::FrameBuffer CreateFrameBuffer(  UINT width, UINT height, UINT samples, DXGI_FORMAT colorFormat, DXGI_FORMAT depthStencilFormat ) 
 	{
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
 		FrameBuffer fb;
 		fb.Width = width;
 		fb.Height = height;
@@ -455,25 +468,27 @@ namespace John
 		return fb;
 	}
 
-	John::Environment CreateEnvironmentFromFile( ID3D11Device* device, ID3D11DeviceContext* context, const char* EnvMapFile )
+	John::Environment CreateEnvironmentFromFile( const char* EnvMapFile )
 	{
+		auto context = DX::DeviceResources::Get().GetD3DDeviceContext();
+		auto device = DX::DeviceResources::Get().GetD3DDevice();
 		ID3D11UnorderedAccessView* const nullUAV[] = { nullptr };
 		ID3D11Buffer* const nullBuffer[] = { nullptr };
 
 
-		ComPtr<ID3D11SamplerState> ComputeSampler = CreateSamplerState( device, D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP );
+		ComPtr<ID3D11SamplerState> ComputeSampler = CreateSamplerState(D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP );
 
 
 		John::Environment environment;
 		{
 			//unfiltered env cube map (TEMP DO NOT USE TO DRAW)
-			Texture envMapUnfiltered = CreateTextureCube( device, 1024, 1024, DXGI_FORMAT_R16G16B16A16_FLOAT );
-			CreateTextureUAV( device, envMapUnfiltered, 0 );
+			Texture envMapUnfiltered = CreateTextureCube( 1024, 1024, DXGI_FORMAT_R16G16B16A16_FLOAT );
+			CreateTextureUAV(  envMapUnfiltered, 0 );
 
 			{
 				//load and convert equirectangular env map to cubemap
-				ComPtr<ID3D11ComputeShader> equirectToCubemapProgram = CreateComputeShader( device, L"Shaders/Compute/equirect2cube.hlsl" );
-				Texture envTextureEquirect = CreateTexture( device,context,  Image::fromFile(EnvMapFile), DXGI_FORMAT_R32G32B32A32_FLOAT , 1 );
+				ComPtr<ID3D11ComputeShader> equirectToCubemapProgram = CreateComputeShader( L"Shaders/Compute/equirect2cube.hlsl" );
+				Texture envTextureEquirect = CreateTexture( Image::fromFile(EnvMapFile), DXGI_FORMAT_R32G32B32A32_FLOAT , 1 );
 
 				context->CSSetShaderResources( 0, 1, envTextureEquirect.SRV.GetAddressOf() );
 				context->CSSetUnorderedAccessViews( 0, 1, envMapUnfiltered.UAV.GetAddressOf(), nullptr );
@@ -493,10 +508,10 @@ namespace John
 					float roughness;
 					float padding[3];
 				};
-				ComPtr<ID3D11ComputeShader> spMapProgram = CreateComputeShader( device, L"Shaders/Compute/SPMap.hlsl" );
-				ComPtr<ID3D11Buffer> spMapCB = CreateConstantBuffer<SpecularMapFilterSettingsCB>( device );
+				ComPtr<ID3D11ComputeShader> spMapProgram = CreateComputeShader(  L"Shaders/Compute/SPMap.hlsl" );
+				ComPtr<ID3D11Buffer> spMapCB = CreateConstantBuffer<SpecularMapFilterSettingsCB>(  );
 
-				environment.SpecularIBL = CreateTextureCube( device, 1024, 1024, DXGI_FORMAT_R16G16B16A16_FLOAT );
+				environment.SpecularIBL = CreateTextureCube(  1024, 1024, DXGI_FORMAT_R16G16B16A16_FLOAT );
 
 				for(int arraySlice=0; arraySlice<6; ++arraySlice)
 				{
@@ -513,7 +528,7 @@ namespace John
 				for(UINT level=1, size=512; level<environment.SpecularIBL.levels; ++level, size/2)
 				{
 					const UINT numGroups = std::max<UINT>( 1, size / 32 );
-					CreateTextureUAV( device, environment.SpecularIBL, level );
+					CreateTextureUAV(  environment.SpecularIBL, level );
 
 					const SpecularMapFilterSettingsCB spMapConstants = { level * deltaRoughness };
 					context->UpdateSubresource( spMapCB.Get(), 0, nullptr, &spMapConstants, 0, 0 );
@@ -529,9 +544,9 @@ namespace John
 		}
 		{
 			//compute diffuse ibl
-			ComPtr<ID3D11ComputeShader> irMapProgram = CreateComputeShader( device, L"Shaders/Compute/irmap.hlsl" );
-			environment.DiffuseIBL = CreateTextureCube(device, 32, 32, DXGI_FORMAT_R16G16B16A16_FLOAT, 1);
-			CreateTextureUAV( device, environment.DiffuseIBL, 0 );
+			ComPtr<ID3D11ComputeShader> irMapProgram = CreateComputeShader(  L"Shaders/Compute/irmap.hlsl" );
+			environment.DiffuseIBL = CreateTextureCube( 32, 32, DXGI_FORMAT_R16G16B16A16_FLOAT, 1);
+			CreateTextureUAV(  environment.DiffuseIBL, 0 );
 
 			context->CSSetShaderResources( 0, 1, environment.SpecularIBL.SRV.GetAddressOf() );
 			context->CSSetSamplers( 0, 1, ComputeSampler.GetAddressOf() );
@@ -543,10 +558,10 @@ namespace John
 
 		{
 			//compute cook torrance brdf 2D LUT
-			ComPtr<ID3D11ComputeShader> spBRDFShader = CreateComputeShader( device, L"Shaders/Compute/SPBRDF.hlsl" );
+			ComPtr<ID3D11ComputeShader> spBRDFShader = CreateComputeShader( L"Shaders/Compute/SPBRDF.hlsl" );
 
-			environment.BRDF_Lut = CreateTexture( device, 256, 256, DXGI_FORMAT_R16G16B16A16_FLOAT, 1 );
-			CreateTextureUAV(device,  environment.BRDF_Lut, 0 );
+			environment.BRDF_Lut = CreateTexture( 256, 256, DXGI_FORMAT_R16G16B16A16_FLOAT, 1 );
+			CreateTextureUAV(  environment.BRDF_Lut, 0 );
 
 			context->CSSetUnorderedAccessViews( 0, 1, environment.BRDF_Lut.UAV.GetAddressOf(), nullptr );
 			context->CSSetShader( spBRDFShader.Get(), nullptr, 0 );
