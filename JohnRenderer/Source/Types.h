@@ -87,15 +87,43 @@ namespace John
 
 	struct Transform
 	{
-		Vector3 Position;
-		Quaternion Rotation;
-		Vector3 Scale;
+		Vector3 Translation = { 0.f, 0.f, 0.f };
+		Quaternion Rotation = Quaternion::Identity;
+		Vector3 Scale = { 1.f, 1.f, 1.f };
+		Vector3 RotationEuler = Vector3::Zero;
 
 		Transform()
 		{
-			Position = Vector3::Zero;
+			Translation = Vector3::Zero;
 			Rotation = Quaternion::Identity;
 			Scale = Vector3::One;
+		}
+
+		void SetTranslation(Vector3 NewTranslation) { Translation = NewTranslation; }
+		void SetScale(Vector3 NewScale) { Scale = NewScale; }
+		void SetRotation(Vector3 InRotation)
+		{
+			RotationEuler = InRotation;
+			Rotation = Quaternion::CreateFromYawPitchRoll(RotationEuler.y, RotationEuler.x, RotationEuler.z);
+
+		}
+		void SetRotation(Quaternion InRotation)
+		{
+			Rotation = InRotation;
+			RotationEuler = Rotation.ToEuler();
+
+		}
+
+		Vector3 GetTranslation() const { return Translation; }
+		Vector3 GetScale() const { return Scale; }
+		Quaternion GetRotation() const { return Rotation; }
+		Vector3 GetRotationEuler() const { return RotationEuler; }
+
+		void Reset()
+		{
+			Translation = { 0.f, 0.f, 0.f };
+			Rotation = Quaternion::Identity;
+			Scale = { 1.f, 1.f, 1.f };
 		}
 
 
