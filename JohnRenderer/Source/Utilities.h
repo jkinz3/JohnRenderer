@@ -6,4 +6,6 @@ namespace John
 	std::wstring ConvertToUTF16(const std::string& str);
 
 	Vector3 ConvertToEulerUEStyle( Quaternion InQuat );
+
+	static void Print(LPCTSTR sFormat, ...);
 }
