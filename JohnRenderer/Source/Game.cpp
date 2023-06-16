@@ -799,6 +799,11 @@ void Game::DrawScene()
 		DrawMesh( mesh.get() );
 	}
 
+	m_Effect->SetView (m_Camera->GetViewMatrix ());
+	m_Effect->SetProjection (m_Camera->GetProjectionMatrix ());
+	m_Effect->SetWorld (Matrix::Identity);
+	m_Shape->Draw(m_Effect.get(), m_InputLayout.Get());
+
 	DX::DeviceResources::Get().PIXEndEvent ();
 
 }
@@ -976,6 +981,20 @@ void Game::CreateDeviceDependentResources()
 
 	m_ViewportRenderTarget->SetDevice (  device);
 	m_FinalRenderTarget->SetDevice (  device);
+
+	m_Shape = GeometricPrimitive::CreateSphere (context, 1, 16, false);
+
+
+	m_Effect = std::make_unique<DirectX::BasicEffect>(device);
+
+	m_Effect->SetPerPixelLighting (true);
+	m_Effect->SetLightingEnabled (true);
+	m_Effect->SetLightEnabled (0, true);
+	m_Effect->SetLightDiffuseColor (0, Colors::Blue);
+	m_Effect->SetLightDirection (0, -Vector3::UnitZ);
+
+	m_Shape->CreateInputLayout (m_Effect.get(),
+		m_InputLayout.ReleaseAndGetAddressOf ());
 
 
 }
@@ -1289,10 +1308,14 @@ void Game::DrawModelDetails(Entity Mesh)
 			prim->Build ( device );
 		}
 	}
-	auto light = Mesh.GetComponent<PointLightComponent>();
+	if(Mesh.HasComponent<PointLightComponent>())
+	{
+		auto light = Mesh.GetComponent<PointLightComponent>();
+		float lightInt = light.LightIntensity;
+		Vector3 lightColor = light.LightColor;
+	}
 
-	float lightInt = light.LightIntensity;
-	Vector3 lightColor = light.LightColor;
+
 
 
 

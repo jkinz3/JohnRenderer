@@ -216,4 +216,9 @@ private:
 	
 	bool m_bIsGizmoHovered = false;
 
+	std::unique_ptr<DirectX::GeometricPrimitive> m_Shape;
+
+	std::unique_ptr < DirectX::BasicEffect> m_Effect;
+	ComPtr<ID3D11InputLayout> m_InputLayout;
+
 };

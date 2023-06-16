@@ -88,6 +88,7 @@ float4 main(PSInput pin) : SV_TARGET
 	
 	float3 directLighting = 0.0;
 	{
+		[unroll]
 		for (uint i = 0; i < MaxPointLights; ++i)
 		{
 			PointLight Light = PointLights[i];

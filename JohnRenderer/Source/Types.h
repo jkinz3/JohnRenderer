@@ -57,6 +57,14 @@ namespace John
 		XMMATRIX Normal;
 	};
 
+	__declspec(align(16)) struct MVPConstantBuffer
+	{
+		XMMATRIX Model;
+		XMMATRIX View;
+		XMMATRIX Projection;
+		XMMATRIX MVP;
+	};
+
 	struct PhongShadingCB
 	{
 		XMVECTOR CamPos;

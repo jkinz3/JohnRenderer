@@ -7,7 +7,8 @@ set error=0
 
 if %PROCESSOR_ARCHITECTURE%.==ARM64. (set FXCARCH=arm64) else (if %PROCESSOR_ARCHITECTURE%.==AMD64. (set FXCARCH=x64) else (set FXCARCH=x86))
 
-set FXCOPTS=/nologo /WX /Ges /Zi /Zpc /Qstrip_reflect /Qstrip_debug
+set FXCOPTS=/nologo /Ges /Zi /Zpc
+rem /Qstrip_reflect /Qstrip_debug /WX 
 
 if %1.==xbox. goto continuexbox
 if %1.==. goto continuepc

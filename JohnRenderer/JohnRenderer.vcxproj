@@ -103,6 +103,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Source\BufferManager.h" />
     <ClInclude Include="Source\AssetManager.h" />
     <ClInclude Include="Source\SourceMesh.h" />
     <ClInclude Include="Source\Components.h" />
@@ -147,6 +148,7 @@
     <ClInclude Include="ThirdParty\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\BufferManager.cpp" />
     <ClCompile Include="Source\AssetManager.cpp" />
     <ClCompile Include="Source\SourceMesh.cpp" />
     <ClCompile Include="Source\Entity.cpp" />

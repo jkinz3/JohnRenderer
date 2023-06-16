@@ -56,6 +56,7 @@
     <ClInclude Include="Source\AssetManager.h" />
     <ClInclude Include="Source\Utilities.h" />
     <ClInclude Include="ThirdParty\entt\entt.hpp" />
+    <ClInclude Include="Source\BufferManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\pch.cpp" />
@@ -94,6 +95,7 @@
     <ClCompile Include="Source\SourceMesh.cpp" />
     <ClCompile Include="Source\AssetManager.cpp" />
     <ClCompile Include="Source\Utilities.cpp" />
+    <ClCompile Include="Source\BufferManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
