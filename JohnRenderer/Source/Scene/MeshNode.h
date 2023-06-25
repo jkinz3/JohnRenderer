@@ -5,7 +5,7 @@
 #include <experimental/resumable>
 #include <future>
 
-
+#include "ShaderMap.h"
 
 
 class MeshNode : public ContainerNode
@@ -25,6 +25,32 @@ public:
 	void CreateBuffer();
 	void CreateTransform();
 
+private:
+
+	class BufferWrapper
+	{
+	public:
+		BufferWrapper(ComPtr<ID3D11Buffer> buffer)
+			:m_Buffer(buffer)
+		{
+
+		}
+		BufferWrapper()
+		{
+
+		}
+
+		ComPtr<ID3D11Buffer>& GetBuffer() { return m_Buffer; }
+	private:
+		ComPtr<ID3D11Buffer> m_Buffer;
+	};
+
+	std::map<std::wstring, BufferWrapper> m_Buffers;
+
+	size_t m_IndexCount;
+
+	std::shared_ptr<VertexShaderWrapper> m_VertexShaderWrapper;
+	std::shared_ptr<PixelShaderWrapper> m_PixelShaderWrapper;
 
 };
 
