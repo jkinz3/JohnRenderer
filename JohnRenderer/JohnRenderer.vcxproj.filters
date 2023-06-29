@@ -62,6 +62,9 @@
     <ClInclude Include="Source\Scene\ContainerNode.h" />
     <ClInclude Include="Source\Scene\MeshNode.h" />
     <ClInclude Include="Source\ShaderMap.h" />
+    <ClInclude Include="Source\Singleton.h" />
+    <ClInclude Include="Source\BufferMap.h" />
+    <ClInclude Include="Source\GUID.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\pch.cpp" />
@@ -106,6 +109,8 @@
     <ClCompile Include="Source\Scene\ContainerNode.cpp" />
     <ClCompile Include="Source\Scene\MeshNode.cpp" />
     <ClCompile Include="Source\ShaderMap.cpp" />
+    <ClCompile Include="Source\BufferMap.cpp" />
+    <ClCompile Include="Source\GUID.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

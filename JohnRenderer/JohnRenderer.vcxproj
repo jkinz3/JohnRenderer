@@ -103,6 +103,8 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Source\GUID.h" />
+    <ClInclude Include="Source\BufferMap.h" />
     <ClInclude Include="Source\BufferManager.h" />
     <ClInclude Include="Source\ShaderMap.h" />
     <ClInclude Include="Source\Scene\MeshNode.h" />
@@ -110,6 +112,7 @@
     <ClInclude Include="Source\Scene\RootNode.h" />
     <ClInclude Include="Source\Scene\Node.h" />
     <ClInclude Include="Source\AssetManager.h" />
+    <ClInclude Include="Source\Singleton.h" />
     <ClInclude Include="Source\SourceMesh.h" />
     <ClInclude Include="Source\Components.h" />
     <ClInclude Include="Source\Entity.h" />
@@ -153,6 +156,8 @@
     <ClInclude Include="ThirdParty\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\GUID.cpp" />
+    <ClCompile Include="Source\BufferMap.cpp" />
     <ClCompile Include="Source\BufferManager.cpp" />
     <ClCompile Include="Source\ShaderMap.cpp" />
     <ClCompile Include="Source\Scene\MeshNode.cpp" />

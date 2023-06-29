@@ -54,10 +54,26 @@ public:
 	{
 		return m_MVPBuffer;
 	}
+	ConstantBufferData<John::PerObjectConstantBuffer>& GetObjectBuffer()
+	{
+		return m_PerObjectBuffer;
+	}
+	ConstantBufferData<John::PerFrameConstantBuffer>& GetPerFrameBuffer()
+	{
+		return m_PerFrameBuffer;
+	}
+
+	static BufferManager& Get()
+	{
+		static BufferManager instance;
+		return instance;
+	}
 
 protected:
 	BufferManager();
 private:
 	ConstantBufferData<John::MVPConstantBuffer> m_MVPBuffer;
+	ConstantBufferData<John::PerObjectConstantBuffer> m_PerObjectBuffer;
+	ConstantBufferData<John::PerFrameConstantBuffer> m_PerFrameBuffer;
 };
 

@@ -69,7 +69,7 @@ private:
 };
 
 template<>
-struct hash<ShaderDescriptor>
+struct std::hash<ShaderDescriptor>
 {
 	size_t operator()(const ShaderDescriptor& descriptor) const
 	{

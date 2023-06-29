@@ -6,7 +6,9 @@
 #include <future>
 
 
-
+using namespace DirectX;
+using namespace DirectX::SimpleMath;
+using Microsoft::WRL::ComPtr;
 
 class MeshNode : public ContainerNode
 {
@@ -25,6 +27,13 @@ public:
 	void CreateBuffer();
 	void CreateTransform();
 
+	std::shared_ptr<VertexShaderWrapper> m_VertShaderWrapper;
+	std::shared_ptr<PixelShaderWrapper> m_PixelShaderWrapper;
+
+	ComPtr<ID3D11Buffer> m_VertexBuffer;
+	ComPtr<ID3D11Buffer> m_IndexBuffer;
+
+	size_t m_IndexCount;
 
 };
 

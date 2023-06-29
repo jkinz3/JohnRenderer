@@ -64,6 +64,15 @@ namespace John
 		XMMATRIX Projection;
 		XMMATRIX MVP;
 	};
+	__declspec(align(16)) struct PerFrameConstantBuffer
+	{
+		XMVECTOR LightPos;
+	};
+
+	__declspec(align(16)) struct PerObjectConstantBuffer
+	{
+
+	};
 
 	struct PhongShadingCB
 	{
