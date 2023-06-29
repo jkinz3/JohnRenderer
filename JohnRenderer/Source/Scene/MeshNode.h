@@ -4,11 +4,13 @@
 #include <pplawait.h>
 #include <experimental/resumable>
 #include <future>
+#include "ShaderMap.h"
 
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 using Microsoft::WRL::ComPtr;
+
 
 class MeshNode : public ContainerNode
 {

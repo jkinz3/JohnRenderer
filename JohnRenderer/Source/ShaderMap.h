@@ -2,10 +2,12 @@
 #include <map>
 #include <memory.h>
 #include "Utilities.h"
+#include <functional>
+
 using namespace Microsoft::WRL;
 using namespace DX;
 
-HRESULT CompileShader(_In_ LPCWSTR srcFile, const D3D_SHADER_MACRO *defines, _In_ LPCSTR entryPoint, _In_ LPCSTR profile, _Outptr_ ID3DBlob** blob)
+static HRESULT CompileShaderFromFile(_In_ LPCWSTR srcFile,  _In_ LPCSTR entryPoint, _In_ LPCSTR profile, _Outptr_ ID3DBlob** blob)
 {
 	if ( !srcFile || !entryPoint || !profile || !blob )
 		return E_INVALIDARG;
@@ -19,7 +21,7 @@ HRESULT CompileShader(_In_ LPCWSTR srcFile, const D3D_SHADER_MACRO *defines, _In
 
 	ID3DBlob* shaderBlob = nullptr;
 	ID3DBlob* errorBlob = nullptr;
-	HRESULT hr = D3DCompileFromFile(srcFile, defines, D3D_COMPILE_STANDARD_FILE_INCLUDE,
+	HRESULT hr = D3DCompileFromFile(srcFile, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE,
 		entryPoint, profile,
 		flags, 0, &shaderBlob, &errorBlob);
 	if ( FAILED(hr) )
@@ -99,34 +101,19 @@ public:
 	std::shared_ptr<TShaderWrapper> FindOrCreateShader(ShaderDescriptor descriptor)
 	{
 		size_t hash = descriptor.GetHash();
-		std::map<size_t, std::shared_ptr<TShaderWrapper>>::iterator res = m_Shaders.find(hash);
+		std::map<size_t, std::shared_ptr<int>>::iterator result;
+		std::shared_ptr<TShaderWrapper> wrap;
+		typename std::map<size_t, std::shared_ptr<TShaderWrapper>>::iterator res = m_Shaders.find(hash);
 		if(res != m_Shaders.end())
 		{
 			return (*res).second;
 		}
-		auto result = TShaderWrapper::Create(descriptor);
-		m_Shaders[hash] = result;
-		return result;
+		auto ret = TShaderWrapper::Create(descriptor);
+		m_Shaders[hash] = ret;
+		return ret;
 	}
 
-	static std::shared_ptr<D3D_SHADER_MACRO[]> GetShaderMacros(ShaderDescriptor descriptor)
-	{
-		std::shared_ptr<D3D_SHADER_MACRO[]> defines(new D3D_SHADER_MACRO[descriptor.GetDefines().size() + 1],
-			std::default_delete<D3D_SHADER_MACRO[]>());
 
-		int idx = 0;
-		for(auto& def : descriptor.GetDefines())
-		{
-			John::Print(L"define %S", def);
-			(defines.get())[idx].Name = def;
-			(defines.get())[idx].Definition = one;
-			idx++;
-		}
-		(defines.get())[idx].Name = nullptr;
-		(defines.get())[idx].Definition = nullptr;
-
-		return defines;
-	}
 
 private:
 
@@ -148,7 +135,6 @@ public:
 		};
 
 		auto result = std::make_shared<make_shared_enabler>(descriptor);
-		auto defines = ShaderMap<PixelShaderWrapper>::GetShaderMacros(descriptor);
 
 		//compile
 		ID3DBlob* psBlob = nullptr;
@@ -157,10 +143,10 @@ public:
 		std::wstring filePath = path + L"PBR.hlsl";
 
 		DX::ThrowIfFailed(
-			CompileShader(filePath.c_str(), defines.get(), "PSMain", "ps_5_5", &psBlob)
+			CompileShaderFromFile(filePath.c_str(), "main", "ps_5_5", &psBlob)
 		);
 		auto device = DeviceResources::Get().GetD3DDevice();
-		DX::ThrowIfFailed(device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, result.PixelShaderAddressOf()));
+		DX::ThrowIfFailed(device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, result->PixelShaderAddressOf()));
 
 		return result;
 	}
@@ -168,7 +154,11 @@ public:
 	ID3D11PixelShader** PixelShaderAddressOf() { return m_PixelShader.GetAddressOf(); }
 	ID3D11PixelShader* GetPixelShader() { return m_PixelShader.Get(); }
 private:
-
+	PixelShaderWrapper(const ShaderDescriptor& descriptor)
+		:m_Descriptor(descriptor)
+	{
+		
+	}
 	const ShaderDescriptor& m_Descriptor;
 	ComPtr<ID3D11PixelShader> m_PixelShader;
 };
@@ -189,7 +179,6 @@ public:
 
 		//compile
 		auto result = std::make_shared<make_shared_enabler>(descriptor);
-		auto defines = ShaderMap<VertexShaderWrapper>::GetShaderMacros(descriptor);
 
 		ID3DBlob* vsBlob = nullptr;
 
@@ -197,7 +186,7 @@ public:
 		std::wstring filePath = path + L"PBR.hlsl";
 		auto device = DeviceResources::Get().GetD3DDevice();
 		DX::ThrowIfFailed(
-			CompileShader(filePath.c_str(), defines.get(), "VSMain", "vs_5_0", &vsBlob)
+			CompileShaderFromFile(filePath.c_str(),  "main", "vs_5_0", &vsBlob)
 		);
 
 		DX::ThrowIfFailed(
@@ -211,17 +200,13 @@ public:
 		{
 			{ "POSITION",	0,	DXGI_FORMAT_R32G32B32_FLOAT,	0,	0,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "NORMAL",		0,  DXGI_FORMAT_R32G32B32_FLOAT,	1,	0,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "TEXCOORD",	0,  DXGI_FORMAT_R32G32_FLOAT,		2,	0,	D3D11_INPUT_PER_VERTEX_DATA, 0 }
+			{ "TEXCOORD",	0,  DXGI_FORMAT_R32G32_FLOAT,		2,	0,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "TANGENT",		0,  DXGI_FORMAT_R32G32B32_FLOAT,	3,	0,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "BITANGENT",		0,  DXGI_FORMAT_R32G32B32_FLOAT,	4,	0,	D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		};
 
-		auto uvs = std::find(descriptor.GetDefines().begin(), descriptor.GetDefines().end(), "UV");
-
-		bool hasUVs = true;
-
 		DX::ThrowIfFailed(
-			device->CreateInputLayout(&vertexDesc, 5, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), result->InputLayoutAddressOf())
+			device->CreateInputLayout(vertexDesc, 5, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), result->InputLayoutAddressOf())
 		);
 		return result;
 	}

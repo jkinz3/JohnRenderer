@@ -4,7 +4,7 @@
 #include "JohnMesh.h"
 Matrix RenderObject::GetTransformationMatrix()
 {
-	Matrix TransMat = Matrix::CreateTranslation( m_Transform.Position );
+	Matrix TransMat = Matrix::CreateTranslation( m_Transform.Translation );
 	Matrix RotMat = Matrix::CreateFromQuaternion( m_Transform.Rotation );
 	Matrix ScaleMat = Matrix::CreateScale( m_Transform.Scale );
 	Matrix ModelMatrix = ScaleMat * RotMat * TransMat;
@@ -30,12 +30,12 @@ void RenderObject::SetTransform( John::Transform val )
 
 Vector3 RenderObject::GetPosition() const
 {
-	return m_Transform.Position;
+	return m_Transform.Translation;
 }
 
 void RenderObject::SetPosition( Vector3 val )
 {
-	m_Transform.Position = val;
+	m_Transform.Translation = val;
 }
 
 Quaternion RenderObject::GetRotation() const
@@ -73,7 +73,7 @@ void RenderObject::SetRotationEuler( Vector3 NewEuler )
 
 void RenderObject::ResetTransformations()
 {
-	m_Transform.Position = Vector3::Zero;
+	m_Transform.Translation = Vector3::Zero;
 	m_Transform.Rotation = Quaternion::Identity;
 	m_Transform.Scale = Vector3::One;
 
