@@ -8,6 +8,7 @@ Texture2D BaseColorMap : register(t3);
 Texture2D RoughnessMap : register(t4);
 Texture2D NormalMap : register(t5);
 //Texture2D MetallicMap : register(t6);
+StructuredBuffer<PointLight> GPUPointLights : register(t7);
 
 SamplerState defaultSampler : register(s0);
 SamplerState BRDF_Sampler : register(s1);
@@ -88,10 +89,9 @@ float4 main(PSInput pin) : SV_TARGET
 	
 	float3 directLighting = 0.0;
 	{
-		[unroll]
-		for (uint i = 0; i < MaxPointLights; ++i)
+		for (uint i = 0; i < NumPointLights; ++i)
 		{
-			PointLight Light = PointLights[i];
+			PointLight Light = GPUPointLights[i];
 			float3 LightColor = float3(1, 1, 1);
 			float3 Li = normalize(Light.LightPos - pin.PositionWS);
 			float distance = length(Light.LightPos - pin.PositionWS);

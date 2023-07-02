@@ -7,21 +7,21 @@ static std::mt19937_64 eng(s_RandomDevice());
 static std::uniform_int_distribution<uint64_t> s_UniformDistribution;
 
 
-GUID::GUID()
-	:m_GUID(s_UniformDistribution(eng))
+JohnGUID::JohnGUID()
+	:m_JohnGUID(s_UniformDistribution(eng))
 {
 
 
 }
 
-GUID::GUID(uint64_t guid)
-	:m_GUID(guid)
+JohnGUID::JohnGUID(uint64_t guid)
+	:m_JohnGUID(guid)
 {
 
 }
 
-GUID::GUID(const GUID& other)
-	:m_GUID(other.m_GUID)
+JohnGUID::JohnGUID(const JohnGUID& other)
+	:m_JohnGUID(other.m_JohnGUID)
 {
 
 }

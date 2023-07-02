@@ -706,6 +706,7 @@ void Game::DrawScene()
 	auto lights = m_Scene->m_Registry.view<PointLightComponent, TransformComponent>();
 
 	John::PhongShadingCB shadingConstants = {};
+	std::vector<John::GPUPointLight> pointLights;
 	int index = 0;
 	for(auto  entity: lights )
 	{
@@ -721,10 +722,29 @@ void Game::DrawScene()
 		l.LightColor = light.LightColor;
 		l.LightIntensity = light.LightIntensity;
 
-		shadingConstants.Lights[index] = l;
+	//	shadingConstants.Lights[index] = l;
+		John::GPUPointLight gpuLight = {};
+		gpuLight.LightColor = light.LightColor;
+		gpuLight.Position = transform.GetTranslation();
+		gpuLight.LightIntensity = light.LightIntensity;
+		pointLights.push_back (gpuLight);
+		shadingConstants.NumPointLights++;
+
 		index++;
 	}
 
+	D3D11_MAPPED_SUBRESOURCE mappedResource2;
+	DX::ThrowIfFailed (
+		context->Map(m_PointLightBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource2)
+	);
+
+	size_t sizeInBytes = pointLights.size() * sizeof(John::GPUPointLight);
+
+	memcpy_s(mappedResource2.pData, sizeInBytes, pointLights.data(), sizeInBytes);
+
+	context->Unmap(m_PointLightBuffer.Get (), 0);
+
+	context->PSSetShaderResources(7, 1, m_PointLightSRV.GetAddressOf ());
 
 	shadingConstants.CamPos = m_Camera->GetPosition();
 
@@ -995,6 +1015,29 @@ void Game::CreateDeviceDependentResources()
 
 	m_Shape->CreateInputLayout (m_Effect.get(),
 		m_InputLayout.ReleaseAndGetAddressOf ());
+
+	D3D11_BUFFER_DESC lightDesc = {};
+	lightDesc.ByteWidth = sizeof(John::GPUPointLight) * MaxPointLights;
+	lightDesc.Usage = D3D11_USAGE_DYNAMIC;
+	lightDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	lightDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	lightDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	lightDesc.StructureByteStride = sizeof(John::GPUPointLight);
+	
+	DX::ThrowIfFailed (
+		device->CreateBuffer(&lightDesc, NULL, m_PointLightBuffer.ReleaseAndGetAddressOf ())
+	);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	srvDesc.Buffer.FirstElement = 0;
+	srvDesc.Buffer.NumElements = MaxPointLights;
+
+	DX::ThrowIfFailed (
+		device->CreateShaderResourceView(m_PointLightBuffer.Get(), &srvDesc, m_PointLightSRV.ReleaseAndGetAddressOf ())
+	);
+
 
 
 }

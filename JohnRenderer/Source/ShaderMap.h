@@ -46,27 +46,21 @@ static HRESULT CompileShaderFromFile(_In_ LPCWSTR srcFile,  _In_ LPCSTR entryPoi
 class ShaderDescriptor
 {
 public:
-	ShaderDescriptor(std::string ShaderName)
+	ShaderDescriptor(std::wstring ShaderName)
 		:m_ShaderName(ShaderName)
 	{
 
 	}
 
-	void AddDefine(const char* str)
-	{
-		m_Defines.push_back(str);
-	}
 
-	const std::vector<const char*>& GetDefines() const { return m_Defines; }
-	const std::string& GetShaderName() const { return m_ShaderName; }
+	const std::wstring& GetShaderName() const { return m_ShaderName; }
 
 	size_t GetHash();
 
 private:
 
 	bool bHashCalculated = false;
-	std::vector<const char*> m_Defines;
-	std::string m_ShaderName;
+	std::wstring m_ShaderName;
 	size_t m_Hash;
 };
 
@@ -76,11 +70,7 @@ struct std::hash<ShaderDescriptor>
 	size_t operator()(const ShaderDescriptor& descriptor) const
 	{
 		size_t res = 0;
-		hash<string> myHash;
-		for(auto str : descriptor.GetDefines())
-		{
-			res ^= myHash(str);
-		}
+		hash<wstring> myHash;
 		res ^= myHash(descriptor.GetShaderName());
 		return res;
 	}
@@ -140,7 +130,7 @@ public:
 		ID3DBlob* psBlob = nullptr;
 
 		std::wstring path(L"Shaders/");
-		std::wstring filePath = path + L"PBR.hlsl";
+		std::wstring filePath = path + descriptor.GetShaderName ();
 
 		DX::ThrowIfFailed(
 			CompileShaderFromFile(filePath.c_str(), "main", "ps_5_5", &psBlob)
@@ -183,7 +173,7 @@ public:
 		ID3DBlob* vsBlob = nullptr;
 
 		std::wstring path(L"Shaders/");
-		std::wstring filePath = path + L"PBR.hlsl";
+		std::wstring filePath = path + descriptor.GetShaderName ();
 		auto device = DeviceResources::Get().GetD3DDevice();
 		DX::ThrowIfFailed(
 			CompileShaderFromFile(filePath.c_str(),  "main", "vs_5_0", &vsBlob)

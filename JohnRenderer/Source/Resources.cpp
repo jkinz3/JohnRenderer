@@ -32,7 +32,37 @@ struct LogStream : public Assimp::LogStream
 namespace John
 {
 
-	std::shared_ptr<JohnMesh> LoadMeshFromFile( const char* FileName )
+	void ProcessNode(Node* )
+
+	std::shared_ptr<Node> LoadSceneFromFile(const char* FileName)
+	{
+		Assimp::Importer import;
+
+		const unsigned int importFlags =
+			aiProcess_Triangulate |
+			aiProcess_FlipUVs |
+			aiProcess_CalcTangentSpace |
+			aiProcess_JoinIdenticalVertices;
+
+		const aiScene* scene = import.ReadFile(FileName, importFlags);
+		if ( !scene )
+		{
+			std::string output = std::string("Failed to load mesh: %s", FileName);
+			throw std::runtime_error(output);
+		}
+
+		aiNode* rootNode = scene->mRootNode;
+
+		for(int i =0; i < rootNode->mNumMeshes; i++)
+		{
+			aiMesh* mesh = scene->mMeshes[rootNode->mMeshes[i]];
+
+		}
+
+		for(unsigned int )
+	}
+
+	std::shared_ptr<JohnMesh> LoadMeshFromFile(const char* FileName)
 	{
 		LogStream::initialize();
 

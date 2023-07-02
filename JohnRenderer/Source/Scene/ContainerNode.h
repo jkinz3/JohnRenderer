@@ -1,7 +1,7 @@
 #pragma once
 #include "StepTimer.h"
 #include "Node.h" 
-#include "Types.h"
+#include "Components.h"
 class ContainerNode :
 	public Node
 {
@@ -36,8 +36,31 @@ public:
 	virtual bool IsSelected() override;
 	virtual void SetSelected(bool sel) override;
 
-	virtual void CreateTransform(John::Transform data);
+	virtual void CreateTransform();
 
+	//transformations
+	void SetTranslation(Vector3 NewTranslation) { m_Transform.SetTranslation(NewTranslation); }
+	void SetScale(Vector3 NewScale) { m_Transform.SetScale (NewScale); }
+	void SetRotation(Vector3 InRotation)
+	{
+		m_Transform.SetRotation (InRotation);
+
+	}
+	void SetRotation(Quaternion InRotation)
+	{
+		m_Transform.SetRotation (InRotation);`
+
+	}
+
+	Vector3 GetTranslation() const { return m_Transform.GetTranslation (); }
+	Vector3 GetScale() const { return m_Transform.GetScale (); }
+	Quaternion GetRotation() const { return m_Transform.GetRotation (); }
+	Vector3 GetRotationEuler() const { return m_Transform.GetRotationEuler(); }
+
+	void ResetTransformations()
+	{
+		m_Transform.Reset ();
+	}
 protected:
 
 	Matrix m_Matrix;
@@ -53,6 +76,6 @@ protected:
 	bool bLoadingComplete = false;
 	bool bSelected = false;
 
-	John::Transform m_Transform;
+	TransformComponent m_Transform;
 };
 

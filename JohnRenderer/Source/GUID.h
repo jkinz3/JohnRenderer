@@ -1,25 +1,25 @@
 #pragma once
 #include <xhash>
-class GUID
+class JohnGUID
 {
 public:
-	GUID();
-	GUID(uint64_t guid);
-	GUID(const GUID& other);
+	JohnGUID();
+	JohnGUID(uint64_t guid);
+	JohnGUID(const JohnGUID& other);
 
-	operator uint64_t() { return m_GUID; }
-	operator const uint64_t () const { return m_GUID; }
+	operator uint64_t() { return m_JohnGUID; }
+	operator const uint64_t () const { return m_JohnGUID; }
 
 private:
-	uint64_t m_GUID;
+	uint64_t m_JohnGUID;
 };
 
 namespace std
 {
 	template<>
-	struct hash<GUID>
+	struct hash<JohnGUID>
 	{
-		std::size_t operator()(const GUID& guid) const
+		std::size_t operator()(const JohnGUID& guid) const
 		{
 			return guid;
 		}

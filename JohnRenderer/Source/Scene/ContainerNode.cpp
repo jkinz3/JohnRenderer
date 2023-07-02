@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "ContainerNode.h"
+#include "BufferManager.h"
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
@@ -22,7 +23,7 @@ void ContainerNode::Update(StepTimer const& timer)
 	}
 }
 
-XMMATRIX ContainerNode::PreDraw(XMMATRIX model)
+Matrix ContainerNode::PreDraw(Matrix model)
 {
 	XMMATRIX mat;
 	const XMFLOAT3 emptyVector = { 0, 0, 0 };
@@ -32,16 +33,16 @@ XMMATRIX ContainerNode::PreDraw(XMMATRIX model)
 	}
 	else
 	{
-		XMFLOAT3 scale = m_Transform.Scale;
-		XMFLOAT3 trans = m_Transform.Translation;
+		XMFLOAT3 scale = m_Transform.GetScale();
+		XMFLOAT3 trans = m_Transform.GetTranslation();
 		XMFLOAT4 rot = m_Transform.GetRotation();
 
 		mat = XMMatrixTranspose(
 			XMMatrixAffineTransformation(
-				XMLoadFloat3(&m_Transform.Scale),
+				XMLoadFloat3(&m_Transform.GetScale()),
 				XMLoadFloat3(&emptyVector),
-				XMLoadFloat4(&m_Transform.Rotation),
-				XMLoadFloat3(&m_Transform.Translation)
+				XMLoadFloat4(&m_Transform.GetRotation()),
+				XMLoadFloat3(&m_Transform.GetTranslation())
 			));
 	}
 	if ( !XMMatrixIsIdentity(model) )
@@ -52,7 +53,7 @@ XMMATRIX ContainerNode::PreDraw(XMMATRIX model)
 	return mat;
 
 }
-void ContainerNode::Draw(XMMATRIX model)
+void ContainerNode::Draw(Matrix model)
 {
 	for(auto child : m_Children)
 	{
@@ -181,7 +182,8 @@ void ContainerNode::SetSelected(bool sel)
 	);
 }
 
-void ContainerNode::CreateTransform(John::Transform data)
+void ContainerNode::CreateTransform()
 {
-
+	m_Matrix = m_Transform.GetTransformationMatrix ();
+	BufferManager::Get().GetMVPBuffer ().GetBufferData ().Model = m_Matrix;
 }

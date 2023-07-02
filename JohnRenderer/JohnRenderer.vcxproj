@@ -103,6 +103,8 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="SceneFactory.h" />
+    <ClInclude Include="Source\Scene\SceneManager.h" />
     <ClInclude Include="Source\GUID.h" />
     <ClInclude Include="Source\BufferMap.h" />
     <ClInclude Include="Source\BufferManager.h" />
@@ -156,6 +158,8 @@
     <ClInclude Include="ThirdParty\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="SceneFactory.cpp" />
+    <ClCompile Include="Source\Scene\SceneManager.cpp" />
     <ClCompile Include="Source\GUID.cpp" />
     <ClCompile Include="Source\BufferMap.cpp" />
     <ClCompile Include="Source\BufferManager.cpp" />

@@ -16,7 +16,7 @@ MeshNode::~MeshNode()
 
 void MeshNode::CompileAndLoadVertexShader()
 {
-	ShaderDescriptor descriptor("Shaders/PBRVS.hlsl");
+	ShaderDescriptor descriptor(L"Shaders/PBRVS.hlsl");
 
 	ID3DBlob* vsBlob = nullptr;
 
@@ -29,7 +29,7 @@ void MeshNode::CompileAndLoadVertexShader()
 
 void MeshNode::CompileAndLoadPixelShader()
 {
-	ShaderDescriptor descriptor("Shaders/PBRPS.hlsl");
+	ShaderDescriptor descriptor(L"Shaders/PBRPS.hlsl");
 
 	m_PixelShaderWrapper = ShaderMap<PixelShaderWrapper>::Get().FindOrCreateShader(descriptor);
 }
@@ -45,8 +45,8 @@ void MeshNode::Draw(XMMATRIX model)
 	bool indexed = false;
 
 	auto context = DeviceResources::Get().GetD3DDeviceContext();
+//	context->IASetVertexBuffers(0, 1, m_VertexBuffer.GetAddressOf(), );
 
-	context->IASetVertexBuffers(0, 1, m_VertexBuffer.GetAddressOf(), );
 
 	const UINT Stride = sizeof(Vertex);
 	const UINT Offset = 0;
@@ -59,7 +59,6 @@ void MeshNode::Draw(XMMATRIX model)
 	context->VSSetConstantBuffers(0, 1, BufferManager::Get().GetMVPBuffer().GetConstantBuffer().GetAddressOf());
 	context->PSSetShader(m_PixelShaderWrapper->GetPixelShader(), nullptr, 0);
 	context->PSSetConstantBuffers(0, 1, BufferManager::Get().GetPerFrameBuffer().GetConstantBuffer().GetAddressOf());
-	context->PSSetConstantBuffers(1, 1, BufferManager::Get().GetObjectBuffer().GetConstantBuffer().GetAddressOf());
 
 
 	

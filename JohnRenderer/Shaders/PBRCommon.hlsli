@@ -22,8 +22,10 @@ cbuffer ShadingConstants : register(b0)
 {
 	float3 CameraPos;
 	float pack1;
-	PointLight PointLights[MaxPointLights];
+	int NumPointLights;
 }
+
+
 	
 	struct VSInput
 {

@@ -126,6 +126,10 @@ private:
 	ComPtr<ID3D11Buffer> m_ShadingCB;
 	ComPtr<ID3D11Buffer> m_LightSphereTransformCB;
 
+	//structured buffers
+	ComPtr<ID3D11Buffer> m_PointLightBuffer;
+	ComPtr<ID3D11ShaderResourceView> m_PointLightSRV;
+
 
 
 	ComPtr<ID3D11SamplerState> m_StandardSampler;

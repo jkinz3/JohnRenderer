@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Types.h"
-
+#include "Scene/Node.h"
 class JohnMesh;
 
 namespace John
@@ -14,6 +14,8 @@ namespace John
 		}
 		return levels;
 	}
+
+	std::shared_ptr<Node> LoadSceneFromFile(const char* FileName);
 
 	std::shared_ptr<JohnMesh> LoadMeshFromFile( const char* FileName );
 

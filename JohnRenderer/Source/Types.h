@@ -6,7 +6,7 @@ using Microsoft::WRL::ComPtr;
 using namespace DirectX::SimpleMath;
 using namespace DirectX;
 
-static constexpr int MaxPointLights = 5;
+static constexpr int MaxPointLights = 64;
 
 enum class EShaderProgram
 {
@@ -69,15 +69,12 @@ namespace John
 		XMVECTOR LightPos;
 	};
 
-	__declspec(align(16)) struct PerObjectConstantBuffer
-	{
 
-	};
 
 	struct PhongShadingCB
 	{
 		XMVECTOR CamPos;
-		Light Lights[MaxPointLights];
+		int NumPointLights;
 	};
 
 	struct LightSphereTransformCB
@@ -86,6 +83,14 @@ namespace John
 		XMMATRIX Model;
 	};
 
+	struct GPUPointLight
+	{
+		Vector3 Position;
+		float pack1;
+		Vector3 LightColor;
+		float pack2;
+		float LightIntensity;
+	};
 	struct Texture
 	{
 		ComPtr<ID3D11Texture2D> Texture2D;
