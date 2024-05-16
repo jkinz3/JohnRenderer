@@ -1,0 +1,3 @@
+[submodule "JohnRenderer/ThirdParty/DirectXTK"]
+	path = JohnRenderer/ThirdParty/DirectXTK
+	url = https://github.com/microsoft/DirectXTK.git
