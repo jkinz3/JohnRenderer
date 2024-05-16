@@ -51,6 +51,12 @@ public:
 
 	wchar_t* OpenScene(COMDLG_FILTERSPEC FileExt[], UINT ExtensionCount);
 
+	void SelectActor(std::shared_ptr<Actor> actor);
+
+	void ClearScene();
+
+	void DeselectAll();
+
 private:
 
 	std::shared_ptr<Scene> m_Scene;

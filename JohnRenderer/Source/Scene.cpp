@@ -2,6 +2,12 @@
 #include "Scene.h"
 #include "Texture.h"
 #include "PointLight.h"
+
+Scene::Scene()
+{
+
+}
+
 void Scene::LoadFromFile(const char* FileName)
 {
 	Assimp::Importer importer;

@@ -12,6 +12,7 @@ class Scene
 {
 public:
 
+	Scene();
 
 	std::vector<std::shared_ptr<Actor>> m_Actors;
 	std::vector<std::shared_ptr<Texture>> m_LoadedTextures;

@@ -491,7 +491,10 @@ void Application::OpenScene(const std::wstring FileName)
 
 void Application::NewScene()
 {
+	m_GUI->ClearScene  ();
+	long count = m_Scene.use_count  ();
 	m_Scene.reset();
 
 	m_Scene = std::make_shared<Scene>();
+	m_GUI->SetScene  (m_Scene);
 }

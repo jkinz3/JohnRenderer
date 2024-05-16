@@ -513,3 +513,20 @@ wchar_t* GUI::OpenScene(COMDLG_FILTERSPEC FileExt[], UINT ExtensionCount)
 	FileOpen->Release ();
 	return nullptr;
 }
+
+void GUI::SelectActor(std::shared_ptr<Actor> actor)
+{
+	m_SelectedActor = actor;
+
+}
+
+void GUI::ClearScene()
+{
+	m_SelectedActor.reset();
+	m_Scene.reset();
+}
+
+void GUI::DeselectAll()
+{
+	m_SelectedActor = nullptr;
+}
