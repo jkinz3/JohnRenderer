@@ -34,15 +34,15 @@ SkyboxEffect::SkyboxEffect(_In_ ID3D11Device* device) :
     static_assert((sizeof(SkyboxEffect::SkyboxEffectConstants) % 16) == 0, "CB size alignment");
 
     // Get shaders
-    m_vsBlob = DX::ReadData(L"Shaders/SkyboxVS.cso");
+    m_vsBlob = DX::ReadData(L"Shaders/Runtime/SkyboxEffect_VS.cso");
 
-    DX::ThrowIfFailed(
+    ThrowIfFailed(
         device->CreateVertexShader(m_vsBlob.data(), m_vsBlob.size(),
             nullptr, m_vs.ReleaseAndGetAddressOf()));
 
-    auto psBlob = DX::ReadData(L"Shaders/SkyboxPS.cso");
+    auto psBlob = DX::ReadData(L"Shaders/Runtime/SkyboxEffect_PS.cso");
 
-    DX::ThrowIfFailed(
+    ThrowIfFailed(
         device->CreatePixelShader(psBlob.data(), psBlob.size(),
             nullptr, m_ps.ReleaseAndGetAddressOf()));
 }

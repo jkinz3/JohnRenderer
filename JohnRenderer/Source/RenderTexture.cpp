@@ -119,32 +119,6 @@ void RenderTexture::SizeResources(size_t width, size_t height)
 
     SetDebugObjectName(m_shaderResourceView.Get(), "RenderTexture SRV");
 
-	CD3D11_TEXTURE2D_DESC depthStencilDesc(
-		DXGI_FORMAT_D32_FLOAT,
-		static_cast<UINT>(width),
-		static_cast<UINT>(height),
-		1,
-		1,
-		D3D11_BIND_DEPTH_STENCIL
-	);
-	ThrowIfFailed (
-		m_device->CreateTexture2D (
-			&depthStencilDesc,
-			nullptr,
-			m_depthStencilTarget.ReleaseAndGetAddressOf ()
-		)
-	);
-
-	CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc( D3D11_DSV_DIMENSION_TEXTURE2D );
-
-	ThrowIfFailed (
-		m_device->CreateDepthStencilView (
-			m_depthStencilTarget.Get (),
-			&depthStencilViewDesc,
-			m_depthStencilView.ReleaseAndGetAddressOf ()
-		)
-	);
-
     m_width = width;
     m_height = height;
 }

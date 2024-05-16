@@ -3,9 +3,9 @@
 
 cmake_minimum_required (VERSION 3.20)
 
-set(DIRECTXTK_VERSION 1.8.3)
+set(DIRECTXTK_VERSION 1.8.6)
 
-if(DEFINED XBOX_CONSOLE_TARGET)
+if(WINDOWS_STORE OR (DEFINED XBOX_CONSOLE_TARGET))
   set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 endif()
 
@@ -33,6 +33,10 @@ option(DISABLE_MSVC_ITERATOR_DEBUGGING "Disable iterator debugging in Debug conf
 option(ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build" OFF)
 
 option(USE_PREBUILT_SHADERS "Use externally built HLSL shaders" OFF)
+
+option(NO_WCHAR_T "Use legacy wide-character as unsigned short" OFF)
+
+option(BUILD_FUZZING "Build for fuzz testing" OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -348,6 +352,7 @@ if(BUILD_TOOLS AND WIN32)
   add_executable(xwbtool
     xwbtool/xwbtool.cpp
     xwbtool/xwbtool.rc
+    xwbtool/settings.manifest
     Audio/WAVFileReader.cpp
     Audio/WAVFileReader.h)
   target_include_directories(xwbtool PRIVATE Audio Src)
@@ -365,7 +370,7 @@ endif()
 if(MSVC)
     foreach(t IN LISTS TOOL_EXES ITEMS ${PROJECT_NAME})
       target_compile_options(${t} PRIVATE /Wall /GR /fp:fast "$<$<NOT:$<CONFIG:DEBUG>>:/guard:cf>")
-      target_link_options(${t} PRIVATE /DYNAMICBASE /NXCOMPAT)
+      target_link_options(${t} PRIVATE /DYNAMICBASE /NXCOMPAT /INCREMENTAL:NO)
     endforeach()
 
     if((CMAKE_SIZEOF_VOID_P EQUAL 4) AND (NOT ${DIRECTX_ARCH} MATCHES "^arm"))
@@ -397,6 +402,13 @@ if(MSVC)
       foreach(t IN LISTS TOOL_EXES ITEMS ${PROJECT_NAME})
         target_compile_options(${t} PRIVATE "$<$<NOT:$<CONFIG:DEBUG>>:/guard:ehcont>")
         target_link_options(${t} PRIVATE "$<$<NOT:$<CONFIG:DEBUG>>:/guard:ehcont>")
+      endforeach()
+    endif()
+
+    if(NO_WCHAR_T)
+      message(STATUS "Using non-native wchar_t as unsigned short")
+      foreach(t IN LISTS TOOL_EXES ITEMS ${PROJECT_NAME})
+        target_compile_options(${t} PRIVATE "/Zc:wchar_t-")
       endforeach()
     endif()
 else()
@@ -475,11 +487,11 @@ elseif( CMAKE_CXX_COMPILER_ID MATCHES "MSVC" )
 
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.35)
         foreach(t IN LISTS TOOL_EXES ITEMS ${PROJECT_NAME})
-          target_compile_options(${t} PRIVATE /Zc:templateScope /Zc:checkGwOdr)
+          target_compile_options(${t} PRIVATE /Zc:checkGwOdr $<$<VERSION_GREATER_EQUAL:${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION},10.0.22000>:/Zc:templateScope>)
         endforeach()
     endif()
 
-    set(WarningsEXE "/wd4365" "/wd4514" "/wd4625" "/wd4626" "/wd4627" "/wd4710" "/wd4820" "/wd5026" "/wd5027" "/wd5039" "/wd5045")
+    set(WarningsEXE "/wd4365" "/wd4514" "/wd4625" "/wd4626" "/wd4627" "/wd4710" "/wd4711" "/wd4820" "/wd5026" "/wd5027" "/wd5039" "/wd5045")
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.34)
         list(APPEND WarningsEXE "/wd5262" "/wd5264")
         target_compile_options(${PROJECT_NAME} PRIVATE "/wd5262")
@@ -487,6 +499,13 @@ elseif( CMAKE_CXX_COMPILER_ID MATCHES "MSVC" )
     foreach(t IN LISTS TOOL_EXES)
       target_compile_options(${t} PRIVATE ${WarningsEXE})
     endforeach()
+
+    if (BUILD_FUZZING AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.32)
+        foreach(t IN LISTS TOOL_EXES ITEMS ${PROJECT_NAME})
+           target_compile_options(${t} PRIVATE /fsanitize=address /fsanitize-coverage=inline-8bit-counters /fsanitize-coverage=edge /fsanitize-coverage=trace-cmp /fsanitize-coverage=trace-div)
+           target_link_libraries(${t} PRIVATE sancov.lib)
+        endforeach()
+    endif()
 endif()
 
 if(WIN32)
@@ -531,4 +550,8 @@ if(BUILD_TESTING AND WIN32 AND (NOT WINDOWS_STORE)
    AND (EXISTS "${CMAKE_CURRENT_LIST_DIR}/Tests/CMakeLists.txt"))
   enable_testing()
   add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/Tests)
+elseif(BUILD_FUZZING AND WIN32 AND (NOT WINDOWS_STORE)
+   AND (EXISTS "${CMAKE_CURRENT_LIST_DIR}/Tests/fuzzloaders/CMakeLists.txt"))
+  message(STATUS "Building for fuzzing")
+  add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/Tests/fuzzloaders)
 endif()

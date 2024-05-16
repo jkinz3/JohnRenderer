@@ -1,143 +1,237 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Common">
-      <UniqueIdentifier>ecb3e17f-8a71-4e5f-a686-3e3c72756ecc</UniqueIdentifier>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Assets">
-      <UniqueIdentifier>878a02cf-020f-41bd-a5ae-52641288eda0</UniqueIdentifier>
-      <Extensions>ico;cur;bmp;dds;dlg;fbx;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\pch.h" />
-    <ClInclude Include="Source\Game.h" />
-    <ClInclude Include="Source\StepTimer.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\DeviceResources.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\DebugDraw.h" />
-    <ClInclude Include="Source\ReadData.h" />
-    <ClInclude Include="Source\RenderTexture.h" />
-    <ClInclude Include="Source\SkyboxEffect.h" />
-    <ClInclude Include="Source\Resources.h" />
-    <ClInclude Include="Source\Types.h" />
-    <ClInclude Include="Source\JohnMesh.h" />
-    <ClInclude Include="Source\Camera.h" />
-    <ClInclude Include="ThirdParty\ImGui\imconfig.h" />
-    <ClInclude Include="ThirdParty\ImGui\imgui.h" />
-    <ClInclude Include="ThirdParty\ImGui\imgui_impl_dx11.h" />
-    <ClInclude Include="ThirdParty\ImGui\imgui_impl_win32.h" />
-    <ClInclude Include="ThirdParty\ImGui\imgui_internal.h" />
-    <ClInclude Include="ThirdParty\ImGui\imstb_rectpack.h" />
-    <ClInclude Include="ThirdParty\ImGui\imstb_textedit.h" />
-    <ClInclude Include="ThirdParty\ImGui\imstb_truetype.h" />
-    <ClInclude Include="Source\PointLight.h" />
-    <ClInclude Include="ThirdParty\ImGuizmo\ImZoomSlider.h" />
-    <ClInclude Include="ThirdParty\ImGuizmo\GraphEditor.h" />
-    <ClInclude Include="ThirdParty\ImGuizmo\ImCurveEdit.h" />
-    <ClInclude Include="ThirdParty\ImGuizmo\ImGradient.h" />
-    <ClInclude Include="ThirdParty\ImGuizmo\ImGuizmo.h" />
-    <ClInclude Include="ThirdParty\ImGuizmo\ImSequencer.h" />
-    <ClInclude Include="ThirdParty\stb_image.h" />
-    <ClInclude Include="Source\MouseDeltaTracker.h" />
-    <ClInclude Include="Source\Image.h" />
-    <ClInclude Include="Source\Material.h" />
-    <ClInclude Include="Source\RenderObject.h" />
-    <ClInclude Include="Source\Primitives.h" />
-    <ClInclude Include="Source\JohnPrimitive.h" />
-    <ClInclude Include="Source\Scene.h" />
-    <ClInclude Include="ThirdParty\entt\single_include\entt\entt.hpp" />
-    <ClInclude Include="Source\Entity.h" />
-    <ClInclude Include="Source\Components.h" />
-    <ClInclude Include="Source\SourceMesh.h" />
-    <ClInclude Include="Source\AssetManager.h" />
-    <ClInclude Include="Source\Utilities.h" />
-    <ClInclude Include="ThirdParty\entt\entt.hpp" />
-    <ClInclude Include="Source\BufferManager.h" />
-    <ClInclude Include="Source\Scene\Node.h" />
-    <ClInclude Include="Source\Scene\RootNode.h" />
-    <ClInclude Include="Source\Scene\ContainerNode.h" />
-    <ClInclude Include="Source\Scene\MeshNode.h" />
-    <ClInclude Include="Source\ShaderMap.h" />
-    <ClInclude Include="Source\Singleton.h" />
-    <ClInclude Include="Source\BufferMap.h" />
-    <ClInclude Include="Source\GUID.h" />
-    <ClInclude Include="Source\Scene\SceneManager.h" />
-    <ClInclude Include="SceneFactory.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Source\pch.cpp" />
-    <ClCompile Include="Source\Game.cpp" />
-    <ClCompile Include="Source\Main.cpp" />
-    <ClCompile Include="Source\DeviceResources.cpp">
-      <Filter>Common</Filter>
+    <ClCompile Include="Source\Main.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\DebugDraw.cpp" />
-    <ClCompile Include="Source\RenderTexture.cpp" />
-    <ClCompile Include="Source\SkyboxEffect.cpp" />
-    <ClCompile Include="Source\Resources.cpp" />
-    <ClCompile Include="Source\JohnMesh.cpp" />
-    <ClCompile Include="Source\Camera.cpp" />
-    <ClCompile Include="ThirdParty\ImGui\imgui.cpp" />
-    <ClCompile Include="ThirdParty\ImGui\imgui_demo.cpp" />
-    <ClCompile Include="ThirdParty\ImGui\imgui_draw.cpp" />
-    <ClCompile Include="ThirdParty\ImGui\imgui_impl_dx11.cpp" />
-    <ClCompile Include="ThirdParty\ImGui\imgui_impl_win32.cpp" />
-    <ClCompile Include="ThirdParty\ImGui\imgui_tables.cpp" />
-    <ClCompile Include="ThirdParty\ImGui\imgui_widgets.cpp" />
-    <ClCompile Include="Source\PointLight.cpp" />
-    <ClCompile Include="ThirdParty\ImGuizmo\GraphEditor.cpp" />
-    <ClCompile Include="ThirdParty\ImGuizmo\ImCurveEdit.cpp" />
-    <ClCompile Include="ThirdParty\ImGuizmo\ImGradient.cpp" />
-    <ClCompile Include="ThirdParty\ImGuizmo\ImGuizmo.cpp" />
-    <ClCompile Include="ThirdParty\ImGuizmo\ImSequencer.cpp" />
-    <ClCompile Include="Source\MouseDeltaTracker.cpp" />
-    <ClCompile Include="Source\Image.cpp" />
-    <ClCompile Include="Source\Material.cpp" />
-    <ClCompile Include="Source\RenderObject.cpp" />
-    <ClCompile Include="Source\Primitives.cpp" />
-    <ClCompile Include="Source\JohnPrimitive.cpp" />
-    <ClCompile Include="Source\Scene.cpp" />
-    <ClCompile Include="Source\Entity.cpp" />
-    <ClCompile Include="Source\SourceMesh.cpp" />
-    <ClCompile Include="Source\AssetManager.cpp" />
-    <ClCompile Include="Source\Utilities.cpp" />
-    <ClCompile Include="Source\BufferManager.cpp" />
-    <ClCompile Include="Source\Scene\Node.cpp" />
-    <ClCompile Include="Source\Scene\RootNode.cpp" />
-    <ClCompile Include="Source\Scene\ContainerNode.cpp" />
-    <ClCompile Include="Source\Scene\MeshNode.cpp" />
-    <ClCompile Include="Source\ShaderMap.cpp" />
-    <ClCompile Include="Source\BufferMap.cpp" />
-    <ClCompile Include="Source\GUID.cpp" />
-    <ClCompile Include="Source\Scene\SceneManager.cpp" />
-    <ClCompile Include="SceneFactory.cpp" />
+    <ClCompile Include="Source\pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Application.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\JohnMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SceneRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\JohnShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Material.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\JohnCamera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Sky.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SkyboxEffect.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\DebugDraw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\RenderTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\GUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_demo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_impl_dx11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_impl_sdl2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_tables.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_widgets.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Actor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\PointLight.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imguizmo\GraphEditor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imguizmo\ImCurveEdit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imguizmo\ImGradient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imguizmo\ImGuizmo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imguizmo\ImSequencer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelectionOutlineShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\DepthOnlyShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Serialization\SceneSerializer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Serialization\JohnMeshSerializer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="resource.rc" />
+    <ClInclude Include="Source\pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Application.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\JohnMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SceneRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\JohnShader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\JohnCamera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Sky.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ReadData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SkyboxEffect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\DebugDraw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RenderTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GUI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imconfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imgui.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imgui_impl_dx11.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imgui_impl_sdl2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imgui_internal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imstb_rectpack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imstb_textedit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imstb_truetype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Actor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PointLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imguizmo\GraphEditor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imguizmo\ImCurveEdit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imguizmo\ImGradient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imguizmo\ImGuizmo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imguizmo\ImSequencer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imguizmo\ImZoomSlider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelectionOutlineShader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\DepthOnlyShader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Serialization\SceneSerializer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Serialization\JohnMeshSerializer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="directx.ico">
-      <Filter>Assets</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <Manifest Include="settings.manifest">
-      <Filter>Assets</Filter>
-    </Manifest>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Shaders\SkyboxCommon.hlsli" />
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="Shaders\SkyboxPS.hlsl" />
-    <FxCompile Include="Shaders\SkyboxVS.hlsl" />
-    <FxCompile Include="Shaders\PBRPS.hlsl" />
-    <FxCompile Include="Shaders\PBRVS.hlsl" />
-    <FxCompile Include="Shaders\SimpleVS.hlsl" />
-    <FxCompile Include="Shaders\LightSpherePS.hlsl" />
+    <FxCompile Include="Shaders\Source\PBRVS.hlsl" />
+    <FxCompile Include="Shaders\Source\PBRPS.hlsl" />
+    <FxCompile Include="Shaders\Source\equirect2cube.hlsl" />
+    <FxCompile Include="Shaders\Source\irmap.hlsl" />
+    <FxCompile Include="Shaders\Source\spbrdf.hlsl" />
+    <FxCompile Include="Shaders\Source\spmap.hlsl" />
+    <FxCompile Include="Shaders\Source\SkyboxEffect_VS.hlsl" />
+    <FxCompile Include="Shaders\Source\SkyboxEffect_PS.hlsl" />
+    <FxCompile Include="Shaders\Source\SimpleVS.hlsl" />
+    <FxCompile Include="Shaders\Source\SelectionOutlinePS.hlsl" />
   </ItemGroup>
 </Project>

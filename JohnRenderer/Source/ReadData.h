@@ -19,7 +19,8 @@
 #include <stdexcept>
 #include <system_error>
 #include <vector>
-
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 
 namespace DX
 {

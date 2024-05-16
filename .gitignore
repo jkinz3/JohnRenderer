@@ -343,7 +343,6 @@ ModelViewer/Content/Textures/gothic_manor_02_8k.hdr
 *.blend
 
 Cache
-JohnRenderer/Content/fouriesburg_mountain_midday_1k.exr
 JohnRenderer/ThirdParty/Assimp/lib/zlibstaticd.lib
 JohnRenderer/ThirdParty/Assimp/lib/zlibstatic.lib
 JohnRenderer/ThirdParty/Assimp/lib/assimpd.lib

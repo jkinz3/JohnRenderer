@@ -37,21 +37,17 @@ namespace DX
         void SetWindow(const RECT& rect);
 
         ID3D11Texture2D* GetRenderTarget() const noexcept { return m_renderTarget.Get(); }
-        ID3D11Texture2D* GetDepthStencilTarget() const noexcept { return m_depthStencilTarget.Get(); }
         ID3D11RenderTargetView* GetRenderTargetView() const noexcept { return m_renderTargetView.Get(); }
-        ID3D11DepthStencilView* GetDepthStencilView() const noexcept { return m_depthStencilView.Get(); }
         ID3D11ShaderResourceView* GetShaderResourceView() const noexcept { return m_shaderResourceView.Get(); }
-
-		void GetTextureSize( size_t& width, size_t& height ) { width = m_width; height = m_height; }
 
         DXGI_FORMAT GetFormat() const noexcept { return m_format; }
 
     private:
         Microsoft::WRL::ComPtr<ID3D11Device>                m_device;
         Microsoft::WRL::ComPtr<ID3D11Texture2D>             m_renderTarget;
-        Microsoft::WRL::ComPtr<ID3D11Texture2D>             m_depthStencilTarget;
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView>      m_renderTargetView;
-		Microsoft::WRL::ComPtr<ID3D11DepthStencilView>		m_depthStencilView;
+        Microsoft::WRL::ComPtr<ID3D11DepthStencilView>      m_depthStencilView;
+        Microsoft::WRL::ComPtr<ID3D11Texture2D>             m_depthStencil;
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>    m_shaderResourceView;
 
         DXGI_FORMAT                                         m_format;

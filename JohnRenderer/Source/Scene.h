@@ -1,32 +1,42 @@
 #pragma once
-#include "entt.hpp"
+#include "Actor.h"
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
-class Camera;
-class Entity;
+class Texture;
+class PointLight;
+using Microsoft::WRL::ComPtr;
 
 class Scene
 {
 public:
-	Scene();
-	~Scene();
 
-	Entity CreateEntity( const std::string& name = std::string() );
-	void DestroyEntity( Entity entity );
 
-	void RenderScene( Camera& camera );
-	
-	template<typename... Components>
-	auto GetAllEntitiesWith()
-	{
-		return m_Registry.view<Components...>();
-	}
+	std::vector<std::shared_ptr<Actor>> m_Actors;
+	std::vector<std::shared_ptr<Texture>> m_LoadedTextures;
+	std::vector<std::shared_ptr<PointLight>> m_PointLights;
 
-	entt::registry m_Registry;
-private:
 
-	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
+	void LoadFromFile(const char* FileName);
 
-	friend class Entity;
+	void ProcessNode(aiNode* node, const aiScene* scene, std::shared_ptr<Actor> targetParent, aiMatrix4x4 accTransform);
 
+	std::shared_ptr<Actor> ProcessMesh(aiMesh* mesh, const aiScene* scene);
+
+	std::shared_ptr<Texture> LoadMaterialTexture(aiMaterial* mat, aiTextureType type, std::string typeNAme, const aiScene* scene);
+
+	ComPtr<ID3D11ShaderResourceView> LoadEmbeddedTexture(const aiTexture* embeddedTexture);
+
+	std::vector<std::shared_ptr<Actor>>& GetActors();
+	std::vector<std::shared_ptr<PointLight>>& GetPointLights();
+
+	bool bIsLoaded = false;
+
+	void SaveToDisk(const char* Path);
+
+	void AddActor(std::shared_ptr<Actor> newActor);
+
+	void AddPointLight(std::shared_ptr<PointLight> newLight);
 };
 
