@@ -1,3 +1,9 @@
 [submodule "JohnRenderer/ThirdParty/DirectXTK"]
 	path = JohnRenderer/ThirdParty/DirectXTK
 	url = https://github.com/microsoft/DirectXTK.git
+[submodule "JohnRenderer/ThirdParty/imgui"]
+	path = JohnRenderer/ThirdParty/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "JohnRenderer/ThirdParty/ImGuizmo"]
+	path = JohnRenderer/ThirdParty/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git
