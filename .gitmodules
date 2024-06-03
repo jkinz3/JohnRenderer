@@ -7,6 +7,3 @@
 [submodule "JohnRenderer/ThirdParty/ImGuizmo"]
 	path = JohnRenderer/ThirdParty/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
-[submodule "JohnRenderer/ThirdParty/SDL"]
-	path = JohnRenderer/ThirdParty/SDL
-	url = https://github.com/libsdl-org/SDL
