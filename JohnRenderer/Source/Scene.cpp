@@ -2,7 +2,7 @@
 #include "Scene.h"
 #include "Texture.h"
 #include "PointLight.h"
-
+#include "Geometry/RawMesh.h"
 Scene::Scene()
 {
 
@@ -13,11 +13,14 @@ void Scene::LoadFromFile(const char* FileName)
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile (FileName, aiProcessPreset_TargetRealtime_Fast | aiProcess_ConvertToLeftHanded);
 
+	LoadRawMesh  (FileName);
+
 	if(scene == nullptr)
 	{
 		throw std::runtime_error("failed to load file");
 		return;
 	}
+
 
 
 	ProcessNode (scene->mRootNode, scene, nullptr, aiMatrix4x4());
@@ -34,6 +37,64 @@ void Scene::LoadFromFile(const char* FileName)
 // 	light2->SetIntensity (1.f);
 // 	light2->SetColor (Vector3::One);
 // 	m_PointLights.push_back (light2);
+
+
+}
+
+
+
+
+ 
+void Scene::LoadRawMesh(const char* FileName)
+{
+	Assimp::Importer importer;
+	const aiScene* scene = importer.ReadFile (FileName, aiProcess_ConvertToLeftHanded);
+
+	if (scene == nullptr)
+	{
+		throw std::runtime_error("failed to load file");
+		return;
+	}
+
+	aiMesh* firstMesh = scene->mMeshes[0];
+
+	m_RawMesh = std::make_shared<RawMesh>();
+	for(int i = 0; i < firstMesh->mNumVertices; i++)
+	{
+		Vector3 pos;
+		pos.x = firstMesh->mVertices[i].x;
+		pos.y = firstMesh->mVertices[i].y;
+		pos.z = firstMesh->mVertices[i].z;
+		m_RawMesh->m_Vertices.push_back  (pos);
+
+		Vector3 norm;
+		norm.x = firstMesh->mNormals[i].x;
+		norm.y = firstMesh->mNormals[i].y;
+		norm.z = firstMesh->mNormals[i].z;
+		
+		m_RawMesh->m_Normals.push_back  (norm);
+
+		Vector2 texCoord;
+		texCoord.x = firstMesh->mTextureCoords[0][i].x;
+		texCoord.y = firstMesh->mTextureCoords[0][i].y;
+
+		m_RawMesh->m_TexCoords.push_back  (texCoord);
+	}
+
+	for(int i = 0; i < firstMesh->mNumFaces; i++)
+	{
+		aiFace face = firstMesh->mFaces[i];
+		RawFace newFace;
+		newFace.m_NumIndices = (unsigned int)face.mNumIndices;
+
+		for (UINT j = 0; j < face.mNumIndices; j++)
+		{
+			newFace.m_Indices.push_back  (face.mIndices[j]);
+		}
+
+		m_RawMesh->m_Faces.push_back  (newFace);
+	}
+
 }
 
 void Scene::ProcessNode(aiNode* node, const aiScene* scene, std::shared_ptr<Actor> targetParent, aiMatrix4x4 accTransform)
@@ -47,6 +108,7 @@ void Scene::ProcessNode(aiNode* node, const aiScene* scene, std::shared_ptr<Acto
 		{
 			aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 			auto newMesh = ProcessMesh (mesh, scene);
+
 			aiVector3D pos, scale;
 			aiQuaternion rot;
 		 worldMatrix = node->mTransformation * accTransform;
@@ -70,6 +132,8 @@ std::shared_ptr<Actor> Scene::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 {
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
+	std::shared_ptr<RawMesh> NewMesh = std::make_shared<RawMesh>();
+	NewMesh->m_NumFaces = mesh->mNumFaces;
 
 	for(UINT i = 0; i < mesh->mNumVertices; i++)
 	{
@@ -78,16 +142,21 @@ std::shared_ptr<Actor> Scene::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 		vertex.Position.y = mesh->mVertices[i].y;
 		vertex.Position.z = mesh->mVertices[i].z;
 
+
 		if(mesh->HasNormals ())
 		{
 			vertex.Normal.x = mesh->mNormals[i].x;
 			vertex.Normal.y = mesh->mNormals[i].y;
 			vertex.Normal.z = mesh->mNormals[i].z;
+
+			NewMesh->m_Normals.push_back(vertex.Normal);
 		}
 		if(mesh->HasTextureCoords (0))
 		{
 			vertex.TexCoord.x = mesh->mTextureCoords[0][i].x;
 			vertex.TexCoord.y = mesh->mTextureCoords[0][i].y;
+
+			NewMesh->m_TexCoords.push_back  (vertex.TexCoord);
 		}
 
 		vertices.push_back (vertex);
@@ -96,9 +165,13 @@ std::shared_ptr<Actor> Scene::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 	for(UINT i = 0; i < mesh->mNumFaces; i++)
 	{
 		aiFace face = mesh->mFaces[i];
+		RawFace newFace;
+		newFace.m_NumIndices = (unsigned int)face.mNumIndices;
+
 		for(UINT j = 0; j < face.mNumIndices; j++)
 		{
 			indices.push_back (face.mIndices[j]);
+			newFace.m_Indices.push_back  (face.mIndices[j]);
 		}
 	}
 

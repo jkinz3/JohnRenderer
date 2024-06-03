@@ -6,9 +6,6 @@ http://trederia.blogspot.de/2017/03/building-sdl2-for-android-with-visual.html
 
 The rest of this README covers the Android gradle style build process.
 
-If you are using the older ant build process, it is no longer officially
-supported, but you can use the "android-project-ant" directory as a template.
-
 
 Requirements
 ================================================================================
@@ -72,7 +69,7 @@ done in the build directory for the app!
 For more complex projects, follow these instructions:
 
 1. Get the source code for SDL and copy the 'android-project' directory located at SDL/android-project to a suitable location. Also make sure to rename it to your project name (In these examples: YOURPROJECT).
-   
+
    (The 'android-project' directory can basically be seen as a sort of starting point for the android-port of your project. It contains the glue code between the Android Java 'frontend' and the SDL code 'backend'. It also contains some standard behaviour, like how events should be handled, which you will be able to change.)
 
 2. Move or [symlink](https://en.wikipedia.org/wiki/Symbolic_link) the SDL directory into the "YOURPROJECT/app/jni" directory
@@ -94,8 +91,8 @@ If you already have a project that uses CMake, the instructions change somewhat:
 2. Edit "YOURPROJECT/app/build.gradle" to comment out or remove sections containing ndk-build
    and uncomment the cmake sections. Add arguments to the CMake invocation as needed.
 3. Edit "YOURPROJECT/app/jni/CMakeLists.txt" to include your project (it defaults to
-   adding the "src" subdirectory). Note that you'll have SDL2, SDL2main and SDL2-static
-   as targets in your project, so you should have "target_link_libraries(yourgame SDL2 SDL2main)"
+   adding the "src" subdirectory). Note that you'll have SDL3 and SDL3-static
+   as targets in your project, so you should have "target_link_libraries(yourgame SDL3)"
    in your CMakeLists.txt file. Also be aware that you should use add_library() instead of
    add_executable() for the target containing your "main" function.
 
@@ -168,7 +165,7 @@ Loading assets
 
 Any files you put in the "app/src/main/assets" directory of your project
 directory will get bundled into the application package and you can load
-them using the standard functions in SDL_rwops.h.
+them using the standard functions in SDL_iostream.h.
 
 There are also a few Android specific functions that allow you to get other
 useful paths for saving and loading data:
@@ -206,20 +203,27 @@ app can continue to operate as it was.
 
 However, there's a chance (on older hardware, or on systems under heavy load),
 where the GL context can not be restored. In that case you have to listen for
-a specific message (SDL_RENDER_DEVICE_RESET) and restore your textures
+a specific message (SDL_EVENT_RENDER_DEVICE_RESET) and restore your textures
 manually or quit the app.
 
 You should not use the SDL renderer API while the app going in background:
-- SDL_APP_WILLENTERBACKGROUND:
+- SDL_EVENT_WILL_ENTER_BACKGROUND:
     after you read this message, GL context gets backed-up and you should not
     use the SDL renderer API.
 
     When this event is received, you have to set the render target to NULL, if you're using it.
     (eg call SDL_SetRenderTarget(renderer, NULL))
 
-- SDL_APP_DIDENTERFOREGROUND:
+- SDL_EVENT_DID_ENTER_FOREGROUND:
    GL context is restored, and the SDL renderer API is available (unless you
-   receive SDL_RENDER_DEVICE_RESET).
+   receive SDL_EVENT_RENDER_DEVICE_RESET).
+
+Activity lifecycle
+================================================================================
+
+You can control activity re-creation (eg. onCreate()) behaviour. This allows to keep
+or re-initialize java and native static datas, see SDL_hints.h:
+- SDL_HINT_ANDROID_ALLOW_RECREATE_ACTIVITY
 
 Mouse / Touch events
 ================================================================================
@@ -377,7 +381,7 @@ Valgrind has support for Android out of the box, just grab code using:
 
 ... and follow the instructions in the file README.android to build it.
 
-One thing I needed to do on Mac OS X was change the path to the toolchain,
+One thing I needed to do on macOS was change the path to the toolchain,
 and add ranlib to the environment variables:
 export RANLIB=$NDKROOT/toolchains/arm-linux-androideabi-4.4.3/prebuilt/darwin-x86/bin/arm-linux-androideabi-ranlib
 
@@ -422,10 +426,10 @@ Graphics debugging
 ================================================================================
 
 If you are developing on a compatible Tegra-based tablet, NVidia provides
-Tegra Graphics Debugger at their website. Because SDL2 dynamically loads EGL
+Tegra Graphics Debugger at their website. Because SDL3 dynamically loads EGL
 and GLES libraries, you must follow their instructions for installing the
 interposer library on a rooted device. The non-rooted instructions are not
-compatible with applications that use SDL2 for video.
+compatible with applications that use SDL3 for video.
 
 The Tegra Graphics Debugger is available from NVidia here:
 https://developer.nvidia.com/tegra-graphics-debugger
@@ -467,12 +471,12 @@ Two legitimate ways:
 Activity by calling Activity.finish().
 
 - Android OS can decide to terminate your application by calling onDestroy()
-(see Activity life cycle). Your application will receive a SDL_QUIT event you
+(see Activity life cycle). Your application will receive an SDL_EVENT_QUIT you
 can handle to save things and quit.
 
 Don't call exit() as it stops the activity badly.
 
-NB: "Back button" can be handled as a SDL_KEYDOWN/UP events, with Keycode
+NB: "Back button" can be handled as a SDL_EVENT_KEY_DOWN/UP events, with Keycode
 SDLK_AC_BACK, for any purpose.
 
 Known issues
@@ -481,3 +485,79 @@ Known issues
 - The number of buttons reported for each joystick is hardcoded to be 36, which
 is the current maximum number of buttons Android can report.
 
+Building the SDL tests
+================================================================================
+
+SDL's CMake build system can create APK's for the tests.
+It can build all tests with a single command without a dependency on gradle or Android Studio.
+The APK's are signed with a debug certificate.
+The only caveat is that the APK's support a single architecture.
+
+### Requirements
+- SDL source tree
+- CMake
+- ninja or make
+- Android Platform SDK
+- Android NDK
+- Android Build tools
+- Java JDK (version should be compatible with Android)
+- keytool (usually provided with the Java JDK), used for generating a debug certificate
+- zip
+
+### CMake configuration
+
+When configuring the CMake project, you need to use the Android NDK CMake toolchain, and pass the Android home path through `SDL_ANDROID_HOME`.
+```
+cmake .. -DCMAKE_TOOLCHAIN_FILE=<path/to/android.toolchain.cmake> -DANDROID_ABI=<android-abi> -DSDL_ANDROID_HOME=<path-to-android-sdk-home> -DANDROID_PLATFORM=23 -DSDL_TESTS=ON
+```
+
+Remarks:
+- `android.toolchain.cmake` can usually be found at `$ANDROID_HOME/ndk/x.y.z/build/cmake/android.toolchain.cmake`
+- `ANDROID_ABI` should be one of `arm64-v8a`, `armeabi-v7a`, `x86` or `x86_64`.
+- When CMake is unable to find required paths, use `cmake-gui` to override required `SDL_ANDROID_` CMake cache variables.
+
+### Building the APK's
+
+For the `testsprite` executable, the `testsprite-apk` target will build the associated APK:
+```
+cmake --build . --target testsprite-apk
+```
+
+APK's of all tests can be built with the `sdl-test-apks` target:
+```
+cmake --build . --target sdl-test-apks
+```
+
+### Installation/removal of the tests
+
+`testsprite.apk` APK can be installed on your Android machine using the `install-testsprite` target:
+```
+cmake --build . --target install-testsprite
+```
+
+APK's of all tests can be installed with the `install-sdl-test-apks` target:
+```
+cmake --build . --target install-sdl-test-apks
+```
+
+All SDL tests can be uninstalled with the `uninstall-sdl-test-apks` target:
+```
+cmake --build . --target uninstall-sdl-test-apks
+```
+
+### Starting the tests
+
+After installation, the tests can be started using the Android Launcher GUI.
+Alternatively, they can also be started using CMake targets.
+
+This command will start the testsprite executable:
+```
+cmake --build . --target start-testsprite
+```
+
+There is also a convenience target which will build, install and start a test:
+```
+cmake --build . --target build-install-start-testsprite
+```
+
+Not all tests provide a GUI. For those, you can use `adb logcat` to read the output of stdout.

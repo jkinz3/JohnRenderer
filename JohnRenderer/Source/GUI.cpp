@@ -2,6 +2,7 @@
 #include "GUI.h"
 #include "JohnCamera.h"
 #include "Actor.h"
+#include "Primitives.h"
 #include "Serialization/SceneSerializer.h"
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
@@ -9,7 +10,7 @@ using namespace DirectX::SimpleMath;
 GUI::~GUI()
 {
 	ImGui_ImplDX11_Shutdown ();
-	ImGui_ImplSDL2_Shutdown ();
+	ImGui_ImplSDL3_Shutdown ();
 	ImGui::DestroyContext ();
 
 }
@@ -32,7 +33,7 @@ void GUI::Initialize()
 
 	ImGui::StyleColorsDark ();
 
-	ImGui_ImplSDL2_InitForD3D (Application::Get().GetWindow ());
+	ImGui_ImplSDL3_InitForD3D (Application::Get().GetWindow ());
 	ImGui_ImplDX11_Init (Application::Get().GetDevice (), Application::Get ().GetContext ());
 	m_ViewportName = std::string("Viewport");
 
@@ -44,7 +45,7 @@ void GUI::Initialize()
 void GUI::TickUI()
 {
 	ImGui_ImplDX11_NewFrame ();
-	ImGui_ImplSDL2_NewFrame ();
+	ImGui_ImplSDL3_NewFrame ();
 	ImGui::NewFrame ();
 	ImGuizmo::BeginFrame();
 	ImGuiDockNodeFlags NodeFlags = ImGuiDockNodeFlags_PassthruCentralNode;
@@ -244,6 +245,14 @@ void GUI::DrawSideBar()
 {
 	ImGui::Begin("Sidebar");
 	
+	if(ImGui::Button("Add Plane"))
+	{
+		std::shared_ptr<Actor> newActor = std::make_shared<Actor>();
+
+		newActor->SetName  ("Plane");
+		newActor->SetMesh  (John::Primities::CreatePlane  (Vector3(3,3,3)));
+		m_Scene->AddActor  (newActor);
+	}
 	
 	ImGui::End();
 }

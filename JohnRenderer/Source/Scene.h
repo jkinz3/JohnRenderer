@@ -5,6 +5,7 @@
 #include <assimp/postprocess.h>
 
 class Texture;
+class RawMesh;
 class PointLight;
 using Microsoft::WRL::ComPtr;
 
@@ -20,6 +21,8 @@ public:
 
 
 	void LoadFromFile(const char* FileName);
+
+	void LoadRawMesh(const char* FileName);
 
 	void ProcessNode(aiNode* node, const aiScene* scene, std::shared_ptr<Actor> targetParent, aiMatrix4x4 accTransform);
 
@@ -39,5 +42,7 @@ public:
 	void AddActor(std::shared_ptr<Actor> newActor);
 
 	void AddPointLight(std::shared_ptr<PointLight> newLight);
+
+	std::shared_ptr<RawMesh> m_RawMesh;
 };
 

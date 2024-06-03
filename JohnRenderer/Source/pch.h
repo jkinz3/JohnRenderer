@@ -5,9 +5,10 @@
 #include <filesystem>
 
 #define SDL_MAIN_HANDLED
-#include <SDL.h>
-#include <SDL_syswm.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_system.h>
 
+#define NOMINMAX
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -46,7 +47,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_impl_dx11.h"
-#include "imgui_impl_sdl2.h"
+#include "imgui_impl_sdl3.h"
 #include "ImGuizmo.h"
 
 class com_exception : public std::exception

@@ -22,6 +22,8 @@ public:
 	void MousePan(Vector2 MouseDelta);
 	void MouseZoom(Vector2 MouseDelta);
 
+	void MouseDrive(Vector2 MouseDelta);
+
 	void UpdateMatrices();
 
 	void UpdateView();
@@ -49,6 +51,7 @@ public:
 
 	bool GetCanMoveCamera() const;
 	void SetCanMoveCamera(bool val);
+	bool GetIsCameraMoving() const;
 private:
 
 
@@ -64,6 +67,7 @@ private:
 
 	float m_MovementSpeed = 150.f;
 	float m_MouseLookSpeed = 0.5f;
+	float m_DriveSpeed = .1f;
 
 	float m_Distance;
 
@@ -81,7 +85,11 @@ private:
 	
 	bool bInRelativeMode = false;
 
+	bool bIsCameraMoving = false;
+
 	DirectX::SimpleMath::Vector2 m_CursorClickPos;
+
+	bool bInvertPanDirection;
 
 };
 

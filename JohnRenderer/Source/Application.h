@@ -98,6 +98,7 @@ private:
 
 	std::unique_ptr<CommonStates> m_CommonStates;
 
+	Vector2 m_TrackingDelta;
 
 };
 

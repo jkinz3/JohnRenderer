@@ -33,7 +33,7 @@ Here is a rough list of what works, and what doesn't:
 * What works:
   * compilation via Visual C++ 2019.
   * compile-time platform detection for SDL programs.  The C/C++ #define,
-    `__WINRT__`, will be set to 1 (by SDL) when compiling for WinRT.
+    `SDL_PLATFORM_WINRT`, will be set to 1 (by SDL) when compiling for WinRT.
   * GPU-accelerated 2D rendering, via SDL_Renderer.
   * OpenGL ES 2, via the ANGLE library (included separately from SDL)
   * software rendering, via either SDL_Surface (optionally in conjunction with
@@ -42,7 +42,7 @@ Here is a rough list of what works, and what doesn't:
   * threads
   * timers (via SDL_GetTicks(), SDL_AddTimer(), SDL_GetPerformanceCounter(),
     SDL_GetPerformanceFrequency(), etc.)
-  * file I/O via SDL_RWops
+  * file I/O via SDL_IOStream
   * mouse input  (unsupported on Windows Phone)
   * audio, via SDL's WASAPI backend (if you want to record, your app must
     have "Microphone" capabilities enabled in its manifest, and the user must
@@ -52,7 +52,7 @@ Here is a rough list of what works, and what doesn't:
     anything outside of the app is not supported.
   * system path retrieval via SDL's filesystem APIs
   * game controllers.  Support is provided via the SDL_Joystick and
-    SDL_GameController APIs, and is backed by Microsoft's XInput API.  Please
+    SDL_Gamepad APIs, and is backed by Microsoft's XInput API.  Please
     note, however, that Windows limits game-controller support in UWP apps to,
     "Xbox compatible controllers" (many controllers that work in Win32 apps,
     do not work in UWP, due to restrictions in UWP itself.)
@@ -63,7 +63,7 @@ Here is a rough list of what works, and what doesn't:
   * using Direct3D 11.x APIs outside of SDL.  Non-XAML / Direct3D-only apps can
     choose to render content directly via Direct3D, using SDL to manage the
     internal WinRT window, as well as input and audio.  (Use
-    SDL_GetWindowWMInfo() to get the WinRT 'CoreWindow', and pass it into
+    the window properties to get the WinRT 'CoreWindow', and pass it into
     IDXGIFactory2::CreateSwapChainForCoreWindow() as appropriate.)
 
 * What partially works:
@@ -71,10 +71,9 @@ Here is a rough list of what works, and what doesn't:
     well as many keys with documented hardware scancodes.  Converting
     SDL_Scancodes to or from SDL_Keycodes may not work, due to missing APIs
     (MapVirtualKey()) in Microsoft's Windows Store / UWP APIs.
-  * SDLmain.  WinRT uses a different signature for each app's main() function.
-    SDL-based apps that use this port must compile in SDL_winrt_main_NonXAML.cpp
-    (in `SDL\src\main\winrt\`) directly in order for their C-style main()
-    functions to be called.
+  * SDL_main.  WinRT uses a different signature for each app's main() function
+    and requires it to be implemented in C++, so SDL_main.h must be #include'd
+    in a C++ source file, that also must be compiled with /ZW.
 
 * What doesn't work:
   * compilation with anything other than Visual C++
@@ -89,9 +88,9 @@ Here is a rough list of what works, and what doesn't:
     UWP itself).
   * turning off VSync when rendering on Windows Phone.  Attempts to turn VSync
     off on Windows Phone result either in Direct3D not drawing anything, or it
-    forcing VSync back on.  As such, SDL_RENDERER_PRESENTVSYNC will always get
-    turned-on on Windows Phone.  This limitation is not present in non-Phone
-    WinRT (such as Windows 8.x), where turning off VSync appears to work.
+    forcing VSync back on.  As such, vsync will always get turned-on on Windows
+    Phone.  This limitation is not present in non-Phone WinRT (such as Windows 8.x),
+    where turning off VSync appears to work.
   * probably anything else that's not listed as supported
 
 
@@ -130,8 +129,7 @@ SDL_GetPrefPath(), starting with SDL 2.0.4, addresses these by:
    (and which require less work to use safely, in terms of data integrity).
 
 Apps that wish to get their Roaming folder's path can do so either by using
-SDL_WinRTGetFSPathUTF8(), SDL_WinRTGetFSPathUNICODE() (which returns a
-UCS-2/wide-char string), or directly through the WinRT class,
+SDL_WinRTGetFSPath(), or directly through the WinRT class,
 Windows.Storage.ApplicationData.
 
 
@@ -241,6 +239,8 @@ To change these settings:
 3. in the drop-down box next to "Configuration", choose, "All Configurations"
 4. in the drop-down box next to "Platform", choose, "All Platforms"
 5. in the left-hand list, expand the "C/C++" section
+   **Note:** If you don't see this section, you may have to add a .c or .cpp
+   Source file to the Project first.
 6. select "General"
 7. edit the "Additional Include Directories" setting, and add a path to SDL's
    "include" directory
@@ -271,23 +271,28 @@ To include these files for C/C++ projects:
    navigate to "Add", then choose "Existing Item...".
 2. navigate to the directory containing SDL's source code, then into its
    subdirectory, 'src/main/winrt/'.  Select, then add, the following files:
-   - `SDL_winrt_main_NonXAML.cpp`
-   - `SDL2-WinRTResources.rc`
-   - `SDL2-WinRTResource_BlankCursor.cur`
-3. right-click on the file `SDL_winrt_main_NonXAML.cpp` (as listed in your
-   project), then click on "Properties...".
-4. in the drop-down box next to "Configuration", choose, "All Configurations"
-5. in the drop-down box next to "Platform", choose, "All Platforms"
-6. in the left-hand list, click on "C/C++"
-7. change the setting for "Consume Windows Runtime Extension" to "Yes (/ZW)".
-8. click the OK button.  This will close the dialog.
+   - `SDL3-WinRTResources.rc`
+   - `SDL3-WinRTResource_BlankCursor.cur`
+3. For the next step you need a C++ source file.
+   - If your standard main() function is implemented in a **C++** source file,
+     use that file.
+   - If your standard main() function is implemented in a **plain C** source file,
+     create an empty .cpp source file (e.g. `main.cpp`) that only contains the line
+     `#include <SDL3/SDL_main.h>` and use that file instead.
+4. Right click on the C++ source file from step 3 (as listed in your project),
+   then click on "Properties...".
+5. in the drop-down box next to "Configuration", choose, "All Configurations"
+6. in the drop-down box next to "Platform", choose, "All Platforms"
+7. in the left-hand list, click on "C/C++"
+8. change the setting for "Consume Windows Runtime Extension" to "Yes (/ZW)".
+9. click the OK button.  This will close the dialog.
 
 **NOTE: C++/CX compilation is currently required in at least one file of your
 app's project.  This is to make sure that Visual C++'s linker builds a 'Windows
 Metadata' file (.winmd) for your app.  Not doing so can lead to build errors.**
 
-For non-C++ projects, you will need to call SDL_WinRTRunApp from your language's
-main function, and generate SDL2-WinRTResources.res manually by using `rc` via
+For non-C++ projects, you will need to call SDL_RunApp from your language's
+main function, and generate SDL3-WinRTResources.res manually by using `rc` via
 the Developer Command Prompt and including it as a <Win32Resource> within the
 first <PropertyGroup> block in your Visual Studio project file.
 
@@ -322,27 +327,25 @@ your project, and open the file in Visual C++'s text editor.
 7. Copy and paste the following code into the new file, then save it.
 
 ```c
-#include <SDL.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 
 int main(int argc, char **argv)
 {
-    SDL_DisplayMode mode;
-    SDL_Window * window = NULL;
-    SDL_Renderer * renderer = NULL;
+    SDL_Window *window = NULL;
+    SDL_Renderer *renderer = NULL;
     SDL_Event evt;
     SDL_bool keep_going = SDL_TRUE;
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         return 1;
-    } else if (SDL_GetCurrentDisplayMode(0, &mode) != 0) {
-        return 1;
-    } else if (SDL_CreateWindowAndRenderer(mode.w, mode.h, SDL_WINDOW_FULLSCREEN, &window, &renderer) != 0) {
+    } else if (SDL_CreateWindowAndRenderer("Hello SDL", 0, 0, SDL_WINDOW_FULLSCREEN, &window, &renderer) != 0) {
         return 1;
     }
 
     while (keep_going) {
         while (SDL_PollEvent(&evt)) {
-            if ((evt.type == SDL_KEYDOWN) && (evt.key.keysym.sym == SDLK_ESCAPE)) {
+            if ((evt.type == SDL_EVENT_KEY_DOWN) && (evt.key.keysym.sym == SDLK_ESCAPE)) {
                 keep_going = SDL_FALSE;
             }
         }

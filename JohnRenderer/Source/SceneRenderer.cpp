@@ -177,7 +177,7 @@ void SceneRenderer::DrawScene(Scene* InScene, Matrix view, Matrix proj)
 		0.f,
 		(float)texDesc.Width,
 		(float)texDesc.Height,
-		0.1,
+		0.1f,
 		1.f
 	};
 	auto rt = m_PrePostProcessTarget->GetRenderTargetView();

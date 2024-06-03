@@ -9,7 +9,7 @@ struct Vertex
 {
 	Vector3 Position;
 	Vector3 Normal;
-	Vector3 TexCoord;
+	Vector2 TexCoord;
 };
 
 struct JohnMeshHeader

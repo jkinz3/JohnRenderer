@@ -40,18 +40,17 @@ bool Application::Initialize()
 		return false;
 	}
 
-	SDL_WindowFlags flags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-	m_Window = SDL_CreateWindow(m_AppName.c_str (), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_Width, m_Height, flags);
+	SDL_WindowFlags flags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+	m_Window = SDL_CreateWindow(m_AppName.c_str (), m_Width, m_Height, flags);
 	if(!m_Window)
 	{
 		printf("Error: %s\n", SDL_GetError ());
 		return false;
 	}
 
-	SDL_SysWMinfo info;
-	SDL_VERSION(&info.version);
-	SDL_GetWindowWMInfo (m_Window, &info);
-	HWND hWnd = (HWND)info.info.win.window;
+	auto hWnd = (HWND)SDL_GetProperty(SDL_GetWindowProperties(m_Window), "SDL.window.win32.hwnd", NULL);
+
+
 	if(!InitD3D (hWnd))
 	{
 		CleanupD3D ();
@@ -176,10 +175,7 @@ void Application::CleanupRenderTarget()
 }
 void Application::CreateRenderTarget()
 {
-	SDL_SysWMinfo info;
-	SDL_VERSION(&info.version);
-	SDL_GetWindowWMInfo (m_Window, &info);
-	HWND hWnd = (HWND)info.info.win.window;
+	HWND hWnd = GetNativeWindow  ();
 	RECT rc;
 	GetClientRect (hWnd, &rc);
 
@@ -232,25 +228,25 @@ void Application::ProcessInput(float DeltaTime)
 	Vector2 MouseDelta = Vector2::Zero;
 	while(SDL_PollEvent (&event))
 	{
-		ImGui_ImplSDL2_ProcessEvent (&event);
-		if(event.type == SDL_QUIT)
+		ImGui_ImplSDL3_ProcessEvent (&event);
+		if(event.type == SDL_EVENT_QUIT)
 		{
 			bWantsToQuit = true;
 		}
 
-		if(event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED && event.window.windowID == SDL_GetWindowID(m_Window))
+		if(event.type == SDL_EVENT_WINDOW_RESIZED && event.window.windowID == SDL_GetWindowID(m_Window))
 		{
 			OnWindowResized (event.window.data1, event.window.data2);
 
 		}
-		if(event.type == SDL_MOUSEMOTION)
+		if(event.type == SDL_EVENT_MOUSE_MOTION)
 		{
 			MouseDelta.x = event.motion.xrel;
 			MouseDelta.y = event.motion.yrel;
 
 		}
 
-		if(event.type == SDL_KEYDOWN)
+		if(event.type == SDL_EVENT_KEY_DOWN)
 		{
 			switch(event.key.keysym.sym)
 			{
@@ -267,12 +263,14 @@ void Application::ProcessInput(float DeltaTime)
 
 				}
 				break;
+			case SDLK_ESCAPE:
+				m_GUI->DeselectAll  ();
 
 			case SDLK_PERIOD:
 				{
 
 				auto mods = SDL_GetModState ();
-				if(mods & KMOD_LCTRL && mods & KMOD_LSHIFT)
+				if(mods & SDL_KMOD_LCTRL && mods & SDL_KMOD_LSHIFT)
 				{
 					m_Renderer->RecompileShaders();
 
@@ -290,18 +288,28 @@ void Application::ProcessInput(float DeltaTime)
 				break;
 			}
 		}
-		if (event.type == SDL_MOUSEBUTTONUP)
+		if (event.type == SDL_EVENT_MOUSE_BUTTON_UP)
 		{
-			if (event.button.button == SDL_BUTTON_LEFT)
+			if (event.button.button == SDL_BUTTON_LEFT &&  m_TrackingDelta == Vector2::Zero)
 			{
 				m_GUI->MousePicking();
 			}
 		}
+		if(event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+		{
+			if(SDL_GetRelativeMouseMode() == SDL_FALSE)
+			{
+				m_TrackingDelta = Vector2::Zero;
+			}
+		}
 	}
-	m_Camera->SetCanMoveCamera (m_GUI->IsViewportHovered () || m_Camera->IsInRelativeMode ());
+	m_Camera->SetCanMoveCamera (m_GUI->IsViewportHovered () || !m_Camera->IsInRelativeMode ());
 	m_Camera->Tick(DeltaTime, MouseDelta);
 
-
+	if(SDL_GetRelativeMouseMode() == SDL_TRUE)
+	{
+		m_TrackingDelta += MouseDelta;
+	}
 
 }
 
@@ -358,7 +366,7 @@ void Application::Present()
 
 void Application::Run()
 {
-	uint64_t oldTime = SDL_GetTicks64 ();
+	uint64_t oldTime = SDL_GetTicks ();
 
 	while(!bWantsToQuit)
 	{
@@ -441,10 +449,8 @@ std::shared_ptr<SceneRenderer> Application::GetRenderer() const
 
 HWND Application::GetNativeWindow() const
 {
-	SDL_SysWMinfo info;
-	SDL_VERSION(&info.version);
-	SDL_GetWindowWMInfo (m_Window, &info);
-	HWND hWnd = (HWND)info.info.win.window;
+	auto hWnd = (HWND)SDL_GetProperty(SDL_GetWindowProperties(m_Window), "SDL.window.win32.hwnd", NULL);
+
 
 	return hWnd;
 }

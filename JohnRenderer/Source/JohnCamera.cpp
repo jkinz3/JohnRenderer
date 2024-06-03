@@ -115,6 +115,16 @@ void JohnCamera::MouseZoom(Vector2 MouseDelta)
 	UpdateCameraPosition ();
 }
 
+void JohnCamera::MouseDrive(Vector2 MouseDelta)
+{
+	m_Rotation.y += MouseDelta.x;
+
+	Vector3 DragDelta;
+	DragDelta.z = MouseDelta.y * cosf(XMConvertToRadians  (m_Rotation.y));
+	DragDelta.x = MouseDelta.y * sinf(XMConvertToRadians  (m_Rotation.y));
+
+	m_Position -= DragDelta * m_DriveSpeed;
+}
 void JohnCamera::UpdateMatrices()
 {
 	UpdateView();
@@ -141,77 +151,110 @@ void JohnCamera::Tick(float DeltaTime, Vector2 MouseDelta)
 	Vector3 inputDir = Vector3::Zero;
 	Vector2 mouseDelta = Vector2::Zero;
 	mouseDelta = MouseDelta;
-	int x, y;
+	float  x, y;
 	auto MouseState = SDL_GetMouseState (&x, &y);
+
+	bool bRightMouseDown = MouseState & SDL_BUTTON_RMASK;
+	bool bLeftMouseDown = MouseState & SDL_BUTTON_LMASK;
+	bool bMiddleMouseDown = MouseState & SDL_BUTTON_MMASK;
+
+	if(MouseDelta != Vector2::Zero)
+	{
+		bIsCameraMoving =true;
+	}
+	else
+	{
+		bIsCameraMoving = false ;
+	}
 
 	if (SDL_GetRelativeMouseMode () && bCanMoveCamera)
 	{
-		 if(currentState[SDL_SCANCODE_LALT])
-		 {
-			 mouseDelta *= .00314f;
+		if (currentState[SDL_SCANCODE_LALT])
+		{
+			mouseDelta *= .00314f;
 			bool move = false;
-			if (MouseState & SDL_BUTTON_MMASK)
+			if (bMiddleMouseDown)
 			{
 				MousePan(mouseDelta);
 				move = true;
 			}
-			else if (MouseState & SDL_BUTTON_LMASK)
+			else if (bLeftMouseDown)
 			{
 				MouseOrbit(mouseDelta);
 				move = true;
 			}
-			else if (MouseState & SDL_BUTTON_RMASK)
+			else if (bRightMouseDown)
 			{
 				MouseZoom(mouseDelta);
 				move = true;
 			}
-			if(move = true)
+			if (move = true)
 			{
 				UpdateCameraPosition ();
 			}
 
-		 }
-		 else
-		 {
-			 if (currentState[SDL_SCANCODE_D])
-			 {
-				 inputDir.x += 1.f;
-			 }
-			 if (currentState[SDL_SCANCODE_A])
-			 {
-				 inputDir.x -= 1.f;
-			 }
-			 if (currentState[SDL_SCANCODE_W])
-			 {
-				 inputDir.z += 1.f;
-			 }
-			 if (currentState[SDL_SCANCODE_S])
-			 {
-				 inputDir.z -= 1.f;
-			 }
-			 if (currentState[SDL_SCANCODE_E])
-			 {
-				 inputDir.y += 1.f;
-			 }
-			 if (currentState[SDL_SCANCODE_Q])
-			 {
-				 inputDir.y -= 1.f;
-			 }			
-			 mouseDelta *= m_MouseLookSpeed;
-			 m_Rotation.x += mouseDelta.y;
-			 m_Rotation.y += mouseDelta.x;
-			 UpdateFocalPosition ();
+		}
+		else if(bRightMouseDown && !bLeftMouseDown)
+		{
+			if (currentState[SDL_SCANCODE_D])
+			{
+				inputDir.x += 1.f;
+			}
+			if (currentState[SDL_SCANCODE_A])
+			{
+				inputDir.x -= 1.f;
+			}
+			if (currentState[SDL_SCANCODE_W])
+			{
+				inputDir.z += 1.f;
+			}
+			if (currentState[SDL_SCANCODE_S])
+			{
+				inputDir.z -= 1.f;
+			}
+			if (currentState[SDL_SCANCODE_E])
+			{
+				inputDir.y += 1.f;
+			}
+			if (currentState[SDL_SCANCODE_Q])
+			{
+				inputDir.y -= 1.f;
+			}
+			mouseDelta *= m_MouseLookSpeed;
+			m_Rotation.x += mouseDelta.y;
+			m_Rotation.y += mouseDelta.x;
+			UpdateFocalPosition ();
 
-			 int width, height;
-			 Application::Get().GetBackBufferSize(width, height);
-			 SDL_WarpMouseInWindow (Application::Get().GetWindow (), m_CursorClickPos.x, m_CursorClickPos.y);
-		 }
+			int width, height;
+			Application::Get().GetBackBufferSize(width, height);
+			SDL_WarpMouseInWindow (Application::Get().GetWindow (), m_CursorClickPos.x, m_CursorClickPos.y);
+		}
+		else if (bLeftMouseDown && !bRightMouseDown)
+		{
+			MouseDrive  (MouseDelta);
+
+		}
+		else if (bRightMouseDown && bLeftMouseDown)
+		{
+			mouseDelta *= .00314f * -1;
+			MousePan(mouseDelta);
+			UpdateCameraPosition  ();
+
+
+			int width, height;
+			Application::Get().GetBackBufferSize(width, height);
+			SDL_WarpMouseInWindow (Application::Get().GetWindow (), m_CursorClickPos.x, m_CursorClickPos.y);
+		}
 	}
 
-	
+
 	UpdatePhysicsSimulation (inputDir, DeltaTime);
 
-	bInRelativeMode =  bCanMoveCamera && (MouseState & SDL_BUTTON_RMASK || currentState[SDL_SCANCODE_LALT]  && (MouseState & SDL_BUTTON_LMASK || MouseState & SDL_BUTTON_RMASK || MouseState & SDL_BUTTON_MMASK));
+	bool bFlyCam = MouseState & SDL_BUTTON_RMASK;
+	bool bMayaCam = currentState[SDL_SCANCODE_LALT] && (MouseState & SDL_BUTTON_LMASK || MouseState & SDL_BUTTON_RMASK || MouseState & SDL_BUTTON_MMASK);
+	bool bDriveCam = MouseState & SDL_BUTTON_LMASK;
+
+	bInRelativeMode = bCanMoveCamera && (bFlyCam || bMayaCam || bDriveCam);
 
 	if (SDL_GetRelativeMouseMode() == SDL_FALSE && bInRelativeMode == true)
 	{
@@ -219,6 +262,10 @@ void JohnCamera::Tick(float DeltaTime, Vector2 MouseDelta)
 		m_CursorClickPos.y = y;
 	}
 
+	if(bInRelativeMode == false)
+	{
+		int x = 0;
+	}
 	SDL_SetRelativeMouseMode (bInRelativeMode ? SDL_TRUE : SDL_FALSE);
 }
 
@@ -329,4 +376,9 @@ bool JohnCamera::GetCanMoveCamera() const
 void JohnCamera::SetCanMoveCamera(bool val)
 {
 	bCanMoveCamera = val;
+}
+
+bool JohnCamera::GetIsCameraMoving() const
+{
+	return bIsCameraMoving;
 }
