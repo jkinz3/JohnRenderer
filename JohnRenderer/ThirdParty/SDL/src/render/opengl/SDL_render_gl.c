@@ -26,7 +26,6 @@
 #include "../SDL_sysrender.h"
 #include "SDL_shaders_gl.h"
 #include "../../video/SDL_pixels_c.h"
-#include "../../SDL_utils_c.h"
 
 #ifdef SDL_PLATFORM_MACOS
 #include <OpenGL/OpenGL.h>
@@ -1677,7 +1676,6 @@ static int GL_CreateRenderer(SDL_Renderer *renderer, SDL_Window *window, SDL_Pro
     renderer->window = window;
 
     renderer->info.name = GL_RenderDriver.name;
-    SDL_AddSupportedTextureFormat(renderer, SDL_PIXELFORMAT_ARGB8888);
     SDL_AddSupportedTextureFormat(renderer, SDL_PIXELFORMAT_ARGB8888);
     SDL_AddSupportedTextureFormat(renderer, SDL_PIXELFORMAT_ABGR8888);
     SDL_AddSupportedTextureFormat(renderer, SDL_PIXELFORMAT_XRGB8888);

@@ -185,7 +185,7 @@ SDL_GetAudioDeviceSpec() is removed; use SDL_GetAudioDeviceFormat() instead.
 
 SDL_GetDefaultAudioInfo() is removed; SDL_GetAudioDeviceFormat() with SDL_AUDIO_DEVICE_DEFAULT_OUTPUT or SDL_AUDIO_DEVICE_DEFAULT_CAPTURE. There is no replacement for querying the default device name; the string is no longer used to open devices, and SDL3 will migrate between physical devices on the fly if the system default changes, so if you must show this to the user, a generic name like "System default" is recommended.
 
-SDL_MixAudio() has been removed, as it relied on legacy SDL 1.2 quirks; SDL_MixAudioFormat() remains and offers the same functionality.
+SDL_MixAudioFormat() and SDL_MIX_MAXVOLUME have been removed in favour of SDL_MixAudio(), which now takes the audio format, and a float volume between 0.0 and 1.0.
 
 SDL_FreeWAV has been removed and calls can be replaced with SDL_free.
 
@@ -254,6 +254,7 @@ The following functions have been renamed:
 * SDL_AudioStreamPut() => SDL_PutAudioStreamData()
 * SDL_FreeAudioStream() => SDL_DestroyAudioStream()
 * SDL_LoadWAV_RW() => SDL_LoadWAV_IO()
+* SDL_MixAudioFormat() => SDL_MixAudio()
 * SDL_NewAudioStream() => SDL_CreateAudioStream()
 
 
@@ -293,6 +294,9 @@ The following symbols have been renamed:
 * AUDIO_S32SYS => SDL_AUDIO_S32
 * AUDIO_S8 => SDL_AUDIO_S8
 * AUDIO_U8 => SDL_AUDIO_U8
+
+The following symbols have been removed:
+* SDL_MIX_MAXVOLUME - mixer volume is now a float between 0.0 and 1.0
 
 ## SDL_cpuinfo.h
 
@@ -730,7 +734,7 @@ The following hints have been removed:
 * SDL_HINT_RENDER_LOGICAL_SIZE_MODE - the logical size mode is explicitly set with SDL_SetRenderLogicalPresentation()
 * SDL_HINT_RENDER_OPENGL_SHADERS - shaders are always used if they are available
 * SDL_HINT_RENDER_SCALE_QUALITY - textures now default to linear filtering, use SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST) if you want nearest pixel mode instead
-* SDL_HINT_THREAD_STACK_SIZE - the stack size can be specified using SDL_CreateThreadWithStackSize()
+* SDL_HINT_THREAD_STACK_SIZE - the stack size can be specified using SDL_CreateThreadWithProperties()
 * SDL_HINT_VIDEO_EXTERNAL_CONTEXT - replaced with SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN in SDL_CreateWindowWithProperties()
 * SDL_HINT_VIDEO_FOREIGN_WINDOW_OPENGL - replaced with SDL_PROP_WINDOW_CREATE_OPENGL_BOOLEAN in SDL_CreateWindowWithProperties()
 * SDL_HINT_VIDEO_FOREIGN_WINDOW_VULKAN - replaced with SDL_PROP_WINDOW_CREATE_VULKAN_BOOLEAN in SDL_CreateWindowWithProperties()
@@ -957,8 +961,30 @@ SDL_ShowCursor() has been split into three functions: SDL_ShowCursor(), SDL_Hide
 
 SDL_GetMouseState(), SDL_GetGlobalMouseState(), SDL_GetRelativeMouseState(), SDL_WarpMouseInWindow(), and SDL_WarpMouseGlobal() all use floating point mouse positions, to provide sub-pixel precision on platforms that support it.
 
+SDL_SystemCursor's items from SDL2 have been renamed to match CSS cursor names.
+
 The following functions have been renamed:
 * SDL_FreeCursor() => SDL_DestroyCursor()
+
+The following symbols have been renamed:
+* SDL_SYSTEM_CURSOR_ARROW => SDL_SYSTEM_CURSOR_DEFAULT
+* SDL_SYSTEM_CURSOR_HAND => SDL_SYSTEM_CURSOR_POINTER
+* SDL_SYSTEM_CURSOR_IBEAM => SDL_SYSTEM_CURSOR_TEXT
+* SDL_SYSTEM_CURSOR_NO => SDL_SYSTEM_CURSOR_NOT_ALLOWED
+* SDL_SYSTEM_CURSOR_SIZEALL => SDL_SYSTEM_CURSOR_MOVE
+* SDL_SYSTEM_CURSOR_SIZENESW => SDL_SYSTEM_CURSOR_NESW_RESIZE
+* SDL_SYSTEM_CURSOR_SIZENS => SDL_SYSTEM_CURSOR_NS_RESIZE
+* SDL_SYSTEM_CURSOR_SIZENWSE => SDL_SYSTEM_CURSOR_NWSE_RESIZE
+* SDL_SYSTEM_CURSOR_SIZEWE => SDL_SYSTEM_CURSOR_EW_RESIZE
+* SDL_SYSTEM_CURSOR_WAITARROW => SDL_SYSTEM_CURSOR_PROGRESS
+* SDL_SYSTEM_CURSOR_WINDOW_BOTTOM => SDL_SYSTEM_CURSOR_S_RESIZE
+* SDL_SYSTEM_CURSOR_WINDOW_BOTTOMLEFT => SDL_SYSTEM_CURSOR_SW_RESIZE
+* SDL_SYSTEM_CURSOR_WINDOW_BOTTOMRIGHT => SDL_SYSTEM_CURSOR_SE_RESIZE
+* SDL_SYSTEM_CURSOR_WINDOW_LEFT => SDL_SYSTEM_CURSOR_W_RESIZE
+* SDL_SYSTEM_CURSOR_WINDOW_RIGHT => SDL_SYSTEM_CURSOR_E_RESIZE
+* SDL_SYSTEM_CURSOR_WINDOW_TOP => SDL_SYSTEM_CURSOR_N_RESIZE
+* SDL_SYSTEM_CURSOR_WINDOW_TOPLEFT => SDL_SYSTEM_CURSOR_NW_RESIZE
+* SDL_SYSTEM_CURSOR_WINDOW_TOPRIGHT => SDL_SYSTEM_CURSOR_NE_RESIZE
 
 ## SDL_mutex.h
 
@@ -999,6 +1025,14 @@ The following functions have been renamed:
 * SDL_FreePalette() => SDL_DestroyPalette()
 * SDL_MasksToPixelFormatEnum() => SDL_GetPixelFormatEnumForMasks()
 * SDL_PixelFormatEnumToMasks() => SDL_GetMasksForPixelFormatEnum()
+
+The following symbols have been renamed:
+* SDL_PIXELFORMAT_BGR444 => SDL_PIXELFORMAT_XBGR4444
+* SDL_PIXELFORMAT_BGR555 => SDL_PIXELFORMAT_XBGR1555
+* SDL_PIXELFORMAT_BGR888 => SDL_PIXELFORMAT_XBGR8888
+* SDL_PIXELFORMAT_RGB444 => SDL_PIXELFORMAT_XRGB4444
+* SDL_PIXELFORMAT_RGB555 => SDL_PIXELFORMAT_XRGB1555
+* SDL_PIXELFORMAT_RGB888 => SDL_PIXELFORMAT_XRGB8888
 
 The following macros have been removed:
 * SDL_Colour - use SDL_Color instead
@@ -1503,6 +1537,7 @@ SDL_SoftStretch() now takes a scale paramater.
 SDL_PixelFormatEnum is used instead of Uint32 for API functions that refer to pixel format by enumerated value.
 
 The following functions have been renamed:
+* SDL_BlitScaled() => SDL_BlitSurfaceScaled()
 * SDL_FillRect() => SDL_FillSurfaceRect()
 * SDL_FillRects() => SDL_FillSurfaceRects()
 * SDL_FreeSurface() => SDL_DestroySurface()
@@ -1626,6 +1661,10 @@ becomes:
 
 ## SDL_thread.h
 
+SDL_CreateThreadWithStackSize has been replaced with SDL_CreateThreadWithProperties.
+
+SDL_CreateThread and SDL_CreateThreadWithProperties now take beginthread/endthread function pointers on all platforms (ignoring them on most), and have been replaced with macros that hide this detail on all platforms. This works the same as before at the source code level, but the actual function signature that is called in SDL has changed. The library's exported symbol is SDL_CreateThreadRuntime, and looking for "SDL_CreateThread" in the DLL/Shared Library/Dylib will fail. You should not call this directly, but instead always use the macro!
+
 The following functions have been renamed:
 * SDL_TLSCleanup() => SDL_CleanupTLS()
 * SDL_TLSCreate() => SDL_CreateTLS()
@@ -1659,6 +1698,13 @@ If you were using this macro for other things besides SDL ticks values, you can 
 ```c
 #define SDL_TICKS_PASSED(A, B)  ((Sint32)((B) - (A)) <= 0)
 ```
+
+The callback passed to SDL_AddTimer() has changed parameters to:
+```c
+Uint32 SDLCALL TimerCallback(void *userdata, SDL_TimerID timerID, Uint32 interval);
+````
+
+The return value of SDL_RemoveTimer() has changed to the standard int error code.
 
 ## SDL_touch.h
 

@@ -9,6 +9,7 @@ SDL3_0.0.0 {
     SDL_AddGamepadMappingsFromIO;
     SDL_AddHintCallback;
     SDL_AddTimer;
+    SDL_AddTimerNS;
     SDL_AddVulkanRenderSemaphores;
     SDL_AllocateEventMemory;
     SDL_AndroidBackButton;
@@ -84,8 +85,8 @@ SDL3_0.0.0 {
     SDL_CreateTexture;
     SDL_CreateTextureFromSurface;
     SDL_CreateTextureWithProperties;
-    SDL_CreateThread;
-    SDL_CreateThreadWithStackSize;
+    SDL_CreateThreadRuntime;
+    SDL_CreateThreadWithPropertiesRuntime;
     SDL_CreateWindow;
     SDL_CreateWindowAndRenderer;
     SDL_CreateWindowWithProperties;
@@ -208,6 +209,7 @@ SDL3_0.0.0 {
     SDL_GetDaysInMonth;
     SDL_GetDefaultAssertionHandler;
     SDL_GetDefaultCursor;
+    SDL_GetDefaultKeyFromScancode;
     SDL_GetDesktopDisplayMode;
     SDL_GetDisplayBounds;
     SDL_GetDisplayContentScale;
@@ -351,18 +353,11 @@ SDL3_0.0.0 {
     SDL_GetOriginalMemoryFunctions;
     SDL_GetPathInfo;
     SDL_GetPenCapabilities;
-    SDL_GetPenCapabilities;
-    SDL_GetPenFromGUID;
     SDL_GetPenFromGUID;
     SDL_GetPenGUID;
-    SDL_GetPenGUID;
-    SDL_GetPenName;
     SDL_GetPenName;
     SDL_GetPenStatus;
-    SDL_GetPenStatus;
     SDL_GetPenType;
-    SDL_GetPenType;
-    SDL_GetPens;
     SDL_GetPens;
     SDL_GetPerformanceCounter;
     SDL_GetPerformanceFrequency;
@@ -459,6 +454,7 @@ SDL3_0.0.0 {
     SDL_GetUserFolder;
     SDL_GetVersion;
     SDL_GetVideoDriver;
+    SDL_GetWindowAspectRatio;
     SDL_GetWindowBordersSize;
     SDL_GetWindowDisplayScale;
     SDL_GetWindowFlags;
@@ -480,6 +476,7 @@ SDL3_0.0.0 {
     SDL_GetWindowSize;
     SDL_GetWindowSizeInPixels;
     SDL_GetWindowSurface;
+    SDL_GetWindowSurfaceVSync;
     SDL_GetWindowTitle;
     SDL_GlobDirectory;
     SDL_GlobStorageDirectory;
@@ -571,7 +568,7 @@ SDL3_0.0.0 {
     SDL_Metal_DestroyView;
     SDL_Metal_GetLayer;
     SDL_MinimizeWindow;
-    SDL_MixAudioFormat;
+    SDL_MixAudio;
     SDL_OnApplicationDidBecomeActive;
     SDL_OnApplicationDidChangeStatusBarOrientation;
     SDL_OnApplicationDidEnterBackground;
@@ -596,9 +593,9 @@ SDL3_0.0.0 {
     SDL_OpenUserStorage;
     SDL_OutOfMemory;
     SDL_PauseAudioDevice;
+    SDL_PauseAudioStreamDevice;
     SDL_PauseHaptic;
     SDL_PeepEvents;
-    SDL_PenConnected;
     SDL_PenConnected;
     SDL_PlayHapticRumble;
     SDL_PollEvent;
@@ -664,6 +661,7 @@ SDL3_0.0.0 {
     SDL_ResetLogPriorities;
     SDL_RestoreWindow;
     SDL_ResumeAudioDevice;
+    SDL_ResumeAudioStreamDevice;
     SDL_ResumeHaptic;
     SDL_RumbleGamepad;
     SDL_RumbleGamepadTriggers;
@@ -681,7 +679,6 @@ SDL3_0.0.0 {
     SDL_SendJoystickVirtualSensorData;
     SDL_SetAssertionHandler;
     SDL_SetAudioPostmixCallback;
-    SDL_SetAudioStreamFormat;
     SDL_SetAudioStreamFormat;
     SDL_SetAudioStreamFrequencyRatio;
     SDL_SetAudioStreamGetCallback;
@@ -753,6 +750,7 @@ SDL3_0.0.0 {
     SDL_SetTextureScaleMode;
     SDL_SetThreadPriority;
     SDL_SetWindowAlwaysOnTop;
+    SDL_SetWindowAspectRatio;
     SDL_SetWindowBordered;
     SDL_SetWindowFocusable;
     SDL_SetWindowFullscreen;
@@ -771,6 +769,7 @@ SDL3_0.0.0 {
     SDL_SetWindowResizable;
     SDL_SetWindowShape;
     SDL_SetWindowSize;
+    SDL_SetWindowSurfaceVSync;
     SDL_SetWindowTitle;
     SDL_SetWindowsMessageHook;
     SDL_SetX11EventHook;
@@ -825,6 +824,7 @@ SDL3_0.0.0 {
     SDL_UpdateWindowSurfaceRects;
     SDL_UpdateYUVTexture;
     SDL_Vulkan_CreateSurface;
+    SDL_Vulkan_DestroySurface;
     SDL_Vulkan_GetInstanceExtensions;
     SDL_Vulkan_GetVkGetInstanceProcAddr;
     SDL_Vulkan_LoadLibrary;

@@ -108,7 +108,7 @@ typedef enum SDL_EventType
     /* 0x201 was SDL_EVENT_SYSWM, reserve the number for sdl2-compat */
     SDL_EVENT_WINDOW_SHOWN = 0x202,     /**< Window has been shown */
     SDL_EVENT_WINDOW_HIDDEN,            /**< Window has been hidden */
-    SDL_EVENT_WINDOW_EXPOSED,           /**< Window has been exposed and should be redrawn */
+    SDL_EVENT_WINDOW_EXPOSED,           /**< Window has been exposed and should be redrawn, and can be redrawn directly from event watchers for this event */
     SDL_EVENT_WINDOW_MOVED,             /**< Window has been moved to data1, data2 */
     SDL_EVENT_WINDOW_RESIZED,           /**< Window has been resized to data1xdata2 */
     SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED,/**< The pixel size of the window has changed to data1xdata2 */
@@ -273,7 +273,7 @@ typedef struct SDL_DisplayEvent
  */
 typedef struct SDL_WindowEvent
 {
-    SDL_EventType type; /**< SDL_WINDOWEVENT_* */
+    SDL_EventType type; /**< SDL_EVENT_WINDOW_* */
     Uint32 reserved;
     Uint64 timestamp;   /**< In nanoseconds, populated using SDL_GetTicksNS() */
     SDL_WindowID windowID; /**< The associated window */
@@ -338,7 +338,13 @@ typedef struct SDL_TextEditingEvent
  * The `text` is owned by SDL and should be copied if the application wants to
  * hold onto it beyond the scope of handling this event.
  *
+ * This event will never be delivered unless text input is enabled by calling
+ * SDL_StartTextInput(). Text input is disabled by default!
+ *
  * \since This struct is available since SDL 3.0.0.
+ *
+ * \sa SDL_StartTextInput
+ * \sa SDL_StopTextInput
  */
 typedef struct SDL_TextInputEvent
 {
@@ -374,7 +380,7 @@ typedef struct SDL_MouseMotionEvent
     Uint64 timestamp;   /**< In nanoseconds, populated using SDL_GetTicksNS() */
     SDL_WindowID windowID; /**< The window with mouse focus, if any */
     SDL_MouseID which;  /**< The mouse instance id, SDL_TOUCH_MOUSEID, or SDL_PEN_MOUSEID */
-    Uint32 state;       /**< The current button state */
+    SDL_MouseButtonFlags state;       /**< The current button state */
     float x;            /**< X coordinate, relative to window */
     float y;            /**< Y coordinate, relative to window */
     float xrel;         /**< The relative motion in the X direction */
@@ -893,7 +899,7 @@ SDL_COMPILE_TIME_ASSERT(SDL_Event, sizeof(SDL_Event) == sizeof(((SDL_Event *)NUL
  * \sa SDL_PollEvent
  * \sa SDL_WaitEvent
  */
-extern DECLSPEC void SDLCALL SDL_PumpEvents(void);
+extern SDL_DECLSPEC void SDLCALL SDL_PumpEvents(void);
 
 /* @{ */
 typedef enum SDL_EventAction
@@ -941,7 +947,7 @@ typedef enum SDL_EventAction
  * \sa SDL_PumpEvents
  * \sa SDL_PushEvent
  */
-extern DECLSPEC int SDLCALL SDL_PeepEvents(SDL_Event *events, int numevents, SDL_EventAction action, Uint32 minType, Uint32 maxType);
+extern SDL_DECLSPEC int SDLCALL SDL_PeepEvents(SDL_Event *events, int numevents, SDL_EventAction action, Uint32 minType, Uint32 maxType);
 /* @} */
 
 /**
@@ -958,7 +964,7 @@ extern DECLSPEC int SDLCALL SDL_PeepEvents(SDL_Event *events, int numevents, SDL
  *
  * \sa SDL_HasEvents
  */
-extern DECLSPEC SDL_bool SDLCALL SDL_HasEvent(Uint32 type);
+extern SDL_DECLSPEC SDL_bool SDLCALL SDL_HasEvent(Uint32 type);
 
 
 /**
@@ -977,7 +983,7 @@ extern DECLSPEC SDL_bool SDLCALL SDL_HasEvent(Uint32 type);
  *
  * \sa SDL_HasEvents
  */
-extern DECLSPEC SDL_bool SDLCALL SDL_HasEvents(Uint32 minType, Uint32 maxType);
+extern SDL_DECLSPEC SDL_bool SDLCALL SDL_HasEvents(Uint32 minType, Uint32 maxType);
 
 /**
  * Clear events of a specific type from the event queue.
@@ -1003,7 +1009,7 @@ extern DECLSPEC SDL_bool SDLCALL SDL_HasEvents(Uint32 minType, Uint32 maxType);
  *
  * \sa SDL_FlushEvents
  */
-extern DECLSPEC void SDLCALL SDL_FlushEvent(Uint32 type);
+extern SDL_DECLSPEC void SDLCALL SDL_FlushEvent(Uint32 type);
 
 /**
  * Clear events of a range of types from the event queue.
@@ -1028,7 +1034,7 @@ extern DECLSPEC void SDLCALL SDL_FlushEvent(Uint32 type);
  *
  * \sa SDL_FlushEvent
  */
-extern DECLSPEC void SDLCALL SDL_FlushEvents(Uint32 minType, Uint32 maxType);
+extern SDL_DECLSPEC void SDLCALL SDL_FlushEvents(Uint32 minType, Uint32 maxType);
 
 /**
  * Poll for currently pending events.
@@ -1073,7 +1079,7 @@ extern DECLSPEC void SDLCALL SDL_FlushEvents(Uint32 minType, Uint32 maxType);
  * \sa SDL_WaitEvent
  * \sa SDL_WaitEventTimeout
  */
-extern DECLSPEC SDL_bool SDLCALL SDL_PollEvent(SDL_Event *event);
+extern SDL_DECLSPEC SDL_bool SDLCALL SDL_PollEvent(SDL_Event *event);
 
 /**
  * Wait indefinitely for the next available event.
@@ -1095,7 +1101,7 @@ extern DECLSPEC SDL_bool SDLCALL SDL_PollEvent(SDL_Event *event);
  * \sa SDL_PushEvent
  * \sa SDL_WaitEventTimeout
  */
-extern DECLSPEC SDL_bool SDLCALL SDL_WaitEvent(SDL_Event *event);
+extern SDL_DECLSPEC SDL_bool SDLCALL SDL_WaitEvent(SDL_Event *event);
 
 /**
  * Wait until the specified timeout (in milliseconds) for the next available
@@ -1123,7 +1129,7 @@ extern DECLSPEC SDL_bool SDLCALL SDL_WaitEvent(SDL_Event *event);
  * \sa SDL_PushEvent
  * \sa SDL_WaitEvent
  */
-extern DECLSPEC SDL_bool SDLCALL SDL_WaitEventTimeout(SDL_Event *event, Sint32 timeoutMS);
+extern SDL_DECLSPEC SDL_bool SDLCALL SDL_WaitEventTimeout(SDL_Event *event, Sint32 timeoutMS);
 
 /**
  * Add an event to the event queue.
@@ -1157,7 +1163,7 @@ extern DECLSPEC SDL_bool SDLCALL SDL_WaitEventTimeout(SDL_Event *event, Sint32 t
  * \sa SDL_PollEvent
  * \sa SDL_RegisterEvents
  */
-extern DECLSPEC int SDLCALL SDL_PushEvent(SDL_Event *event);
+extern SDL_DECLSPEC int SDLCALL SDL_PushEvent(SDL_Event *event);
 
 /**
  * A function pointer used for callbacks that watch the event queue.
@@ -1225,7 +1231,7 @@ typedef int (SDLCALL *SDL_EventFilter)(void *userdata, SDL_Event *event);
  * \sa SDL_PeepEvents
  * \sa SDL_PushEvent
  */
-extern DECLSPEC void SDLCALL SDL_SetEventFilter(SDL_EventFilter filter, void *userdata);
+extern SDL_DECLSPEC void SDLCALL SDL_SetEventFilter(SDL_EventFilter filter, void *userdata);
 
 /**
  * Query the current event filter.
@@ -1242,7 +1248,7 @@ extern DECLSPEC void SDLCALL SDL_SetEventFilter(SDL_EventFilter filter, void *us
  *
  * \sa SDL_SetEventFilter
  */
-extern DECLSPEC SDL_bool SDLCALL SDL_GetEventFilter(SDL_EventFilter *filter, void **userdata);
+extern SDL_DECLSPEC SDL_bool SDLCALL SDL_GetEventFilter(SDL_EventFilter *filter, void **userdata);
 
 /**
  * Add a callback to be triggered when an event is added to the event queue.
@@ -1267,12 +1273,14 @@ extern DECLSPEC SDL_bool SDLCALL SDL_GetEventFilter(SDL_EventFilter *filter, voi
  * \returns 0 on success, or a negative error code on failure; call
  *          SDL_GetError() for more information.
  *
+ * \threadsafety It is safe to call this function from any thread.
+ *
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_DelEventWatch
  * \sa SDL_SetEventFilter
  */
-extern DECLSPEC int SDLCALL SDL_AddEventWatch(SDL_EventFilter filter, void *userdata);
+extern SDL_DECLSPEC int SDLCALL SDL_AddEventWatch(SDL_EventFilter filter, void *userdata);
 
 /**
  * Remove an event watch callback added with SDL_AddEventWatch().
@@ -1287,7 +1295,7 @@ extern DECLSPEC int SDLCALL SDL_AddEventWatch(SDL_EventFilter filter, void *user
  *
  * \sa SDL_AddEventWatch
  */
-extern DECLSPEC void SDLCALL SDL_DelEventWatch(SDL_EventFilter filter, void *userdata);
+extern SDL_DECLSPEC void SDLCALL SDL_DelEventWatch(SDL_EventFilter filter, void *userdata);
 
 /**
  * Run a specific filter function on the current event queue, removing any
@@ -1305,7 +1313,7 @@ extern DECLSPEC void SDLCALL SDL_DelEventWatch(SDL_EventFilter filter, void *use
  * \sa SDL_GetEventFilter
  * \sa SDL_SetEventFilter
  */
-extern DECLSPEC void SDLCALL SDL_FilterEvents(SDL_EventFilter filter, void *userdata);
+extern SDL_DECLSPEC void SDLCALL SDL_FilterEvents(SDL_EventFilter filter, void *userdata);
 
 /**
  * Set the state of processing events by type.
@@ -1317,7 +1325,7 @@ extern DECLSPEC void SDLCALL SDL_FilterEvents(SDL_EventFilter filter, void *user
  *
  * \sa SDL_EventEnabled
  */
-extern DECLSPEC void SDLCALL SDL_SetEventEnabled(Uint32 type, SDL_bool enabled);
+extern SDL_DECLSPEC void SDLCALL SDL_SetEventEnabled(Uint32 type, SDL_bool enabled);
 
 /**
  * Query the state of processing events by type.
@@ -1329,7 +1337,7 @@ extern DECLSPEC void SDLCALL SDL_SetEventEnabled(Uint32 type, SDL_bool enabled);
  *
  * \sa SDL_SetEventEnabled
  */
-extern DECLSPEC SDL_bool SDLCALL SDL_EventEnabled(Uint32 type);
+extern SDL_DECLSPEC SDL_bool SDLCALL SDL_EventEnabled(Uint32 type);
 
 /**
  * Allocate a set of user-defined events, and return the beginning event
@@ -1343,7 +1351,7 @@ extern DECLSPEC SDL_bool SDLCALL SDL_EventEnabled(Uint32 type);
  *
  * \sa SDL_PushEvent
  */
-extern DECLSPEC Uint32 SDLCALL SDL_RegisterEvents(int numevents);
+extern SDL_DECLSPEC Uint32 SDLCALL SDL_RegisterEvents(int numevents);
 
 /**
  * Allocate dynamic memory for an SDL event.
@@ -1355,9 +1363,11 @@ extern DECLSPEC Uint32 SDLCALL SDL_RegisterEvents(int numevents);
  * \returns a pointer to the memory allocated or NULL on failure; call
  *          SDL_GetError() for more information.
  *
+ * \threadsafety It is safe to call this function from any thread.
+ *
  * \since This function is available since SDL 3.0.0.
  */
-extern DECLSPEC void * SDLCALL SDL_AllocateEventMemory(size_t size);
+extern SDL_DECLSPEC void * SDLCALL SDL_AllocateEventMemory(size_t size);
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus

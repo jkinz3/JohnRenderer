@@ -58,6 +58,7 @@
 extern int SDL_HelperWindowCreate(void);
 extern int SDL_HelperWindowDestroy(void);
 #endif
+extern void SDL_FreeEnvironmentMemory(void);
 
 #ifdef SDL_BUILD_MAJOR_VERSION
 SDL_COMPILE_TIME_ASSERT(SDL_BUILD_MAJOR_VERSION,
@@ -542,6 +543,7 @@ void SDL_Quit(void)
     SDL_DBus_Quit();
 #endif
 
+    SDL_SetObjectsInvalid();
     SDL_ClearHints();
     SDL_AssertionsQuit();
 
@@ -557,21 +559,9 @@ void SDL_Quit(void)
 
     SDL_CleanupTLS();
 
+    SDL_FreeEnvironmentMemory();
+
     SDL_bInMainQuit = SDL_FALSE;
-}
-
-/* Assume we can wrap SDL_AtomicInt values and cast to Uint32 */
-SDL_COMPILE_TIME_ASSERT(sizeof_object_id, sizeof(int) == sizeof(Uint32));
-
-Uint32 SDL_GetNextObjectID(void)
-{
-    static SDL_AtomicInt last_id;
-
-    Uint32 id = (Uint32)SDL_AtomicIncRef(&last_id) + 1;
-    if (id == 0) {
-        id = (Uint32)SDL_AtomicIncRef(&last_id) + 1;
-    }
-    return id;
 }
 
 /* Get the library version number */
@@ -583,10 +573,11 @@ int SDL_GetVersion(void)
 /* Get the library source revision */
 const char *SDL_GetRevision(void)
 {
-    return SDL_REVISION;
+    return SDL_REVISION;  // a string literal, no need to SDL_FreeLater it.
 }
 
-/* Get the name of the platform */
+// Get the name of the platform
+// (a string literal, no need to SDL_FreeLater it.)
 const char *SDL_GetPlatform(void)
 {
 #if defined(SDL_PLATFORM_AIX)

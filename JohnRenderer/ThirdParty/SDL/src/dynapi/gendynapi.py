@@ -75,7 +75,20 @@ def main():
         parsing_comment = False
         current_comment = ""
 
+        ignore_wiki_documentation = False
+
         for line in input:
+
+            # Skip lines if we're in a wiki documentation block.
+            if ignore_wiki_documentation:
+                if line.startswith("#endif"):
+                    ignore_wiki_documentation = False
+                continue
+
+            # Discard wiki documentions blocks.
+            if line.startswith("#ifdef SDL_WIKI_DOCUMENTATION_SECTION"):
+                ignore_wiki_documentation = True
+                continue
 
             # Discard pre-processor directives ^#.*
             if line.startswith("#"):
@@ -87,7 +100,7 @@ def main():
                 continue
 
             # Remove one line comment /* ... */
-            # eg: extern DECLSPEC SDL_hid_device * SDLCALL SDL_hid_open_path(const char *path, int bExclusive /* = false */);
+            # eg: extern SDL_DECLSPEC SDL_hid_device * SDLCALL SDL_hid_open_path(const char *path, int bExclusive /* = false */);
             line = reg_comment_remove_content.sub('', line)
 
             # Get the comment block /* ... */ across several lines
@@ -183,7 +196,7 @@ def main():
             #
             func_ret = func_ret.replace('extern', ' ')
             func_ret = func_ret.replace('SDLCALL', ' ')
-            func_ret = func_ret.replace('DECLSPEC', ' ')
+            func_ret = func_ret.replace('SDL_DECLSPEC', ' ')
             # Remove trailing spaces in front of '*'
             tmp = ""
             while func_ret != tmp:

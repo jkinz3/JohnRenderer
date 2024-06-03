@@ -124,7 +124,7 @@ extern "C" {
  *
  * \sa SDL_GetRevision
  */
-extern DECLSPEC int SDLCALL SDL_GetVersion(void);
+extern SDL_DECLSPEC int SDLCALL SDL_GetVersion(void);
 
 /**
  * Get the code revision of SDL that is linked against your program.
@@ -143,6 +143,8 @@ extern DECLSPEC int SDLCALL SDL_GetVersion(void);
  * You shouldn't use this function for anything but logging it for debugging
  * purposes. The string is not intended to be reliable in any way.
  *
+ * The returned string follows the SDL_GetStringRule.
+ *
  * \returns an arbitrary string, uniquely identifying the exact revision of
  *          the SDL library in use.
  *
@@ -150,7 +152,7 @@ extern DECLSPEC int SDLCALL SDL_GetVersion(void);
  *
  * \sa SDL_GetVersion
  */
-extern DECLSPEC const char *SDLCALL SDL_GetRevision(void);
+extern SDL_DECLSPEC const char *SDLCALL SDL_GetRevision(void);
 
 
 /* Ends C function definitions when using C++ */
