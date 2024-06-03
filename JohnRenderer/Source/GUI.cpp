@@ -49,7 +49,7 @@ void GUI::TickUI()
 	ImGui::NewFrame ();
 	ImGuizmo::BeginFrame();
 	ImGuiDockNodeFlags NodeFlags = ImGuiDockNodeFlags_PassthruCentralNode;
-	ImGui::DockSpaceOverViewport (ImGui::GetMainViewport (), NodeFlags);
+	ImGui::DockSpaceOverViewport (0, ImGui::GetMainViewport (), NodeFlags);
 
 	DrawViewport();
 
