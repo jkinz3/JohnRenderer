@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "JohnCamera.h"
-
+#include "GUI.h"
 #define MAX_FLT 3.402823466e+38F
 using namespace DirectX::SimpleMath;
 JohnCamera::JohnCamera()
@@ -262,11 +262,30 @@ void JohnCamera::Tick(float DeltaTime, Vector2 MouseDelta)
 		m_CursorClickPos.y = y;
 	}
 
-	if(bInRelativeMode == false)
-	{
-		int x = 0;
-	}
+	bool relativeMode = SDL_GetRelativeMouseMode  ();
+
 	SDL_SetRelativeMouseMode (bInRelativeMode ? SDL_TRUE : SDL_FALSE);
+
+	if(relativeMode == false && SDL_GetRelativeMouseMode  ())
+	{
+		//we initiated relative mode. Warp mouse to center to avoid mouse from leaving viewport on large drags
+
+		ImVec2 min, max;
+
+		Application::Get().GetGUI  ()->GetViewportBounds  (min, max);
+
+		ImVec2 viewportPos = Application::Get().GetGUI  ()->GetViewportPos  ();
+		ImVec2 viewportSize = Application::Get().GetGUI  ()->GetViewportSize();
+
+		float x = viewportSize.x / 2;
+		float y = viewportSize.y / 2;
+
+		float newX = viewportPos.x + x;
+		float newY = viewportPos.y + y;
+
+		//SDL_WarpMouseInWindow  (Application::Get().GetWindow  (), newX, newY);
+		
+	}
 }
 
 Matrix JohnCamera::GetViewMatrix() const

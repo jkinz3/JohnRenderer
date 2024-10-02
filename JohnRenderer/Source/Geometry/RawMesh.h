@@ -21,6 +21,23 @@ using namespace DirectX::SimpleMath;
 #define MAX_TEXCOORDS 0x8
 #endif
 
+//I hate this. This sucks. But I don't feel like figuring out the whole
+// turning integer index into X/Y/Z thingy
+inline float GetVector3ComponentFromIndex(Vector3 vec, int index)
+{
+	switch(index)
+	{
+	case 0:
+		return vec.x;
+	case 1:
+		return vec.y;
+	case 2:
+		return vec.z;
+	default:
+		return vec.x;
+	}
+}
+
 struct RawFace
 {
 	unsigned int m_NumIndices;
@@ -57,8 +74,7 @@ struct RawFace
 		if(m_NumIndices)
 		{
 			m_Indices.reserve  (m_NumIndices);
-			::memcpy(m_Indices.data(), o.m_Indices.data(), sizeof(unsigned int) * m_NumIndices);
-
+			m_Indices = o.m_Indices;
 		}
 		else
 		{
@@ -101,19 +117,20 @@ struct RawFace
 	}
 
 };
-	enum PrimitiveType
-	{
-		Point = 0x1,
-		Line=0x2,
-		Triangle=0x3,
-		fPolygon=0x8
+enum PrimitiveType
+{
+	Point = 0x1,
+	Line = 0x2,
+	Triangle = 0x3,
+	fPolygon = 0x8,
+	NGONEncodingFlag = 0x10
 	};
 
 
 PrimitiveType GetPrimitiveTypeForIndexCount(unsigned int n);
 struct RawMesh
 {
-	PrimitiveType m_Primitivetypes;
+	unsigned int m_Primitivetypes;
 
 	unsigned int m_NumVertices;
 
@@ -155,6 +172,8 @@ struct RawMesh
 	bool HasNormals() const;
 
 	bool HasTexCoords(unsigned int index) const;
+
+	void ExtractTriangles(std::vector<Vertex>& vertices, std::vector<unsigned int>& indices);
 
 
 };

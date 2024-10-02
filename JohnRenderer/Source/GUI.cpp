@@ -92,6 +92,28 @@ void GUI::TickMainMenuBar()
 				}
 
 			}
+			if(ImGui::MenuItem("Import Scene"))
+			{
+				COMDLG_FILTERSPEC Extensions[] =
+				{
+					{
+						L"GLTF", L"*.glb"
+					},
+					{
+						L"FBX", L"*.fbx"
+					},
+					{
+						L"OBJ", L"*.obj"
+					}
+				};
+
+				wchar_t* SceneName = OpenFile  (Extensions, _countof(Extensions));
+
+				if(SceneName != nullptr)
+				{
+					Application::Get().ImportScene(SceneName);
+				}
+			}
 			if(ImGui::MenuItem ("Save"))
 			{
 				SceneSerializer Serializer(m_Scene);
@@ -233,8 +255,9 @@ void GUI::DrawViewport()
 	auto rectMax = ImGui::GetItemRectMax ();
 	m_ViewportBounds[0] = { rectMin.x, rectMin.y };
 	m_ViewportBounds[1] = { rectMax.x, rectMax.y };
+	m_ViewportSize = ImGui::GetCurrentWindow  ()->Size;
+	m_ViewportPos = ImGui::GetWindowPos  ();
 	TickGizmo();
-
 	ImGui::PopStyleVar ();
 
 	ImGui::End();
@@ -250,10 +273,42 @@ void GUI::DrawSideBar()
 		std::shared_ptr<Actor> newActor = std::make_shared<Actor>();
 
 		newActor->SetName  ("Plane");
-		newActor->SetMesh  (John::Primities::CreatePlane  (Vector3(3,3,3)));
+		auto mesh = John::Primities::CreatePlane  (Vector3(3, 3, 3));
+		auto renderer = Application::Get().GetRenderer  ();
+		mesh->SetMaterial  (renderer->GetDefaultMaterial());
+		newActor->SetMesh  (mesh);
 		m_Scene->AddActor  (newActor);
 	}
-	
+	if(ImGui::Button("Add Sphere"))
+	{
+		std::shared_ptr<Actor> newActor = std::make_shared<Actor> ();
+		newActor->SetName  ("Sphere");
+		auto mesh = John::Primities::CreateSphere();
+		auto renderer = Application::Get().GetRenderer  ();
+		mesh->SetMaterial  (renderer->GetDefaultMaterial  ());
+		newActor->SetMesh  (mesh);
+		m_Scene->AddActor  (newActor);
+	}
+	ImGuiContext& context = *ImGui::GetCurrentContext  ();
+	ImGuiWindow* window = context.HoveredWindow;
+	if(window)
+	{
+		ImGui::Text(window->Name);
+	}
+
+
+
+	float  x, y;
+	SDL_GetMouseState  (&x, &y);
+
+	ImGui::Text("Mouse X: %f, Mouse Y: %f", x, y);
+
+	ImGui::Text("Min X: %f    Min Y: %f", m_ViewportBounds[0].x, m_ViewportBounds[0].y);
+	ImGui::Text("Max X: %f    Max Y: %f", m_ViewportBounds[1].x, m_ViewportBounds[1].y);
+	ImGui::Text("Pos X: %f    Pos Y: %f", m_ViewportPos.x, m_ViewportPos.y);
+	ImGui::Text("Size X: %f    Size Y: %f", m_ViewportSize.x, m_ViewportSize.y);
+
+
 	ImGui::End();
 }
 
@@ -277,7 +332,8 @@ bool GUI::IsViewportHovered() const
 	ImGuiWindow* window = context.HoveredWindow;
 	if(window)
 	{
-		return *window->Name == *m_ViewportName.c_str ();
+		bool ret = *window->Name == *m_ViewportName.c_str ();
+		return ret;
 	}
 	return false;
 }
@@ -371,7 +427,7 @@ void GUI::MousePicking()
 				if (bResult)
 				{
 					hitDistance = std::min(hitDistance, dist);
-					m_SelectedActor = actor;
+					SelectActor(actor);
 					bHitTriangle = true;
 					break;
 				}
@@ -393,6 +449,7 @@ void GUI::MousePicking()
 			else
 			{
 				bClickedOnObject = false;
+				DeselectAll  ();
 			}
 
 		}
@@ -523,6 +580,75 @@ wchar_t* GUI::OpenScene(COMDLG_FILTERSPEC FileExt[], UINT ExtensionCount)
 	return nullptr;
 }
 
+wchar_t* GUI::OpenFile(COMDLG_FILTERSPEC FileExt[], UINT ExtensionCount)
+{
+	IFileOpenDialog* FileOpen;
+	HRESULT hr = CoCreateInstance  (CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, reinterpret_cast<void**>(&FileOpen));
+
+	if(FAILED(hr))
+	{
+		std::printf("Could not create instance!");
+		return nullptr;
+	}
+
+	hr = FileOpen->SetFileTypes(ExtensionCount, FileExt);
+
+	std::string startingDir("Content/");
+
+	PIDLIST_ABSOLUTE pid1;
+	WCHAR startingDirW[MAX_PATH];
+	HRESULT parse = SHParseDisplayName (startingDirW, 0, &pid1, SFGAO_FOLDER, 0);
+
+	if(SUCCEEDED(parse))
+	{
+		IShellItem* psi;
+		parse = SHCreateShellItem(NULL, NULL, pid1, &psi);
+		if(SUCCEEDED(parse))
+		{
+			FileOpen->SetFolder  (psi);
+
+		}
+		ILFree(pid1);
+	}
+
+
+
+
+
+	hr = FileOpen->Show(NULL);
+	if(FAILED(hr))
+	{
+		std::printf("Could not show file!");
+		return nullptr;
+	}
+	IShellItem* Item;
+
+	hr = FileOpen->GetResult  (&Item);
+
+	if(FAILED(hr))
+	{
+		std::printf("Could not get item!");
+		return nullptr;
+	}
+
+	PWSTR filePath;
+	char buffer[MAX_PATH];
+	hr = Item->GetDisplayName  (SIGDN_FILESYSPATH, &filePath);
+
+	if(wcslen(filePath) > 0)
+	{
+		Item->Release();
+		FileOpen->Release();
+		return filePath;
+	}
+
+	Item->Release  ();
+	FileOpen->Release  ();
+	return nullptr;
+
+
+}
+
 void GUI::SelectActor(std::shared_ptr<Actor> actor)
 {
 	m_SelectedActor = actor;
@@ -538,4 +664,27 @@ void GUI::ClearScene()
 void GUI::DeselectAll()
 {
 	m_SelectedActor = nullptr;
+}
+
+void GUI::GetViewportBounds(ImVec2& min, ImVec2& max)
+{
+	min = m_ViewportBounds[0];
+	max = m_ViewportBounds[1];
+}
+
+ImVec2 GUI::GetViewportSize() const
+{
+	return m_ViewportSize;
+}
+
+ImVec2 GUI::GetViewportPos() const
+{
+	return m_ViewportPos;
+
+}
+
+bool GUI::IsGizmoBeginUsed()
+{
+	return ImGuizmo::IsOver();
+
 }

@@ -5,6 +5,9 @@ class JohnShader;
 class SelectionOutlineShader;
 class DepthOnlyShader;
 class Sky;
+class Brush;
+struct BrushFace;
+struct Winding;
 using Microsoft::WRL::ComPtr;
 using namespace DirectX::SimpleMath;
 using namespace DirectX;
@@ -16,7 +19,25 @@ class SceneRenderer
 public:
 	~SceneRenderer();
 
+	void CreateBrush();
+
+	void BuildBrush();
+
+	void BuildBrushWindings();
+
+	void MakeBrushFacePlanes();
+
+	void MakeFacePlane(BrushFace* f);
+
+	Winding* MakeFaceWinding(BrushFace* face);
+
+	Winding* MakeBaseForPlane(Plane* p);
+
+	Winding* WindingClip(Winding* in, Plane* split, bool keepon);
+
 	void Initialize();
+
+	void InitializeDefaults();
 
 	void DrawScene(Scene* InScene, Matrix view, Matrix proj);
 
@@ -48,6 +69,8 @@ public:
 	std::shared_ptr<Texture> GetDefaultRoughness() const { return m_DefaultRoughness; }
 
 	void RecompileShaders();
+
+	std::shared_ptr<Material> GetDefaultMaterial() const { return m_DefaultMaterial; }
 private:
 
 	ID3D11RasterizerState* GetCurrentRSState() const;
@@ -86,7 +109,7 @@ private:
 	ComPtr<ID3D11DepthStencilState> m_StandardState;
 	std::unique_ptr<DirectX::ToneMapPostProcess> m_ToneMap;
 
-	
+	std::shared_ptr<Material> m_DefaultMaterial;
 
 	std::unique_ptr<GeometricPrimitive> m_Sphere;
 	std::unique_ptr<PBREffect> m_PBREffect;
@@ -118,5 +141,7 @@ private:
 
 	Matrix m_CachedView;
 	Matrix m_CachedProj;
+
+	Brush* m_Brush;
 };
 

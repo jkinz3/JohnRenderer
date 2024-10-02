@@ -57,10 +57,10 @@ bool Application::Initialize()
 		return false;
 	}
 
-	m_Scene = std::make_shared<Scene>();
-	m_Scene->LoadFromFile ("Content/scene.glb");
 	m_Renderer = std::make_shared<SceneRenderer>();
 	m_Renderer->Initialize();
+	m_Scene = std::make_shared<Scene>();
+	m_Scene->LoadFromFile ("Content/scene.fbx");
 
 
 	m_GUI = std::make_shared<GUI>();
@@ -228,7 +228,7 @@ void Application::ProcessInput(float DeltaTime)
 	Vector2 MouseDelta = Vector2::Zero;
 	while(SDL_PollEvent (&event))
 	{
-		ImGui_ImplSDL3_ProcessEvent (&event);
+
 		if(event.type == SDL_EVENT_QUIT)
 		{
 			bWantsToQuit = true;
@@ -294,6 +294,15 @@ void Application::ProcessInput(float DeltaTime)
 			{
 				m_GUI->MousePicking();
 			}
+
+			float x, y;
+			auto state = SDL_GetMouseState  (&x, &y);
+			
+			if (!(state & SDL_BUTTON_RMASK | SDL_BUTTON_LMASK))
+			{
+				m_Camera->SetCanMoveCamera (false);
+			}
+
 		}
 		if(event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
 		{
@@ -301,9 +310,11 @@ void Application::ProcessInput(float DeltaTime)
 			{
 				m_TrackingDelta = Vector2::Zero;
 			}
+			m_Camera->SetCanMoveCamera (m_GUI->IsViewportHovered () && !m_GUI->IsGizmoBeginUsed());
 		}
+		ImGui_ImplSDL3_ProcessEvent (&event);
 	}
-	m_Camera->SetCanMoveCamera (m_GUI->IsViewportHovered () || !m_Camera->IsInRelativeMode ());
+
 	m_Camera->Tick(DeltaTime, MouseDelta);
 
 	if(SDL_GetRelativeMouseMode() == SDL_TRUE)
@@ -455,6 +466,12 @@ HWND Application::GetNativeWindow() const
 	return hWnd;
 }
 
+GUI* Application::GetGUI() const
+{
+	return m_GUI.get();
+
+}
+
 void Application::RequestExit()
 {
 	Cleanup ();
@@ -472,7 +489,7 @@ void Application::EndDebugEvent()
 }
 
 void Application::SetDebugMarker(_In_z_ const wchar_t* name)
-{
+{ 
 	m_DebugAnnotation->SetMarker (name);
 }
 
@@ -490,9 +507,24 @@ bool Application::IsActorSelected() const
 
 void Application::OpenScene(const std::wstring FileName)
 {
+	m_GUI->ClearScene  ();
+	m_Scene.reset();
 	SceneSerializer Serializer;
 	std::string file(FileName.begin(), FileName.end());
 	m_Scene = Serializer.LoadFromDisk (file);
+	m_GUI->SetScene  (m_Scene);
+}
+
+
+
+void Application::ImportScene(const std::wstring FileName)
+{
+	m_GUI->ClearScene  ();
+	m_Scene.reset();
+	std::string FileNameA(FileName.begin(), FileName.end());
+	m_Scene = std::make_shared<Scene>();
+	m_Scene->LoadFromFile  (FileNameA.c_str  ());
+	m_GUI->SetScene  (m_Scene);
 }
 
 void Application::NewScene()

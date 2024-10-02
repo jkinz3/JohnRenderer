@@ -3,8 +3,8 @@
 
 #include <stdio.h>
 #include <filesystem>
+#include <string.h>
 
-#define SDL_MAIN_HANDLED
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_system.h>
 
@@ -77,4 +77,3 @@ inline void ThrowIfFailed(HRESULT hr)
 }
 
 
-#include <string.h>

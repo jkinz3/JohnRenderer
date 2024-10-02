@@ -18,6 +18,8 @@ public:
 
 	void TickGizmo();
 
+
+
 	void SetScene(std::shared_ptr<Scene> InScene);
 
 	void RenderUI();
@@ -51,11 +53,21 @@ public:
 
 	wchar_t* OpenScene(COMDLG_FILTERSPEC FileExt[], UINT ExtensionCount);
 
+	wchar_t* OpenFile(COMDLG_FILTERSPEC FileExt[], UINT ExtensionCount);
+
 	void SelectActor(std::shared_ptr<Actor> actor);
 
 	void ClearScene();
 
 	void DeselectAll();
+
+	void GetViewportBounds(ImVec2& min, ImVec2& max);
+
+	ImVec2 GetViewportSize() const;
+
+	ImVec2 GetViewportPos() const;
+
+	bool IsGizmoBeginUsed();
 
 private:
 
@@ -75,6 +87,10 @@ private:
 
 	ImGuizmo::OPERATION m_GizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
 	ImGuizmo::MODE m_GizmoMode = ImGuizmo::MODE::WORLD;
+
+	ImVec2 m_ViewportSize;
+
+	ImVec2 m_ViewportPos;
 
 	bool bIsGizmoActive = false;
 

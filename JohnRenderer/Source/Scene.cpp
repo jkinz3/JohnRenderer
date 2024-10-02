@@ -3,6 +3,8 @@
 #include "Texture.h"
 #include "PointLight.h"
 #include "Geometry/RawMesh.h"
+#include "Material.h"
+#include "JohnMesh.h"
 Scene::Scene()
 {
 
@@ -11,9 +13,8 @@ Scene::Scene()
 void Scene::LoadFromFile(const char* FileName)
 {
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile (FileName, aiProcessPreset_TargetRealtime_Fast | aiProcess_ConvertToLeftHanded);
+	const aiScene* scene = importer.ReadFile (FileName, aiProcess_ConvertToLeftHanded);
 
-	LoadRawMesh  (FileName);
 
 	if(scene == nullptr)
 	{
@@ -67,18 +68,26 @@ void Scene::LoadRawMesh(const char* FileName)
 		pos.z = firstMesh->mVertices[i].z;
 		m_RawMesh->m_Vertices.push_back  (pos);
 
+		if(firstMesh->HasNormals  ())
+		{
+
 		Vector3 norm;
 		norm.x = firstMesh->mNormals[i].x;
 		norm.y = firstMesh->mNormals[i].y;
 		norm.z = firstMesh->mNormals[i].z;
 		
 		m_RawMesh->m_Normals.push_back  (norm);
+		}
+
+		if(firstMesh->HasTextureCoords  (0))
+		{
 
 		Vector2 texCoord;
 		texCoord.x = firstMesh->mTextureCoords[0][i].x;
 		texCoord.y = firstMesh->mTextureCoords[0][i].y;
 
 		m_RawMesh->m_TexCoords.push_back  (texCoord);
+		}
 	}
 
 	for(int i = 0; i < firstMesh->mNumFaces; i++)
@@ -111,7 +120,7 @@ void Scene::ProcessNode(aiNode* node, const aiScene* scene, std::shared_ptr<Acto
 
 			aiVector3D pos, scale;
 			aiQuaternion rot;
-		 worldMatrix = node->mTransformation * accTransform;
+			worldMatrix = node->mTransformation * accTransform;
 			worldMatrix.Decompose (scale, rot, pos);
 	
 			newMesh->SetPosition ({ pos.x, pos.y, pos.z });
@@ -132,8 +141,10 @@ std::shared_ptr<Actor> Scene::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 {
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
-	std::shared_ptr<RawMesh> NewMesh = std::make_shared<RawMesh>();
-	NewMesh->m_NumFaces = mesh->mNumFaces;
+
+	std::shared_ptr<RawMesh> rawMesh = std::make_shared<RawMesh>();
+	rawMesh->m_NumFaces = mesh->mNumFaces;
+	rawMesh->m_NumVertices = mesh->mNumVertices;
 
 	for(UINT i = 0; i < mesh->mNumVertices; i++)
 	{
@@ -142,6 +153,7 @@ std::shared_ptr<Actor> Scene::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 		vertex.Position.y = mesh->mVertices[i].y;
 		vertex.Position.z = mesh->mVertices[i].z;
 
+		rawMesh->m_Vertices.push_back  (vertex.Position);
 
 		if(mesh->HasNormals ())
 		{
@@ -149,17 +161,16 @@ std::shared_ptr<Actor> Scene::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 			vertex.Normal.y = mesh->mNormals[i].y;
 			vertex.Normal.z = mesh->mNormals[i].z;
 
-			NewMesh->m_Normals.push_back(vertex.Normal);
+			rawMesh->m_Normals.push_back(vertex.Normal);
 		}
 		if(mesh->HasTextureCoords (0))
 		{
 			vertex.TexCoord.x = mesh->mTextureCoords[0][i].x;
 			vertex.TexCoord.y = mesh->mTextureCoords[0][i].y;
 
-			NewMesh->m_TexCoords.push_back  (vertex.TexCoord);
+			rawMesh->m_TexCoords.push_back  (vertex.TexCoord);
 		}
 
-		vertices.push_back (vertex);
 	}
 
 	for(UINT i = 0; i < mesh->mNumFaces; i++)
@@ -170,25 +181,61 @@ std::shared_ptr<Actor> Scene::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 
 		for(UINT j = 0; j < face.mNumIndices; j++)
 		{
-			indices.push_back (face.mIndices[j]);
-			newFace.m_Indices.push_back  (face.mIndices[j]);
+			unsigned int index = face.mIndices[j];
+			newFace.m_Indices.push_back  (index);
 		}
+		rawMesh->m_Faces.push_back  (newFace);
 	}
-
+	rawMesh->ExtractTriangles  (vertices, indices);
 	std::shared_ptr<JohnMesh> newMesh = std::make_shared<JohnMesh>(vertices, indices);
+	newMesh->SetRawMesh  (rawMesh);
 
 	if(mesh->mMaterialIndex >= 0)
 	{
+		auto renderer = Application::Get().GetRenderer  ();
 		aiMaterial* mat = scene->mMaterials[mesh->mMaterialIndex];
+		std::shared_ptr<Material> newMat = std::make_shared<Material>();
 		std::shared_ptr<Texture> baseColor = LoadMaterialTexture (mat, aiTextureType_DIFFUSE, "baseColor", scene);
-		newMesh->SetBaseColorMap (baseColor);
-		std::shared_ptr<Texture> normal = LoadMaterialTexture (mat, aiTextureType_NORMALS, "normal", scene);
-		newMesh->SetNormalMap(normal);
-		std::shared_ptr<Texture> roughness = LoadMaterialTexture (mat, aiTextureType_DIFFUSE_ROUGHNESS, "roughness", scene);
-		newMesh->SetRoughnessMap(roughness);
-		std::shared_ptr<Texture> metallic = LoadMaterialTexture (mat, aiTextureType_METALNESS, "metallic", scene);
-		newMesh->SetMetallicMap(metallic);
+		if(baseColor != nullptr)
+		{
+			newMat->SetBaseColorMap (baseColor);
 
+		}
+		else
+		{
+			newMat->SetBaseColorMap  (renderer->GetDefaultDiffuse  ());
+		}
+		std::shared_ptr<Texture> normal = LoadMaterialTexture (mat, aiTextureType_NORMALS, "normal", scene);
+		if(normal != nullptr)
+		{
+			newMat->SetNormalMap(normal);
+
+		}
+		else
+		{
+			newMat->SetNormalMap  (renderer->GetDefaultNormal  ());
+		}
+		std::shared_ptr<Texture> roughness = LoadMaterialTexture (mat, aiTextureType_DIFFUSE_ROUGHNESS, "roughness", scene);
+		if(roughness != nullptr)
+		{
+			newMat->SetRoughnessMap(roughness);
+
+		}
+		else
+		{
+			newMat->SetRoughnessMap  (renderer->GetDefaultRoughness  ());
+		}
+		std::shared_ptr<Texture> metallic = LoadMaterialTexture (mat, aiTextureType_METALNESS, "metallic", scene);
+		if(metallic != nullptr)
+		{
+			newMat->SetMetallicMap(metallic);
+
+		}
+		else
+		{
+			newMat->SetMetallicMap  (renderer->GetDefaultMetallic  ());
+		}
+		newMesh->SetMaterial  (newMat);
 
 	}
 

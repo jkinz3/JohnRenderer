@@ -54,6 +54,8 @@ public:
 
 	HWND GetNativeWindow() const;
 
+	GUI* GetGUI() const;
+
 	void RequestExit();
 
 	std::shared_ptr<JohnCamera> GetCamera() const {return m_Camera;}
@@ -66,6 +68,8 @@ public:
 	bool IsActorSelected() const;
 
 	void OpenScene(const std::wstring FileName);
+
+	void ImportScene(const std::wstring FileName);
 
 	void NewScene();
 private:

@@ -12,6 +12,7 @@ Texture::Texture(ComPtr<ID3D11Texture2D> tex, ComPtr<ID3D11ShaderResourceView> s
 	tex->GetDesc (&desc);
 	SetWidth (desc.Width);
 	SetHeight (desc.Height);
+	
 }
 
 

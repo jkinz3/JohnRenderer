@@ -2,6 +2,7 @@
 #include "JohnMesh.h"
 #include "Application.h"
 #include "Texture.h"
+#include "Material.h"
 
 JohnMesh::JohnMesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices)
 	:m_Vertices(vertices), m_Indices(indices)
@@ -63,15 +64,7 @@ void JohnMesh::Draw()
 	context->IASetVertexBuffers (0, 1, m_VertexBuffer.GetAddressOf (), &stride, &offset);
 	context->IASetIndexBuffer (m_IndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
- 	ID3D11ShaderResourceView* srvs[] =
- 	{
- 		m_BaseColorMap->GetSRV().Get(),
- 		m_NormalMap->GetSRV().Get(),
- 		m_RoughnessMap->GetSRV().Get(),
- 		m_MetallicMap->GetSRV().Get()
- 	};
-
-	context->PSSetShaderResources (0, _countof(srvs), srvs);
+	m_Material->Apply  ();
 
 	context->DrawIndexed (m_Indices.size(), 0, 0);
 }

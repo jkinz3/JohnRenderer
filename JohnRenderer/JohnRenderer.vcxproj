@@ -65,7 +65,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProjectDir)ThirdParty\SDL\VisualC\x64\Release;$(ProjectDir)ThirdParty\Assimp\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL3.lib;d3d11.lib;dxgi.lib;d3dcompiler.lib;assimpd.lib;zlibstaticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -90,7 +90,7 @@
       <DisableSpecificWarnings>4244;4101;4267;4018;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -108,6 +108,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Geometry\Brush.cpp" />
     <ClCompile Include="Source\Geometry\AABB.cpp" />
     <ClCompile Include="Source\Geometry\RawMesh.cpp" />
     <ClCompile Include="Source\Primitives.cpp" />
@@ -184,6 +185,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Geometry\Brush.h" />
     <ClInclude Include="Source\Geometry\AABB.h" />
     <ClInclude Include="Source\Geometry\RawMesh.h" />
     <ClInclude Include="Source\Primitives.h" />

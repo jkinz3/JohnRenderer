@@ -5,6 +5,8 @@ using namespace DirectX::SimpleMath;
 
 using Microsoft::WRL::ComPtr;
 class Texture;
+class Material;
+struct RawMesh;
 struct Vertex
 {
 	Vector3 Position;
@@ -41,14 +43,7 @@ public:
 	ComPtr<ID3D11Buffer> m_VertexBuffer;
 	ComPtr<ID3D11Buffer> m_IndexBuffer;
 
-	std::shared_ptr<Texture> GetMetallicMap() const { return m_MetallicMap; }
-	void SetMetallicMap(std::shared_ptr<Texture> val) { m_MetallicMap = val; }
-	std::shared_ptr<Texture> GetNormalMap() const { return m_NormalMap; }
-	void SetNormalMap(std::shared_ptr<Texture> val) { m_NormalMap = val; }
-	std::shared_ptr<Texture> GetBaseColorMap() const { return m_BaseColorMap; }
-	void SetBaseColorMap(std::shared_ptr<Texture> val) { m_BaseColorMap = val; }
-	std::shared_ptr<Texture> GetRoughnessMap() const { return m_RoughnessMap; }
-	void SetRoughnessMap(std::shared_ptr<Texture> val) { m_RoughnessMap = val; }
+
 
 
 
@@ -60,13 +55,15 @@ public:
 
 	std::vector<Vertex>& GetVertices();
 	std::vector<unsigned int>& GetIndices();
+	std::shared_ptr<Material> GetMaterial() const { return m_Material; }
+	void SetMaterial(std::shared_ptr<Material> val) { m_Material = val; }
+	std::shared_ptr<RawMesh> GetRawMesh() const { return m_RawMesh; }
+	void SetRawMesh(std::shared_ptr<RawMesh> val) { m_RawMesh = val; }
 private:
 
-	std::shared_ptr<Texture> m_BaseColorMap;
-	std::shared_ptr<Texture> m_NormalMap;
-	std::shared_ptr<Texture> m_MetallicMap;
-	std::shared_ptr<Texture> m_RoughnessMap;
+	std::shared_ptr<RawMesh> m_RawMesh;
 
+	std::shared_ptr<Material> m_Material;
 
 };
 
