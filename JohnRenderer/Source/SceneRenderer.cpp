@@ -107,8 +107,8 @@ void SceneRenderer::CreateBrush()
 	f->PlanePoints[2] = points[2][1];
 
 	BrushFace* f2 = new BrushFace();
-	f->next = m_Brush->BrushFaces;
-	m_Brush->BrushFaces = f;
+	f2->next = m_Brush->BrushFaces;
+	m_Brush->BrushFaces = f2;
 	f2->PlanePoints[0] = points[2][0];
 	f2->PlanePoints[1] = points[1][0];
 	f2->PlanePoints[2] = points[0][0];
